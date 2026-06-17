@@ -47,6 +47,12 @@ const wishlistForm = document.getElementById('wishlist-form')
 const wishTitle = document.getElementById('wish-title')
 const wishAuthor = document.getElementById('wish-author')
 const wishlistEl = document.getElementById('wishlist')
+const wishlistEmpty = document.getElementById('wishlist-empty')
+const wishlistModal = document.getElementById('wishlist-modal')
+const wishlistModalTitle = document.getElementById('wishlist-modal-title')
+const addWishBtn = document.getElementById('add-wish-btn')
+const cancelWishBtn = document.getElementById('cancel-wish')
+let wishEditIndex = null // null = adding, number = editing that entry
 const finishedList = document.getElementById('finished-list')
 
 // Library refs
@@ -126,16 +132,45 @@ finishFormInner.addEventListener('submit', e=>{
 })
 
 // ---------- Wishlist ----------
+function openWishlistModal(index){
+  wishEditIndex = (typeof index === 'number') ? index : null
+  if(wishEditIndex !== null){
+    const it = state.wishlist[wishEditIndex] || {}
+    wishlistModalTitle.textContent = 'Edit Book'
+    wishTitle.value = it.title || ''
+    wishAuthor.value = it.author || ''
+  } else {
+    wishlistModalTitle.textContent = 'Add to TBR Pile'
+    wishTitle.value = ''
+    wishAuthor.value = ''
+  }
+  wishlistModal.hidden = false
+  wishTitle.focus()
+}
+
+function closeWishlistModal(){
+  wishlistModal.hidden = true
+  wishEditIndex = null
+}
+
+addWishBtn && addWishBtn.addEventListener('click', ()=> openWishlistModal())
+cancelWishBtn && cancelWishBtn.addEventListener('click', closeWishlistModal)
+// click the dimmed backdrop (outside the form) to dismiss
+wishlistModal && wishlistModal.addEventListener('click', e=>{ if(e.target === wishlistModal) closeWishlistModal() })
+
 wishlistForm.addEventListener('submit', e=>{
   e.preventDefault()
   const title = wishTitle.value.trim()
   if(!title) return
   const it = { title, author: wishAuthor.value.trim() }
-  state.wishlist.push(it)
+  if(wishEditIndex !== null){
+    state.wishlist[wishEditIndex] = it
+  } else {
+    state.wishlist.push(it)
+  }
   sortWishlist()
   saveState(state)
-  wishTitle.value = ''
-  wishAuthor.value = ''
+  closeWishlistModal()
   renderAll()
 })
 
@@ -257,6 +292,7 @@ function renderCurrent(){
 
 function renderWishlist(){
   wishlistEl.innerHTML = ''
+  if(wishlistEmpty) wishlistEmpty.classList.toggle('hidden', state.wishlist.length > 0)
   state.wishlist.forEach((it, idx)=>{
     const li = document.createElement('li')
   const left = document.createElement('div')
@@ -267,11 +303,15 @@ function renderWishlist(){
   setBtn.className='btn'
   setBtn.innerHTML = `<svg><use href="#icon-finish"></use></svg>Set current`
   setBtn.addEventListener('click', ()=> setAsCurrentFromWishlist(idx))
+  const editBtn = document.createElement('button')
+  editBtn.className='btn'
+  editBtn.innerHTML = `<svg><use href="#icon-edit"></use></svg>Edit`
+  editBtn.addEventListener('click', ()=> openWishlistModal(idx))
   const delBtn = document.createElement('button')
   delBtn.className='btn'
   delBtn.innerHTML = `<svg><use href="#icon-trash"></use></svg>Remove`
   delBtn.addEventListener('click', ()=> removeWishlist(idx))
-  actions.appendChild(setBtn); actions.appendChild(delBtn)
+  actions.appendChild(setBtn); actions.appendChild(editBtn); actions.appendChild(delBtn)
   li.appendChild(left)
   li.appendChild(actions)
     wishlistEl.appendChild(li)

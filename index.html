@@ -102,13 +102,12 @@
     </section>
 
     <section class="panel wishlist-panel">
-      <h2>The TBR Pile</h2>
-      <form id="wishlist-form" class="small-form">
-        <input id="wish-title" placeholder="Title" required>
-        <input id="wish-author" placeholder="Author">
-  <button class="btn"><svg><use href="#icon-finish"></use></svg>Add</button>
-      </form>
+      <div class="panel-head">
+        <h2>The TBR Pile</h2>
+        <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
+      </div>
       <ul id="wishlist" class="list"></ul>
+      <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
     </section>
 
     <section class="panel finished-panel">
@@ -129,6 +128,24 @@
       </div>
     </section>
   </main>
+
+  <div id="wishlist-modal" class="modal hidden" hidden>
+    <form id="wishlist-form" class="finish-inner">
+      <h3 id="wishlist-modal-title">Add to TBR Pile</h3>
+      <div class="field">
+        <label for="wish-title">Title</label>
+        <input id="wish-title" placeholder="Title" required>
+      </div>
+      <div class="field">
+        <label for="wish-author">Author</label>
+        <input id="wish-author" placeholder="Author">
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn primary">Save</button>
+        <button id="cancel-wish" type="button" class="btn">Cancel</button>
+      </div>
+    </form>
+  </div>
 
   <div id="library-modal" class="modal hidden" hidden>
     <form id="library-form" class="finish-inner">
