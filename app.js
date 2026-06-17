@@ -1,7 +1,7 @@
 // Simple localStorage-backed reading tracker
 const LS_KEY = 'otherworld_reads_v1'
 // Bump this with every release; it's shown in the footer and matches the SW cache name.
-const APP_VERSION = 'v7'
+const APP_VERSION = 'v8'
 // When signed in, saves also go to the cloud (set by sync.js).
 let cloudMode = false
 

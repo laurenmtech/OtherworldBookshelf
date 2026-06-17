@@ -2,7 +2,8 @@
 // so the window.__* bridge functions it calls already exist.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, persistentSingleTabManager,
@@ -51,10 +52,32 @@ if(!configured){
 
   if(signinBtn) signinBtn.classList.remove('hidden');
 
+  // Complete any pending redirect-based sign-in (returns here after the Google page).
+  getRedirectResult(auth).catch((e)=>{
+    console.error('redirect result', e);
+    setStatus('Sign-in failed: ' + (e && e.code ? e.code : 'error'));
+  });
+
   signinBtn && signinBtn.addEventListener('click', async ()=>{
     setStatus('Signing in…');
-    try { await signInWithPopup(auth, provider); }
-    catch(e){ console.error('sign-in', e); setStatus('Sign-in failed'); }
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e){
+      console.error('popup sign-in', e);
+      // Popups are unreliable on phones / installed PWAs — fall back to a full-page redirect.
+      const popupIssue = !e || !e.code || [
+        'auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request',
+        'auth/operation-not-supported-in-this-environment', 'auth/web-storage-unsupported',
+        'auth/internal-error', 'auth/network-request-failed'
+      ].includes(e.code);
+      if(popupIssue){
+        setStatus('Redirecting to Google…');
+        try { await signInWithRedirect(auth, provider); return; }
+        catch(e2){ console.error('redirect sign-in', e2); setStatus('Sign-in failed: ' + (e2 && e2.code ? e2.code : 'error')); }
+      } else {
+        setStatus('Sign-in failed: ' + e.code);
+      }
+    }
   });
   signoutBtn && signoutBtn.addEventListener('click', async ()=>{
     try { await signOut(auth); } catch(e){ console.error('sign-out', e); }
