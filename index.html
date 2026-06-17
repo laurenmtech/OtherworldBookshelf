@@ -194,7 +194,8 @@
         window.location.reload();
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then((reg) => {
+        // updateViaCache:'none' -> always fetch sw.js fresh so new versions are detected.
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
           const check = () => reg.update().catch(() => {});
           // Re-check whenever the app comes back to the foreground (e.g. reopened from home screen).
           document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });

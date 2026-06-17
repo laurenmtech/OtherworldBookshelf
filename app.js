@@ -1,7 +1,7 @@
 // Simple localStorage-backed reading tracker
 const LS_KEY = 'otherworld_reads_v1'
 // Bump this with every release; it's shown in the footer and matches the SW cache name.
-const APP_VERSION = 'v8'
+const APP_VERSION = 'v9'
 // When signed in, saves also go to the cloud (set by sync.js).
 let cloudMode = false
 
@@ -374,8 +374,23 @@ syncFinishedOpen()
 finishedMQ.addEventListener('change', syncFinishedOpen)
 
 // Show the running version in the footer so you can confirm what's loaded.
+// Tap it to force a fresh update check (no need to remove/re-add the home-screen app).
 const versionEl = document.getElementById('app-version')
-if(versionEl) versionEl.textContent = APP_VERSION
+if(versionEl){
+  versionEl.textContent = APP_VERSION
+  versionEl.title = 'Tap to check for updates'
+  versionEl.style.cursor = 'pointer'
+  versionEl.addEventListener('click', async ()=>{
+    if(!('serviceWorker' in navigator)){ location.reload(); return }
+    versionEl.textContent = APP_VERSION + ' · checking…'
+    try{
+      const reg = await navigator.serviceWorker.getRegistration()
+      if(reg) await reg.update()
+      // If a newer version exists, the controllerchange handler reloads us automatically.
+      setTimeout(()=>{ versionEl.textContent = APP_VERSION + ' · up to date' }, 1800)
+    }catch(e){ versionEl.textContent = APP_VERSION }
+  })
+}
 
 // ---------- Cloud sync bridge (used by sync.js) ----------
 function normalizeState(data){
