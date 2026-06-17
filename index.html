@@ -59,15 +59,9 @@
             <label for="current-title">Title</label>
             <input id="current-title" name="title" placeholder="What's on your nightstand?">
           </div>
-          <div class="field two">
-            <div>
-              <label for="current-author">Author</label>
-              <input id="current-author" name="author" placeholder="Author">
-            </div>
-            <div>
-              <label for="current-cover">Cover URL</label>
-              <input id="current-cover" name="cover" placeholder="Optional image URL">
-            </div>
+          <div class="field">
+            <label for="current-author">Author</label>
+            <input id="current-author" name="author" placeholder="Author">
           </div>
 
           <div class="actions">
@@ -77,7 +71,6 @@
         </form>
 
         <div id="current-display" class="card-display hidden">
-          <img id="current-image" src="" alt="cover" onerror="this.style.display='none'">
           <div class="meta">
             <h3 id="display-title"></h3>
             <div id="display-author" class="muted"></div>

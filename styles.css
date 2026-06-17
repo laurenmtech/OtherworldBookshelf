@@ -63,7 +63,6 @@ body{
 .btn:active{ transform:translateY(1px) }
 
 .card-display{ display:flex; gap:12px; align-items:flex-start }
-.card-display img{ width:110px; height:160px; object-fit:cover; border-radius:6px; box-shadow:0 8px 30px rgba(0,0,0,0.6) }
 .meta h3{ margin:0 0 6px; font-family:'Cinzel', serif; color:var(--accent-2) }
 .muted{ color:var(--muted); font-size:13px }
 .card-actions{ margin-top:10px }
@@ -153,5 +152,4 @@ body{
   /* comfortable tap targets and no zoom-on-focus (16px inputs) */
   .field input, .field textarea, .small-form input{ font-size:16px; padding:10px 12px }
   .btn{ padding:10px 14px }
-  .card-display img{ width:90px; height:130px }
 }

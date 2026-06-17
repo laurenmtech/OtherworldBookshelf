@@ -1,7 +1,7 @@
 // Simple localStorage-backed reading tracker
 const LS_KEY = 'otherworld_reads_v1'
 // Bump this with every release; it's shown in the footer and matches the SW cache name.
-const APP_VERSION = 'v9'
+const APP_VERSION = 'v10'
 // When signed in, saves also go to the cloud (set by sync.js).
 let cloudMode = false
 
@@ -35,11 +35,9 @@ function sortWishlist(){
 const currentForm = document.getElementById('current-form')
 const titleInput = document.getElementById('current-title')
 const authorInput = document.getElementById('current-author')
-const coverInput = document.getElementById('current-cover')
 const saveCurrentBtn = document.getElementById('save-current')
 const finishBtn = document.getElementById('finish-current')
 const currentDisplay = document.getElementById('current-display')
-const currentImage = document.getElementById('current-image')
 const displayTitle = document.getElementById('display-title')
 const displayAuthor = document.getElementById('display-author')
 const editCurrentBtn = document.getElementById('edit-current')
@@ -91,7 +89,7 @@ renderAll()
 // ---------- Current flow ----------
 currentForm.addEventListener('submit', e=>{
   e.preventDefault()
-  const book = { title: titleInput.value.trim(), author: authorInput.value.trim(), cover: coverInput.value.trim() }
+  const book = { title: titleInput.value.trim(), author: authorInput.value.trim() }
   if(!book.title) return alert('Please enter a title')
   state.current = book
   saveState(state)
@@ -103,7 +101,6 @@ editCurrentBtn.addEventListener('click', ()=>{
   if(!state.current) return
   titleInput.value = state.current.title || ''
   authorInput.value = state.current.author || ''
-  coverInput.value = state.current.cover || ''
   currentForm.classList.remove('hidden')
   currentDisplay.classList.add('hidden')
 })
@@ -287,13 +284,11 @@ function renderCurrent(){
     currentDisplay.classList.remove('hidden')
     displayTitle.textContent = state.current.title
     displayAuthor.textContent = state.current.author || ''
-    if(state.current.cover){ currentImage.src = state.current.cover; currentImage.style.display = '' } else { currentImage.style.display = 'none' }
   } else {
     currentForm.classList.remove('hidden')
     currentDisplay.classList.add('hidden')
     titleInput.value = ''
     authorInput.value = ''
-    coverInput.value = ''
   }
 }
 

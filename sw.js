@@ -1,5 +1,5 @@
 // Service worker for Otherworld Reads — offline support via cache-first for the app shell.
-const CACHE = 'otherworld-reads-v9';
+const CACHE = 'otherworld-reads-v10';
 const ASSETS = [
   './',
   './index.html',
