@@ -119,17 +119,34 @@
     </section>
     
     <section class="panel library-panel">
-      <h2>My Local Library</h2>
+      <div class="panel-head">
+        <h2>My Local Library</h2>
+        <button id="add-library-btn" type="button" class="btn btn-add">+ Add</button>
+      </div>
       <div class="box">
-      <form id="library-form" class="small-form">
-        <input id="lib-name" placeholder="Library name" required>
-        <input id="lib-url" placeholder="URL (https://...)">
-        <button class="btn"><svg><use href="#icon-finish"></use></svg>Add</button>
-      </form>
       <ul id="library" class="list"></ul>
+      <div id="library-empty" class="muted hidden">No libraries yet — tap “+ Add”.</div>
       </div>
     </section>
   </main>
+
+  <div id="library-modal" class="modal hidden" hidden>
+    <form id="library-form" class="finish-inner">
+      <h3 id="library-modal-title">Add to Library</h3>
+      <div class="field">
+        <label for="lib-name">Library name</label>
+        <input id="lib-name" placeholder="Library name" required>
+      </div>
+      <div class="field">
+        <label for="lib-url">URL</label>
+        <input id="lib-url" placeholder="https://...">
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn primary">Save</button>
+        <button id="cancel-library" type="button" class="btn">Cancel</button>
+      </div>
+    </form>
+  </div>
 
   <footer class="site-footer">Made for quiet hours and strange moons</footer>
 

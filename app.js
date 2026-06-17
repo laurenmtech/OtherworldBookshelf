@@ -54,6 +54,12 @@ const libraryForm = document.getElementById('library-form')
 const libName = document.getElementById('lib-name')
 const libUrl = document.getElementById('lib-url')
 const libraryEl = document.getElementById('library')
+const libraryEmpty = document.getElementById('library-empty')
+const libraryModal = document.getElementById('library-modal')
+const libraryModalTitle = document.getElementById('library-modal-title')
+const addLibraryBtn = document.getElementById('add-library-btn')
+const cancelLibraryBtn = document.getElementById('cancel-library')
+let libEditIndex = null // null = adding, number = editing that entry
 
 // close dropdowns when clicking elsewhere
 document.addEventListener('click', (e)=>{
@@ -153,15 +159,44 @@ function renderAll(){
 }
 
 // ---------- Library ----------
+function openLibraryModal(index){
+  libEditIndex = (typeof index === 'number') ? index : null
+  if(libEditIndex !== null){
+    const it = state.library[libEditIndex] || {}
+    libraryModalTitle.textContent = 'Edit Library'
+    libName.value = it.name || ''
+    libUrl.value = it.url || ''
+  } else {
+    libraryModalTitle.textContent = 'Add to Library'
+    libName.value = ''
+    libUrl.value = ''
+  }
+  libraryModal.hidden = false
+  libName.focus()
+}
+
+function closeLibraryModal(){
+  libraryModal.hidden = true
+  libEditIndex = null
+}
+
+addLibraryBtn && addLibraryBtn.addEventListener('click', ()=> openLibraryModal())
+cancelLibraryBtn && cancelLibraryBtn.addEventListener('click', closeLibraryModal)
+// click the dimmed backdrop (outside the form) to dismiss
+libraryModal && libraryModal.addEventListener('click', e=>{ if(e.target === libraryModal) closeLibraryModal() })
+
 libraryForm && libraryForm.addEventListener('submit', e=>{
   e.preventDefault()
   const name = libName.value.trim()
   if(!name) return
   const it = { name, url: libUrl.value.trim() }
-  state.library.push(it)
+  if(libEditIndex !== null){
+    state.library[libEditIndex] = it
+  } else {
+    state.library.push(it)
+  }
   saveState(state)
-  libName.value = ''
-  libUrl.value = ''
+  closeLibraryModal()
   renderAll()
 })
 
@@ -179,6 +214,7 @@ function removeLibrary(index){ state.library.splice(index,1); saveState(state); 
 function renderLibrary(){
   if(!libraryEl) return
   libraryEl.innerHTML = ''
+  if(libraryEmpty) libraryEmpty.classList.toggle('hidden', state.library.length > 0)
   state.library.forEach((it, idx)=>{
     const li = document.createElement('li')
     const left = document.createElement('div')
@@ -189,11 +225,15 @@ function renderLibrary(){
     setBtn.className='btn'
     setBtn.innerHTML = `<svg><use href="#icon-finish"></use></svg>Set current`
     setBtn.addEventListener('click', ()=> setAsCurrentFromLibrary(idx))
+    const editBtn = document.createElement('button')
+    editBtn.className='btn'
+    editBtn.innerHTML = `<svg><use href="#icon-edit"></use></svg>Edit`
+    editBtn.addEventListener('click', ()=> openLibraryModal(idx))
     const delBtn = document.createElement('button')
     delBtn.className='btn'
     delBtn.innerHTML = `<svg><use href="#icon-trash"></use></svg>Remove`
     delBtn.addEventListener('click', ()=> removeLibrary(idx))
-    actions.appendChild(setBtn); actions.appendChild(delBtn)
+    actions.appendChild(setBtn); actions.appendChild(editBtn); actions.appendChild(delBtn)
     li.appendChild(left); li.appendChild(actions)
     libraryEl.appendChild(li)
   })
