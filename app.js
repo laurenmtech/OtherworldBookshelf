@@ -1,7 +1,9 @@
 // Simple localStorage-backed reading tracker
 const LS_KEY = 'otherworld_reads_v1'
 // Bump this with every release; it's shown in the footer and matches the SW cache name.
-const APP_VERSION = 'v5'
+const APP_VERSION = 'v6'
+// When signed in, saves also go to the cloud (set by sync.js).
+let cloudMode = false
 
 function loadState(){
   try{
@@ -14,6 +16,9 @@ function loadState(){
 
 function saveState(state){
   localStorage.setItem(LS_KEY, JSON.stringify(state))
+  if(cloudMode && typeof window.__cloudSave === 'function'){
+    window.__cloudSave(state)
+  }
 }
 
 function sortWishlist(){
@@ -371,6 +376,33 @@ finishedMQ.addEventListener('change', syncFinishedOpen)
 // Show the running version in the footer so you can confirm what's loaded.
 const versionEl = document.getElementById('app-version')
 if(versionEl) versionEl.textContent = APP_VERSION
+
+// ---------- Cloud sync bridge (used by sync.js) ----------
+function normalizeState(data){
+  data = data || {}
+  return {
+    current: data.current || null,
+    wishlist: Array.isArray(data.wishlist) ? data.wishlist : [],
+    finished: Array.isArray(data.finished) ? data.finished : [],
+    library: Array.isArray(data.library) ? data.library : []
+  }
+}
+// Replace the in-memory state from a remote snapshot and re-render (no write-back).
+window.__applyRemoteState = function(data){
+  state = normalizeState(data)
+  sortWishlist()
+  renderAll()
+}
+// Current local data (for first-login migration to the cloud).
+window.__getLocalState = function(){ return normalizeState(loadState()) }
+// Toggle whether saves also write to the cloud.
+window.__setCloudMode = function(on){ cloudMode = !!on }
+// Revert to local-only data (used on sign-out).
+window.__loadLocal = function(){
+  state = normalizeState(loadState())
+  sortWishlist()
+  renderAll()
+}
 
 // tiny helper
 function escapeHtml(s){ if(!s) return '' ; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }

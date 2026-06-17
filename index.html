@@ -37,6 +37,15 @@
   <header class="site-header">
     <div class="site-title">Otherworld Reads</div>
     <div class="site-sub">fantasy · learning · private shelf</div>
+    <div class="auth" id="auth-area">
+      <button id="signin-btn" class="btn hidden" type="button">Sign in with Google</button>
+      <div id="user-info" class="user-info hidden">
+        <img id="user-avatar" class="user-avatar" alt="" referrerpolicy="no-referrer">
+        <span id="user-name" class="muted"></span>
+        <button id="signout-btn" class="btn" type="button">Sign out</button>
+      </div>
+      <div id="sync-status" class="sync-status muted"></div>
+    </div>
   </header>
 
   <main class="container">
@@ -171,6 +180,8 @@
   </footer>
 
   <script src="app.js"></script>
+  <script src="firebase-config.js"></script>
+  <script type="module" src="sync.js"></script>
   <script>
     // Register the service worker for offline support / installability,
     // and auto-update: check on (re)launch and reload once a new version takes over.
