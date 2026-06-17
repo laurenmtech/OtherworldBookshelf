@@ -279,5 +279,12 @@ function renderFinished(){
   })
 }
 
+// Finished Books: expanded on desktop, collapsed by default on phones.
+const finishedDetails = document.querySelector('.finished-details')
+const finishedMQ = window.matchMedia('(max-width:760px)')
+function syncFinishedOpen(){ if(finishedDetails) finishedDetails.open = !finishedMQ.matches }
+syncFinishedOpen()
+finishedMQ.addEventListener('change', syncFinishedOpen)
+
 // tiny helper
 function escapeHtml(s){ if(!s) return '' ; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }

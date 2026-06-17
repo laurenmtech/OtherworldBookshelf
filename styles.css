@@ -92,6 +92,16 @@ body{
 .dropdown.open .dropdown-menu{ display:flex }
 .dropdown-menu .btn{ width:100%; justify-content:flex-start }
 
+/* Collapsible Finished Books */
+.finished-details > summary{
+  cursor:pointer; list-style:none; user-select:none;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:16px; color:var(--accent); margin:0 0 12px;
+}
+.finished-details > summary::-webkit-details-marker{ display:none }
+.finished-details > summary::after{ content:"\25B8"; color:var(--muted); transition:transform .18s ease }
+.finished-details[open] > summary::after{ transform:rotate(90deg) }
+
 .site-footer{ text-align:center; padding:18px; color:var(--muted); font-size:13px }
 
 .hidden{ display:none }
@@ -112,17 +122,19 @@ body{
 .wishlist-panel{ grid-area: wishlist }
 .finished-panel{ grid-area: finished }
 @media (max-width:760px){
-  /* Single-column stack, in reading order: Current Read → TBR Pile → Library */
+  /* Single-column stack: Current Read → TBR Pile → Library → Finished */
   .container{
     grid-template-columns: 1fr;
     grid-template-areas:
       "current"
       "wishlist"
-      "library";
+      "library"
+      "finished";
     gap:14px;
     padding:14px;
   }
   .panel{ min-height:0; padding:14px }
+  .finished-panel{ display:block } /* shown on mobile, collapsed by default */
   .site-header{ padding:20px 16px 4px }
   .site-title{ font-size:24px }
   /* comfortable tap targets and no zoom-on-focus (16px inputs) */
