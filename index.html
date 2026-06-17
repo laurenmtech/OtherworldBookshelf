@@ -165,14 +165,30 @@
     </form>
   </div>
 
-  <footer class="site-footer">Made for quiet hours and strange moons</footer>
+  <footer class="site-footer">
+    Made for quiet hours and strange moons
+    <span class="version" id="app-version"></span>
+  </footer>
 
   <script src="app.js"></script>
   <script>
-    // Register the service worker for offline support / installability.
+    // Register the service worker for offline support / installability,
+    // and auto-update: check on (re)launch and reload once a new version takes over.
     if ('serviceWorker' in navigator) {
+      const hadController = !!navigator.serviceWorker.controller;
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || refreshing) return; // skip the first claim on a fresh install
+        refreshing = true;
+        window.location.reload();
+      });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW registration failed', err));
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          const check = () => reg.update().catch(() => {});
+          // Re-check whenever the app comes back to the foreground (e.g. reopened from home screen).
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+          check();
+        }).catch((err) => console.warn('SW registration failed', err));
       });
     }
   </script>

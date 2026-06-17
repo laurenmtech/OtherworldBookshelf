@@ -108,6 +108,7 @@ body{
 .finished-details[open] > summary::after{ transform:rotate(90deg) }
 
 .site-footer{ text-align:center; padding:18px; color:var(--muted); font-size:13px }
+.site-footer .version{ display:block; margin-top:4px; font-size:11px; opacity:0.6 }
 
 .hidden{ display:none }
 

@@ -1,5 +1,7 @@
 // Simple localStorage-backed reading tracker
 const LS_KEY = 'otherworld_reads_v1'
+// Bump this with every release; it's shown in the footer and matches the SW cache name.
+const APP_VERSION = 'v5'
 
 function loadState(){
   try{
@@ -365,6 +367,10 @@ const finishedMQ = window.matchMedia('(max-width:760px)')
 function syncFinishedOpen(){ if(finishedDetails) finishedDetails.open = !finishedMQ.matches }
 syncFinishedOpen()
 finishedMQ.addEventListener('change', syncFinishedOpen)
+
+// Show the running version in the footer so you can confirm what's loaded.
+const versionEl = document.getElementById('app-version')
+if(versionEl) versionEl.textContent = APP_VERSION
 
 // tiny helper
 function escapeHtml(s){ if(!s) return '' ; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
