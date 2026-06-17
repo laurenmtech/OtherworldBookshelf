@@ -6,8 +6,8 @@
 //   2. Copy the values into the object below.
 // Until real values are set, the app runs in local-only mode (no login button).
 window.FIREBASE_CONFIG = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME",
-  projectId: "REPLACE_ME",
-  appId: "REPLACE_ME"
+  apiKey: "AIzaSyCMfbiJA3qWYq9HehEe30tFPtrRKyJbX7w",
+  authDomain: "books-7a105.firebaseapp.com",
+  projectId: "books-7a105",
+  appId: "1:998106137307:web:2fe6d281ebe1e20f4582fe"
 };
