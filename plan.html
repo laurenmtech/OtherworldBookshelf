@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Otherworld Reads — Build Plan</title>
+<style>
+  :root{
+    --bg-1:#0b0710; --bg-2:#0f0d1a; --card:#141119; --line:rgba(255,255,255,.08);
+    --ink:#e8e7ec; --muted:#9aa0a6; --accent:#8bd3c7; --gold:#d4b04b;
+    --warn:#e0a97a; --ok:#8bd3a4; --risk:#d98b8b;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:0;
+    font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:radial-gradient(1200px 800px at 10% 0%,#1a0f2b33,transparent),
+               radial-gradient(900px 700px at 95% 90%,#07122644,transparent),
+               linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    background-attachment:fixed;
+    color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 100px}
+  header.doc{border-bottom:1px solid var(--line);padding-bottom:26px}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(30px,5vw,44px);line-height:1.15;margin:0 0 12px;color:var(--gold);letter-spacing:.5px}
+  .lede{font-size:17px;color:#cfcdd6;max-width:68ch;margin:0}
+  .meta{margin-top:18px;font-size:12.5px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
+  h2{font-family:Georgia,serif;font-size:26px;color:var(--gold);margin:56px 0 6px;scroll-margin-top:20px}
+  h3{font-size:16.5px;color:var(--accent);margin:30px 0 8px}
+  h4{font-size:13px;color:var(--ink);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.1em}
+  p,li{max-width:76ch}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:5px;color:#d8f0ea}
+  .muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+  td:first-child{white-space:nowrap}
+  pre{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;
+      font-family:var(--mono);font-size:13px;line-height:1.7;color:#cfe8e2}
+  pre .c{color:#7d8590}
+  .note{border-left:3px solid var(--accent);background:rgba(139,211,199,.05);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0}
+  .note.warn{border-left-color:var(--warn);background:rgba(224,169,122,.06)}
+  .note strong{color:var(--gold)}
+
+  /* phase blocks */
+  .phase{border:1px solid var(--line);border-radius:14px;margin:26px 0;overflow:hidden;
+         background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.008))}
+  .phase > .head{padding:20px 24px 16px;border-bottom:1px solid var(--line);
+                 background:linear-gradient(180deg,rgba(139,211,199,.05),transparent)}
+  .phase > .body{padding:6px 24px 24px}
+  .phase .pnum{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.14em;text-transform:uppercase}
+  .phase h2{margin:6px 0 8px;font-size:24px}
+  .phase .goal{margin:0;color:#cfcdd6;max-width:70ch}
+  .badges{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid rgba(139,211,199,.3);
+       color:var(--accent);letter-spacing:.04em;white-space:nowrap}
+  .tag.gold{border-color:rgba(212,176,75,.42);color:var(--gold)}
+  .tag.warn{border-color:rgba(224,169,122,.42);color:var(--warn)}
+  .tag.ok{border-color:rgba(139,211,164,.42);color:var(--ok)}
+  .tag.risk{border-color:rgba(217,139,139,.42);color:var(--risk)}
+  ul.deliv{list-style:none;padding:0;margin:8px 0}
+  ul.deliv li{padding:7px 0 7px 26px;position:relative;border-bottom:1px dashed rgba(255,255,255,.06)}
+  ul.deliv li:last-child{border-bottom:0}
+  ul.deliv li::before{content:"";position:absolute;left:4px;top:16px;width:7px;height:7px;border-radius:2px;
+                      background:var(--accent);opacity:.65;transform:rotate(45deg)}
+  ul.crit{list-style:none;padding:0;margin:8px 0}
+  ul.crit li{padding:6px 0 6px 28px;position:relative}
+  ul.crit li::before{content:"✓";position:absolute;left:4px;top:6px;color:var(--ok);font-size:13px}
+  .risk{border-left:3px solid var(--risk);background:rgba(217,139,139,.05);padding:11px 15px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14.5px}
+  .risk strong{color:var(--risk)}
+  .toc{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:6px 10px;margin:28px 0}
+  .toc table{margin:0}
+  .toc td:first-child{color:var(--accent);font-family:var(--mono);font-size:12.5px}
+  .toc a{text-decoration:none;color:#cfcdd6}
+  .toc a:hover{color:var(--accent)}
+  .toc tr:last-child td{border-bottom:0}
+  hr{border:0;border-top:1px solid var(--line);margin:52px 0 0}
+  footer.doc{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <p class="eyebrow">Build Plan</p>
+  <h1>Otherworld Reads — Phases &amp; Deliverables</h1>
+  <p class="lede">Six phases, each one shippable on its own. The refactor comes first so everything after it is
+  cheap; every feature phase after that adds a layer that can fail without taking the app down with it.</p>
+  <div class="meta">
+    <span>Version 1.0 · 27 July 2026</span>
+    <span>Companion: <a href="spec.html">spec.html</a></span>
+    <span>Starting from build v13</span>
+  </div>
+</header>
+
+<div class="toc">
+<table>
+  <tr><td>Phase 0</td><td><a href="#phase-0">Ground rules</a></td><td class="muted">Conventions every phase follows</td></tr>
+  <tr><td>Phase 1</td><td><a href="#phase-1">Refactor: modules &amp; a real state store</a></td><td class="muted">Split the monolith, no new features</td></tr>
+  <tr><td>Phase 2</td><td><a href="#phase-2">Vibes</a></td><td class="muted">Choose and change your library's look</td></tr>
+  <tr><td>Phase 3</td><td><a href="#phase-3">Book search &amp; autofill</a></td><td class="muted">Stop typing titles by hand</td></tr>
+  <tr><td>Phase 4</td><td><a href="#phase-4">Libraries, Libby &amp; local shops</a></td><td class="muted">Real availability, real borrow links</td></tr>
+  <tr><td>Phase 5</td><td><a href="#phase-5">Backend + AI recommendations</a></td><td class="muted">The Worker, and reading by vibe</td></tr>
+  <tr><td>Phase 6</td><td><a href="#phase-6">Ready to share</a></td><td class="muted">Onboarding, export, polish</td></tr>
+</table>
+</div>
+
+<!-- ═══════════════ PHASE 0 ═══════════════ -->
+<div class="phase" id="phase-0">
+  <div class="head">
+    <span class="pnum">Phase 0 · Ongoing</span>
+    <h2>Ground rules</h2>
+    <p class="goal">Conventions that apply to every phase below, so they don't have to be repeated six times.</p>
+  </div>
+  <div class="body">
+    <table>
+      <tr><th>Rule</th><th>Detail</th></tr>
+      <tr><td><strong>Ship each phase</strong></td>
+          <td>Every phase ends on <code>main</code>, deployed to GitHub Pages, working on your phone. No long-lived
+          branches, no half-landed refactors.</td></tr>
+      <tr><td><strong>Bump the version</strong></td>
+          <td>Each release bumps <code>APP_VERSION</code> in the app <em>and</em> the <code>CACHE</code> name in
+          <code>sw.js</code>, together. A version bump without a cache bump ships an app that never updates
+          itself.</td></tr>
+      <tr><td><strong>Update the SW file list</strong></td>
+          <td>Splitting one JS file into fifteen means fifteen entries the service worker must precache. This is
+          the single easiest thing to get wrong during the refactor — see the Phase&nbsp;1 risk.</td></tr>
+      <tr><td><strong>Migrate data forward, never sideways</strong></td>
+          <td>Every shape change ships a migration that runs on load and is safe to run twice. Old entries keep
+          rendering. Nothing in a reader's finished list is ever lost to a schema change.</td></tr>
+      <tr><td><strong>Enhancements degrade</strong></td>
+          <td>Search, availability, and AI each have an explicit off-state that leaves the app fully usable. Test
+          each phase with the network disabled before calling it done.</td></tr>
+      <tr><td><strong>Manual QA pass</strong></td>
+          <td>Same checklist each release: cold start offline, sign in/out, add via search and manually, finish a
+          book, switch vibe, two devices in sync. Takes five minutes; catches nearly everything.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 1 ═══════════════ -->
+<div class="phase" id="phase-1">
+  <div class="head">
+    <span class="pnum">Phase 1 · Foundation</span>
+    <h2>Refactor: modules &amp; a real state store</h2>
+    <p class="goal">Break <code>app.js</code> into focused modules and put a single state store underneath them.
+    <strong>Zero user-visible change</strong> — if anyone notices this shipped, something went wrong. Everything
+    after this phase is dramatically cheaper because of it.</p>
+    <div class="badges">
+      <span class="tag gold">Do this first</span>
+      <span class="tag">No new features</span>
+      <span class="tag ok">Unblocks 2–6</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <h4>Why now</h4>
+    <p>Today <code>app.js</code> is 476 lines holding DOM lookups, event wiring, business logic, rendering, and the
+    cloud-sync bridge all at once, communicating with <code>sync.js</code> through four
+    <code>window.__*</code> globals. It works — but adding vibes, search, availability, and AI on top of it means
+    four more features tangled into the same file. Every hour spent here is repaid three times over in Phases 2–5.</p>
+
+    <h4>Structure</h4>
+    <p>Native ES modules, no bundler, no build step — this deploys to GitHub Pages exactly as it does today.</p>
+<pre><span class="c">/</span>
+  index.html          <span class="c">— markup + &lt;script type="module" src="js/main.js"&gt;</span>
+  sw.js               <span class="c">— service worker (precache list grows)</span>
+  manifest.webmanifest
+  firebase-config.js
+
+  <span class="c">/js</span>
+    main.js           <span class="c">— boot: load state, mount components, register SW</span>
+
+    <span class="c">/state</span>
+      store.js        <span class="c">— the single source of truth + subscribe()</span>
+      migrate.js      <span class="c">— forward migrations, safe to re-run</span>
+      persist-local.js<span class="c">— localStorage adapter</span>
+      persist-cloud.js<span class="c">— Firestore adapter (was sync.js)</span>
+      auth.js         <span class="c">— Google sign-in, session state</span>
+
+    <span class="c">/components</span>
+      current-read.js
+      tbr-pile.js
+      finished-list.js
+      libraries.js
+      header.js
+      <span class="c">/modals</span>
+        finish-modal.js
+        book-modal.js
+        library-modal.js
+
+    <span class="c">/ui</span>
+      dom.js          <span class="c">— el(), escapeHtml(), focus trap, small helpers</span>
+      modal.js        <span class="c">— shared open/close/backdrop/focus behaviour</span>
+      chips.js        <span class="c">— the selectable-chip control</span>
+
+  <span class="c">/styles</span>
+    tokens.css        <span class="c">— every custom property, one place</span>
+    base.css          <span class="c">— reset, typography, layout grid</span>
+    components.css    <span class="c">— panels, cards, lists, buttons, chips</span></pre>
+
+    <h4>The store</h4>
+    <p>One module owns the shelf. Components never mutate state directly and never read from
+    <code>localStorage</code>; they call actions and re-render on notification.</p>
+<pre>store.getState()              <span class="c">— current shelf, read-only</span>
+store.subscribe(fn)           <span class="c">— called on every change</span>
+store.dispatch(action)        <span class="c">— the only way to change anything</span>
+
+<span class="c">Actions: setCurrent, finishCurrent, addToTbr, editTbr, removeTbr,
+         removeFinished, addLibrary, editLibrary, removeLibrary,
+         setVibe, applyRemote, loadLocal</span></pre>
+    <p>Persistence hangs off <code>subscribe</code>: every change writes to <code>localStorage</code>, and also to
+    Firestore when signed in. That replaces the <code>window.__applyRemoteState</code> /
+    <code>__getLocalState</code> / <code>__setCloudMode</code> / <code>__loadLocal</code> /
+    <code>__cloudSave</code> globals with ordinary imports — the sync logic itself is already solid and gets
+    moved, not rewritten.</p>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li>File structure above, in place and working</li>
+      <li><code>store.js</code> with actions, subscribe, and immutable reads</li>
+      <li>Persistence split into local and cloud adapters behind one interface</li>
+      <li>All four <code>window.__*</code> globals removed</li>
+      <li>Every panel a self-mounting component with its own render</li>
+      <li>Shared modal behaviour extracted once (open, close, backdrop, Escape, focus trap) instead of
+          re-implemented per modal</li>
+      <li><code>styles.css</code> split into tokens / base / components, with every colour promoted to a custom
+          property — the groundwork Phase&nbsp;2 depends on</li>
+      <li><code>sw.js</code> precache list updated for every new file</li>
+      <li>Short <code>ARCHITECTURE.md</code>: where things live and how state flows</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>Every existing feature behaves identically — set current, edit, finish with feeling and moods, TBR
+          add/edit/remove, libraries, collapsible finished list</li>
+      <li>Existing saved data loads untouched, including legacy <code>rating</code> and <code>notes</code> entries</li>
+      <li>Sign in on two devices; a change on one appears on the other</li>
+      <li>Sign out reverts to the local shelf; sign in re-attaches without duplicating or wiping</li>
+      <li>Cold start offline, from the home screen, works</li>
+      <li>Tapping the footer version still forces an update check</li>
+      <li>No console errors on any path</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — the stale service worker.</strong> The precache list is now fifteen files instead of three.
+      Miss one and it 404s offline; forget the cache-name bump and returning users are stuck on the old bundle
+      with no way back short of reinstalling. <em>Mitigation:</em> bump <code>CACHE</code> as the first commit of
+      the phase, not the last; test the upgrade path from a device already running v13 rather than from a fresh
+      install, which hides exactly this bug.
+    </div>
+    <div class="risk">
+      <strong>Risk — a silent sync regression.</strong> The current sync code handles genuinely hard cases
+      (multi-tab persistence, seeding only on server-confirmed empty, not blocking the UI on a slow handshake).
+      Those behaviours are easy to lose while moving code. <em>Mitigation:</em> move <code>sync.js</code> as
+      intact as possible — change its imports and its interface, not its logic — and re-test the first-login
+      seed path with a fresh account before shipping.
+    </div>
+
+    <div class="note">
+      <strong>On separating frontend and backend.</strong> This phase separates the frontend <em>internally</em>.
+      The actual backend split lands in Phase&nbsp;5, where the Cloudflare Worker appears — because that's the
+      first thing that genuinely can't run in the browser. Firebase already plays the backend role for auth and
+      data, and doesn't need replacing.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 2 ═══════════════ -->
+<div class="phase" id="phase-2">
+  <div class="head">
+    <span class="pnum">Phase 2 · Feature</span>
+    <h2>Vibes</h2>
+    <p class="goal">Let a reader choose the look of their library, and change it whenever they like. Visual only —
+    every label stays put. The first phase where the refactor pays off.</p>
+    <div class="badges">
+      <span class="tag gold">Highest delight per hour</span>
+      <span class="tag">Needs Phase 1</span>
+      <span class="tag ok">No backend</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <h4>How it works</h4>
+    <p>Every vibe is one CSS file setting the same fixed set of custom properties under a
+    <code>[data-vibe="…"]</code> selector. Components reference tokens only and never know which vibe is active,
+    so adding a sixth vibe is one new file plus one registry line.</p>
+<pre><span class="c">/styles/vibes/</span>
+   otherworld.css   celestial.css   dark-academia.css
+   cottage.css      seaglass.css
+
+<span class="c">Each defines the same contract:</span>
+[data-vibe="cottage"]{
+  --bg-1 --bg-2 --bg-texture
+  --surface --surface-raised --line
+  --ink --muted
+  --accent --accent-2
+  --font-display --font-body
+  --radius --shadow
+}</pre>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li>Five vibes: Otherworld (default), Cottage, Celestial, Dark Academia, Seaglass</li>
+      <li>Vibe registry module — id, display name, preview swatches, fonts to load</li>
+      <li>First-run picker: full-screen grid of cards, each a live miniature of the real UI in that vibe</li>
+      <li>Vibe control in the header, opening the same picker for changes</li>
+      <li>Inline head script that stamps <code>data-vibe</code> before first paint — no flash of the wrong theme</li>
+      <li><code>theme-color</code> meta updated on switch so the installed PWA's status bar matches</li>
+      <li>Vibe stored locally for instant offline application, mirrored to the cloud profile for new devices</li>
+      <li>Per-vibe font loading — a vibe's webfont is only fetched when that vibe is active</li>
+      <li>Contrast audit results recorded per vibe</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>A brand-new reader picks a vibe before seeing the shelf; an existing reader is never prompted and stays
+          on Otherworld</li>
+      <li>Switching vibes re-skins in place — scroll position, open panels, and half-typed forms all survive</li>
+      <li>Reload in any vibe shows zero flash of the previous or default theme</li>
+      <li>Sign in on a second device and the vibe follows you</li>
+      <li>Every vibe passes WCAG AA on body text, buttons, chips, and links</li>
+      <li>Every vibe is legible in sunlight on a phone and doesn't glare in a dark room</li>
+      <li><code>prefers-reduced-motion</code> disables the transition</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — hard-coded colours in components.</strong> Any literal hex left in
+      <code>components.css</code> will look wrong in four of the five vibes, and they're easy to miss because
+      the default vibe hides them. <em>Mitigation:</em> after the token split, grep for <code>#</code> and
+      <code>rgba(</code> outside <code>tokens.css</code> and the vibe files. Every hit is a bug.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 3 ═══════════════ -->
+<div class="phase" id="phase-3">
+  <div class="head">
+    <span class="pnum">Phase 3 · Feature</span>
+    <h2>Book search &amp; autofill</h2>
+    <p class="goal">Replace hand-typed titles with a search field that suggests real books — bringing correct
+    spelling, covers, publication years, and the stable identifiers that Phases&nbsp;4 and 5 both depend on.</p>
+    <div class="badges">
+      <span class="tag gold">Enables Phase 4 &amp; 5</span>
+      <span class="tag ok">No key required</span>
+      <span class="tag">Data model change</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <h4>The source</h4>
+    <p>Open Library's search endpoint. Verified working directly from a browser: no key, no registration, permissive
+    cross-origin headers, and a single request returns everything needed.</p>
+<pre>GET https://openlibrary.org/search.json
+      ?q=&lt;query&gt;
+      &amp;limit=6
+      &amp;fields=key,title,author_name,first_publish_year,cover_i,edition_count
+
+<span class="c">→ { docs: [ { key: "/works/OL20893680W",
+              title: "Piranesi",
+              author_name: ["Susanna Clarke"],
+              first_publish_year: 2020,
+              cover_i: 10226290 } ] }</span>
+
+<span class="c">Covers: https://covers.openlibrary.org/b/id/&lt;cover_i&gt;-M.jpg</span></pre>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li><code>services/books.js</code> — search, debounce, request supersession, timeout, normalise to the app's
+          Book shape</li>
+      <li>Typeahead component: cover thumbnail, title, author, year; arrow-key navigation; proper
+          <code>listbox</code> semantics</li>
+      <li>Search-first add flow on both the TBR pile and the Current Read card</li>
+      <li>Permanent "add manually" escape hatch below every result list</li>
+      <li>Duplicate detection against TBR and Finished, with a jump-to-existing action</li>
+      <li>Book model extended with <code>workKey</code>, <code>coverId</code>, <code>year</code>,
+          <code>source</code>; migration leaves existing books untouched and fully functional</li>
+      <li>Cover art returns to the Current Read card and list rows — only where a cover exists, never a placeholder</li>
+      <li>Cover images lazy-loaded, with the service worker caching them for offline viewing</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>Typing three characters surfaces relevant results within a second on a normal connection</li>
+      <li>Picking a result adds the book fully populated, in one tap</li>
+      <li>Manual entry still works and is never more than one tap away</li>
+      <li>Offline, the search field degrades to manual entry with a clear note — adding never blocks</li>
+      <li>Rapid typing never leaves a stale result list on screen</li>
+      <li>Existing hand-entered books keep working, with no cover and no errors</li>
+      <li>Fully keyboard-operable and announced correctly by a screen reader</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — search quality on short queries.</strong> Open Library relevance can be uneven; typing
+      "the" returns noise. <em>Mitigation:</em> require three characters, sort by <code>edition_count</code> so
+      the well-known edition wins, and cap at six results. If quality still disappoints, the fallback is Google
+      Books as a second source — but it needs a key, so try ranking tweaks first.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 4 ═══════════════ -->
+<div class="phase" id="phase-4">
+  <div class="head">
+    <span class="pnum">Phase 4 · Feature</span>
+    <h2>Libraries, Libby &amp; local shops</h2>
+    <p class="goal">Turn the Libraries panel from a list of bookmarks into something that answers "can I get this
+    right now?" — with real availability from a real library, and a link that lands on the right title in Libby.</p>
+    <div class="badges">
+      <span class="tag gold">The ethos, made real</span>
+      <span class="tag">Needs Phase 3</span>
+      <span class="tag risk">Undocumented API</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <h4>The endpoints</h4>
+    <p>OverDrive's public catalogue API — the one Libby's own web app uses. Verified live: it permits cross-origin
+    browser requests and returns exactly the availability data this needs.</p>
+<pre><span class="c">Find a library system</span>
+GET https://thunder.api.overdrive.com/v2/libraries?query=&lt;place or name&gt;
+    <span class="c">→ items[].preferredKey, .name, .links.libraryHome</span>
+
+<span class="c">Check a title's availability at that library</span>
+GET https://thunder.api.overdrive.com/v2/libraries/&lt;key&gt;/media?query=&lt;title&gt;
+    <span class="c">→ items[]: isAvailable, availableCopies, ownedCopies,
+                  holdsCount, estimatedWaitDays, type.id (ebook|audiobook), id</span>
+
+<span class="c">Deep links (plain URLs — these cannot break)</span>
+https://libbyapp.com/search/&lt;key&gt;/search/query-&lt;title&gt;/page-1   <span class="c">search</span>
+https://share.libbyapp.com/title/&lt;id&gt;                          <span class="c">a specific title</span></pre>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li><code>services/libby.js</code> — library lookup, availability check, deep-link builders, timeouts, and
+          a hard feature-flag to disable availability wholesale</li>
+      <li>Add-library flow: search real library systems by name or place, pick one, store its key</li>
+      <li><strong>Name your own library.</strong> After picking, a <em>What do you call it?</em> field pre-filled
+          with the official name and freely editable — "Mom's card", "County", "the good one". That label is what
+          the app shows everywhere; the official name is kept underneath and only surfaces to disambiguate two
+          similar entries. Renaming never touches the stored key</li>
+      <li>Library entries typed as <em>library</em>, <em>bookshop</em>, or <em>bookmark</em>; all three named the
+          same way; only libraries get availability</li>
+      <li>Multiple libraries, reorderable, first one primary for availability</li>
+      <li>Borrow row on each TBR book: available now / estimated wait / not in collection / not set — using the
+          reader's own name for the library</li>
+      <li>Availability results cached in memory for the session so scrolling the TBR doesn't re-query per book</li>
+      <li>Bookshop.org fallback link where a purchase makes sense; no Amazon links anywhere</li>
+      <li>Plain "Search this on Libby" link always present, independent of any availability lookup</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>A reader can find their real library by typing their city, name it whatever they want, and see that
+          name everywhere afterwards</li>
+      <li>A book their library holds shows accurate copies, holds, and estimated wait</li>
+      <li>Tapping through lands on that book in Libby, ready to borrow or hold</li>
+      <li>With availability disabled by flag, every borrow row disappears cleanly and the Libby search link still
+          works</li>
+      <li>With the endpoint failing or timing out, the row simply doesn't render — no error, no spinner, no
+          broken layout</li>
+      <li>With no library configured, the TBR shows a single quiet prompt, not a warning per book</li>
+      <li>Two libraries with similar official names are still distinguishable by the reader's own labels</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — the API is undocumented and unsupported.</strong> It works today; it has no compatibility
+      promise and could change shape or start blocking browser origins at any time. <em>Mitigation:</em> build it
+      as a strictly optional enhancement behind a single flag from day one. The deep links are ordinary URLs and
+      cannot break, so the core promise — "take me to Libby for this book" — survives the enhancement's failure
+      completely. Ship the deep links first and the availability layer second, so there's always a working state
+      to fall back to.
+    </div>
+    <div class="risk">
+      <strong>Risk — title matching.</strong> Matching a book from Open Library to the same book in OverDrive is
+      done by title-and-author text, which will occasionally match the wrong edition or miss entirely.
+      <em>Mitigation:</em> prefer ISBN matching where Phase&nbsp;3 captured one; show the matched title in the
+      row so a wrong match is visible rather than silent; treat "not found" and "not owned" as the same neutral
+      state rather than asserting the library doesn't have it.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 5 ═══════════════ -->
+<div class="phase" id="phase-5">
+  <div class="head">
+    <span class="pnum">Phase 5 · Backend + Feature</span>
+    <h2>Backend + AI recommendations</h2>
+    <p class="goal">Stand up the one piece of real backend the app needs — a serverless function holding the API
+    key — and use it for the headline feature: describe a mood, get books back, triage them in one tap.</p>
+    <div class="badges">
+      <span class="tag gold">The headline feature</span>
+      <span class="tag">Needs Phase 3</span>
+      <span class="tag warn">Costs real money</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <h4>Architecture</h4>
+<pre>Browser (GitHub Pages)          Cloudflare Worker              Anthropic API
+─────────────────────           ─────────────────              ─────────────
+ POST /recommend        ──▶     verify Firebase ID token
+ Authorization: &lt;token&gt;         check + increment daily quota
+ { moods, freeText,             build prompt
+   tasteSummary,                call model               ──▶   claude-opus-5
+   exclude[] }                  return structured JSON   ◀──   (structured output)
+                        ◀──     { suggestions[], remaining }
+
+ verify each title against Open Library, drop anything that doesn't resolve
+ render cards → + TBR / Already read / Pass</pre>
+    <p>The Worker is the entire backend: one file, one route, free tier, deployed independently of the site. The
+    API key lives in a Worker secret and never reaches a browser.</p>
+
+    <h4>Deliverables — backend</h4>
+    <ul class="deliv">
+      <li><code>/api</code> directory in the repo: Worker source, <code>wrangler.toml</code>, and a README covering
+          deploy and secret rotation</li>
+      <li>Firebase ID token verification; the user ID is derived from the verified token, never from the request body</li>
+      <li>Per-user daily quota in Workers KV, returning remaining count on every response</li>
+      <li>CORS locked to the Pages origin</li>
+      <li>Structured output so responses are always valid <code>{title, author, why}</code> objects</li>
+      <li>Typed error responses the UI can show verbatim: unauthenticated, over quota, upstream failure</li>
+      <li>No logging of prompts, titles, or results — only a per-user counter</li>
+    </ul>
+
+    <h4>Deliverables — frontend</h4>
+    <ul class="deliv">
+      <li>"Find me something…" entry point on the TBR panel</li>
+      <li>Request sheet: mood chips (the same vocabulary as the finish form) plus a free-text field, with the
+          remaining daily count shown before you ask</li>
+      <li>Taste summary builder — recent loved books and most-used moods, compressed; the full shelf never leaves
+          the device</li>
+      <li>Exclusion list assembled from TBR, Finished, and previously passed suggestions</li>
+      <li>Verification pass against Open Library; unresolvable suggestions dropped silently</li>
+      <li>Suggestion cards with the model's reason, and three one-tap actions: <em>+ TBR</em>,
+          <em>Already read</em>, <em>Pass</em></li>
+      <li>Passed titles persisted so a second ask returns genuinely different books</li>
+      <li>Errors shown as one plain sentence and a Retry, inside the sheet</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>Asking for a mood returns five real, existing books in a few seconds</li>
+      <li>Nothing already on the shelf or previously passed is ever suggested</li>
+      <li>Each suggestion explains itself in a way that references the reader's actual taste</li>
+      <li>Every action lands the book in the right place in one tap</li>
+      <li>Asking twice in a row returns a materially different list</li>
+      <li>Signed out, the feature is hidden entirely — not shown-then-rejected</li>
+      <li>Calling the Worker without a valid token fails; calling with someone else's user ID in the body changes
+          nothing</li>
+      <li>Over quota produces a clear message, not an error</li>
+      <li>The rest of the app is completely unaffected by any AI failure</li>
+    </ul>
+
+    <div class="note warn">
+      <strong>Budget check before building.</strong> At roughly 1.5k tokens in and 800 out, Opus 5 costs about
+      <strong>2¢ per recommendation</strong>. A reader using the full 10/day allowance costs ~$7/month. That's
+      fine for you and a few friends and does not survive contact with strangers. Two levers, both one line in the
+      Worker: lower the daily cap, or switch to Haiku 4.5 at roughly a quarter of the cost. Set a billing alert on
+      the Anthropic account before the first real user touches this.
+    </div>
+
+    <div class="risk">
+      <strong>Risk — invented books.</strong> A recommender that confidently suggests a book that doesn't exist
+      destroys trust in the whole feature. <em>Mitigation:</em> the Open Library verification pass is not optional
+      — it's the acceptance criterion. Anything unverifiable is dropped before it's rendered, and a short list of
+      real books beats five with one fake.
+    </div>
+    <div class="risk">
+      <strong>Risk — quota storage limits.</strong> Workers KV's free tier allows ~1,000 writes/day, and each
+      recommendation is a write. Fine for a handful of readers; a wall if this ever grows. <em>Mitigation:</em>
+      one counter write per call keeps it linear and predictable — watch the number, and move to a Durable Object
+      if it ever gets close.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 6 ═══════════════ -->
+<div class="phase" id="phase-6">
+  <div class="head">
+    <span class="pnum">Phase 6 · Polish</span>
+    <h2>Ready to share</h2>
+    <p class="goal">The gap between "works for me" and "I can send this to a friend without explaining anything."</p>
+    <div class="badges">
+      <span class="tag">Needs 1–5</span>
+      <span class="tag ok">Low risk</span>
+    </div>
+  </div>
+  <div class="body">
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li>First-run flow that reads as a welcome rather than a form: vibe picker → sign in (or "just use it on this
+          device") → add your first book</li>
+      <li>Empty states that teach — each panel explains what it's for and offers the action that fills it</li>
+      <li>Export the whole shelf to JSON; delete everything, with confirmation</li>
+      <li>Import a previously exported shelf, merging rather than replacing</li>
+      <li>Accessibility pass across every vibe: focus order, focus rings, live regions, reduced motion</li>
+      <li>Performance pass against the budgets in the spec, measured on a real mid-range phone</li>
+      <li>README rewritten for someone who isn't you</li>
+      <li>Genuine error states for the paths that currently <code>alert()</code></li>
+    </ul>
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>A non-technical friend installs it, picks a vibe, signs in, and adds a book without being told how</li>
+      <li>Every panel is understandable when empty</li>
+      <li>A shelf can be exported, wiped, and re-imported intact</li>
+      <li>No <code>alert()</code> remains anywhere in the app</li>
+      <li>Lighthouse: accessibility and PWA both green, in every vibe</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="sequencing">Sequencing &amp; dependencies</h2>
+<pre>Phase 1  Refactor          ████████  ← everything depends on this
+Phase 2  Vibes                     ████        needs 1
+Phase 3  Search                    ██████      needs 1
+Phase 4  Libby                          ██████ needs 3
+Phase 5  Backend + AI                   ██████ needs 3
+Phase 6  Share-ready                          ████ needs all</pre>
+<table>
+  <tr><th>If you want to…</th><th>Do this</th></tr>
+  <tr><td>See something delightful fastest</td><td>1 → 2. Vibes are the highest delight per hour of work in the
+      whole plan, and they prove the refactor was worth it.</td></tr>
+  <tr><td>Make daily use better fastest</td><td>1 → 3. Never mistyping a title again is the change you'll feel
+      every single time you add a book.</td></tr>
+  <tr><td>Build the thing that makes this <em>different</em></td><td>1 → 3 → 4. Library-first borrowing is the
+      part no other reading tracker does honestly.</td></tr>
+  <tr><td>Get to the headline feature</td><td>1 → 3 → 5. Phase 4 is not a prerequisite for AI; they're siblings,
+      and either order works.</td></tr>
+</table>
+<p class="muted">Phases 4 and 5 are independent of each other — both only need 3. Do whichever you're more
+excited about; excitement is the scarcest resource in a personal project.</p>
+
+<h2 id="risks">Risk register</h2>
+<table>
+  <tr><th>Risk</th><th>Phase</th><th>Severity</th><th>Mitigation</th></tr>
+  <tr><td>Stale service worker after the file split</td><td>1</td><td>High</td>
+      <td>Bump cache name first; test upgrading from v13, not from a fresh install</td></tr>
+  <tr><td>Sync regression during the move</td><td>1</td><td>High</td>
+      <td>Move sync logic intact; re-test first-login seeding with a fresh account</td></tr>
+  <tr><td>Hard-coded colours surviving the token split</td><td>2</td><td>Low</td>
+      <td>Grep for hex and rgba outside the token files</td></tr>
+  <tr><td>Open Library relevance on short queries</td><td>3</td><td>Medium</td>
+      <td>3-char minimum, rank by edition count, cap results; Google Books held in reserve</td></tr>
+  <tr><td>OverDrive endpoint changes or blocks browsers</td><td>4</td><td>Medium</td>
+      <td>Strictly optional layer behind a flag; deep links work regardless</td></tr>
+  <tr><td>Wrong edition matched at the library</td><td>4</td><td>Low</td>
+      <td>Prefer ISBN; show the matched title; treat not-found as neutral</td></tr>
+  <tr><td>AI suggests books that don't exist</td><td>5</td><td>High</td>
+      <td>Verify every suggestion against Open Library before rendering — non-negotiable</td></tr>
+  <tr><td>AI costs more than expected</td><td>5</td><td>Medium</td>
+      <td>Daily cap, remaining count shown in the UI, billing alert, model swap available in one line</td></tr>
+  <tr><td>Someone else's token used to call the Worker</td><td>5</td><td>High</td>
+      <td>User ID derived from the verified token only; body-supplied IDs ignored entirely</td></tr>
+</table>
+
+<hr>
+<footer class="doc">
+  <p>Otherworld Reads — build plan v1.0.<br>
+  Product spec, flows, and design decisions: <a href="spec.html">spec.html</a></p>
+</footer>
+
+</div>
+</body>
+</html>

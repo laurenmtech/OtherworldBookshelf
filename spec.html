@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Otherworld Reads — Product Spec</title>
+<style>
+  :root{
+    --bg-1:#0b0710; --bg-2:#0f0d1a; --card:#141119; --line:rgba(255,255,255,.08);
+    --ink:#e8e7ec; --muted:#9aa0a6; --accent:#8bd3c7; --gold:#d4b04b;
+    --warn:#e0a97a; --ok:#8bd3a4;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:0;
+    font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:radial-gradient(1200px 800px at 10% 0%,#1a0f2b33,transparent),
+               radial-gradient(900px 700px at 95% 90%,#07122644,transparent),
+               linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    background-attachment:fixed;
+    color:var(--ink); line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 100px}
+  header.doc{border-bottom:1px solid var(--line);padding-bottom:26px;margin-bottom:8px}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(30px,5vw,44px);line-height:1.15;margin:0 0 12px;color:var(--gold);letter-spacing:.5px}
+  .lede{font-size:17px;color:#cfcdd6;max-width:66ch;margin:0}
+  .meta{margin-top:18px;font-size:12.5px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
+  h2{font-family:Georgia,serif;font-size:26px;color:var(--gold);margin:56px 0 6px;scroll-margin-top:20px}
+  h2 .num{color:var(--accent);font-family:var(--mono);font-size:15px;margin-right:10px;opacity:.8}
+  h3{font-size:16.5px;color:var(--accent);margin:32px 0 8px;letter-spacing:.2px}
+  h4{font-size:14px;color:var(--ink);margin:20px 0 6px;text-transform:uppercase;letter-spacing:.09em}
+  p,li{max-width:74ch}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:5px;color:#d8f0ea}
+  nav.toc{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:30px 0 10px}
+  nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:34px}
+  nav.toc li{margin:3px 0;break-inside:avoid}
+  nav.toc a{text-decoration:none;color:#cfcdd6;font-size:14.5px}
+  nav.toc a:hover{color:var(--accent)}
+  @media(max-width:640px){nav.toc ol{columns:1}}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.012));
+        border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:18px 0}
+  .card h4{margin-top:0}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .grid .card{margin:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+  td:first-child{white-space:nowrap}
+  td strong{color:var(--gold);font-weight:600}
+  .flow{list-style:none;padding:0;margin:16px 0;counter-reset:s}
+  .flow li{counter-increment:s;position:relative;padding:11px 0 11px 46px;border-bottom:1px dashed rgba(255,255,255,.07);max-width:80ch}
+  .flow li:last-child{border-bottom:0}
+  .flow li::before{content:counter(s);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:50%;
+    border:1px solid rgba(139,211,199,.4);color:var(--accent);font-family:var(--mono);font-size:13px;
+    display:flex;align-items:center;justify-content:center}
+  .tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid rgba(139,211,199,.3);
+       color:var(--accent);margin-right:6px;letter-spacing:.04em;white-space:nowrap}
+  .tag.gold{border-color:rgba(212,176,75,.4);color:var(--gold)}
+  .tag.warn{border-color:rgba(224,169,122,.4);color:var(--warn)}
+  .note{border-left:3px solid var(--accent);background:rgba(139,211,199,.05);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0}
+  .note.warn{border-left-color:var(--warn);background:rgba(224,169,122,.06)}
+  .note strong{color:var(--gold)}
+  .swatches{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .sw{width:30px;height:30px;border-radius:7px;border:1px solid rgba(255,255,255,.14)}
+  pre{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;
+      font-family:var(--mono);font-size:13px;line-height:1.6;color:#cfe8e2}
+  hr{border:0;border-top:1px solid var(--line);margin:52px 0 0}
+  .muted{color:var(--muted)}
+  footer.doc{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <p class="eyebrow">Product Specification</p>
+  <h1>Otherworld Reads</h1>
+  <p class="lede">A quiet, personal reading tracker that helps you find your next book by feel — and sends you
+  to a library or a local bookshop to get it. Not a social network, not a marketplace. A shelf that's yours.</p>
+  <div class="meta">
+    <span>Version 1.0 · 27 July 2026</span>
+    <span>Companion: <a href="plan.html">plan.html</a></span>
+    <span>Current build: v13</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#vision">What this is</a></li>
+    <li><a href="#principles">Principles</a></li>
+    <li><a href="#readers">Who it's for</a></li>
+    <li><a href="#model">The shelf model</a></li>
+    <li><a href="#vibes">Choosing a vibe</a></li>
+    <li><a href="#search">Finding a book</a></li>
+    <li><a href="#reading">Reading &amp; finishing</a></li>
+    <li><a href="#ai">Reading by vibe (AI)</a></li>
+    <li><a href="#borrow">Getting the book</a></li>
+    <li><a href="#privacy">Data &amp; privacy</a></li>
+    <li><a href="#a11y">Accessibility &amp; performance</a></li>
+    <li><a href="#decisions">Decisions &amp; non-goals</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</nav>
+
+<h2 id="vision"><span class="num">01</span>What this is</h2>
+<p>Otherworld Reads is a private reading shelf. You keep one <strong>current read</strong>, a <strong>TBR pile</strong>
+of what's next, a record of what you've <strong>finished</strong> and how it felt, and a short list of the
+<strong>libraries and bookshops</strong> you actually use.</p>
+
+<p>It already does the first part well. This spec covers what it becomes: a shelf you can dress in a look you like,
+that knows real books so you never mistype a title, that can suggest something when you only know the
+<em>mood</em> you're in, and that hands you off to Libby or a local bookshop when you're ready to read it.</p>
+
+<div class="note">
+  <strong>The one-sentence test.</strong> If a feature doesn't help you (a) remember what you read, (b) decide what
+  to read next, or (c) actually get hold of it — it doesn't ship.
+</div>
+
+<h2 id="principles"><span class="num">02</span>Principles</h2>
+<div class="grid">
+  <div class="card">
+    <h4>Libraries first</h4>
+    <p class="muted" style="margin:0">Every "get this book" path leads to a library hold or an independent shop
+    before it leads anywhere else. No Amazon links. Availability is shown honestly, including the wait.</p>
+  </div>
+  <div class="card">
+    <h4>Private by default</h4>
+    <p class="muted" style="margin:0">Your shelf is yours. No feed, no followers, no public profile. Sharing, if it
+    ever exists, is an explicit one-off act — never a default state.</p>
+  </div>
+  <div class="card">
+    <h4>Feeling over rating</h4>
+    <p class="muted" style="margin:0">Books get a feeling (💛 Loved / Liked / Not for me) and moods, not a number
+    out of five. Stars invite comparison; feelings invite memory.</p>
+  </div>
+  <div class="card">
+    <h4>Phone-shaped</h4>
+    <p class="muted" style="margin:0">Designed for one thumb at 11pm. Desktop is the bonus layout, not the
+    baseline. Installable, works offline, opens instantly.</p>
+  </div>
+  <div class="card">
+    <h4>Nothing you must type twice</h4>
+    <p class="muted" style="margin:0">If a computer can know a book's title, author, cover, and year, you shouldn't
+    be spelling them. Manual entry stays available — it's the fallback, not the default.</p>
+  </div>
+  <div class="card">
+    <h4>Quiet</h4>
+    <p class="muted" style="margin:0">No streaks, no badges, no yearly challenge counting down at you. Reading is
+    not a productivity metric.</p>
+  </div>
+</div>
+
+<h2 id="readers"><span class="num">03</span>Who it's for</h2>
+<table>
+  <tr><th>Reader</th><th>What they want</th><th>What the app must get right</th></tr>
+  <tr>
+    <td><strong>The keeper</strong><br><span class="muted">(the primary user)</span></td>
+    <td>One place that remembers everything they've read and how it felt, across phone and laptop.</td>
+    <td>Sync that never loses data. Fast add. Finished list that's a pleasure to scroll back through.</td>
+  </tr>
+  <tr>
+    <td><strong>The drifter</strong></td>
+    <td>Finished a book, doesn't know what's next, knows only the mood they want.</td>
+    <td>Vibe-based suggestions that feel considered, and a one-tap way to say yes / already read it / no.</td>
+  </tr>
+  <tr>
+    <td><strong>The borrower</strong></td>
+    <td>Wants the book without buying it. Has a library card and forgets to use it.</td>
+    <td>Real availability from their library, and a link that lands them on the right title in Libby.</td>
+  </tr>
+  <tr>
+    <td><strong>The invited friend</strong></td>
+    <td>Was shown the app, wants their own shelf, is not technical.</td>
+    <td>Sign in with Google and start. Zero setup, zero config, zero API keys.</td>
+  </tr>
+</table>
+
+<h2 id="model"><span class="num">04</span>The shelf model</h2>
+<p>Four surfaces, one book moving between them. On a phone they stack in this order; on a wide screen they sit
+in a three-column grid.</p>
+
+<pre>Current Read  ──finish──▶  Finished
+     ▲                        │
+   set current            (already read)
+     │                        ▲
+  TBR Pile  ◀──add──  Search · AI suggestions · Libraries</pre>
+
+<h3>Objects</h3>
+<table>
+  <tr><th>Object</th><th>Fields</th><th>Notes</th></tr>
+  <tr>
+    <td><strong>Book</strong></td>
+    <td><code>title</code>, <code>author</code>, <code>workKey</code>, <code>coverId</code>, <code>year</code>,
+        <code>isbn</code>, <code>source</code></td>
+    <td>Books added by search carry an Open Library <code>workKey</code> — the identity used for cover art
+        and library lookups. Manually-added books have title + author only and degrade gracefully.</td>
+  </tr>
+  <tr>
+    <td><strong>FinishedBook</strong></td>
+    <td>Book + <code>finishedAt</code>, <code>feeling</code>, <code>moods[]</code></td>
+    <td>Feeling is one of loved / liked / not-for-me. Moods are multi-select chips. Legacy entries with a numeric
+        <code>rating</code> or freeform <code>notes</code> keep rendering.</td>
+  </tr>
+  <tr>
+    <td><strong>Library</strong></td>
+    <td><code>label</code>, <code>officialName</code>, <code>url</code>, <code>overdriveKey</code>, <code>kind</code></td>
+    <td>Today this is a free-text name and link. It becomes a real entity: a picked library system with an
+        OverDrive key (enabling availability), a local bookshop, or a plain bookmark. <code>label</code> is
+        whatever the reader calls it and is what the UI shows; <code>officialName</code> is what the library calls
+        itself and is only used for disambiguation.</td>
+  </tr>
+  <tr>
+    <td><strong>Vibe</strong></td>
+    <td><code>id</code></td>
+    <td>A single stored string. The look is defined in CSS, not in data.</td>
+  </tr>
+</table>
+
+<div class="note warn">
+  <strong>A deliberate reversal.</strong> Cover art was removed from the Current Read in v11 because typing an
+  image URL by hand was tedious and usually skipped. With search-based adding, covers arrive for free from
+  the Open Library CDN — so they come back, but only for books that have one. No placeholder boxes, no broken
+  images: if there's no cover, the card is typographic, exactly as it is today.
+</div>
+
+<h2 id="vibes"><span class="num">05</span>Choosing a vibe</h2>
+<p>The vibe is the app's whole look — background, palette, typography, texture. It is chosen once and can be
+changed any time, instantly, from anywhere. It is <em>visual only</em>: every label, every button, every piece
+of copy stays identical across vibes, so switching never costs you your bearings.</p>
+
+<h3>The flow</h3>
+<ol class="flow">
+  <li><strong>First launch.</strong> Before the shelf appears, a full-screen picker: a grid of vibe cards, each
+      rendering a miniature of the real UI in that vibe (a Current Read card, a chip, a button). No copy explaining
+      them — you can see them.</li>
+  <li><strong>Tap one.</strong> The whole page transitions into it immediately behind the picker. There's no
+      "confirm" step; the preview <em>is</em> the confirmation.</li>
+  <li><strong>Enter the shelf.</strong> Choice saved. Never asked again.</li>
+  <li><strong>Change it later.</strong> A vibe control in the header — a small palette glyph — opens the same
+      picker. One tap re-skins the app in place. Scroll position, open panels, and any half-typed form are
+      preserved.</li>
+</ol>
+
+<h3>The vibes</h3>
+<div class="grid">
+  <div class="card">
+    <h4>Otherworld <span class="tag gold">default</span></h4>
+    <p class="muted" style="margin:0 0 4px">Dark fantasy. Near-black with a violet bloom, sea-glass teal and old
+    gold, Cinzel display type. The current look — existing users keep it and are never re-prompted.</p>
+    <div class="swatches"><i class="sw" style="background:#0b0710"></i><i class="sw" style="background:#8bd3c7"></i><i class="sw" style="background:#d4b04b"></i></div>
+  </div>
+  <div class="card">
+    <h4>Cottage</h4>
+    <p class="muted" style="margin:0 0 4px">Warm paper and linen. Cream ground, sage and terracotta, a soft serif.
+    Light-mode, gentle, the reading-nook end of the spectrum.</p>
+    <div class="swatches"><i class="sw" style="background:#f4f0e6"></i><i class="sw" style="background:#7d8c6a"></i><i class="sw" style="background:#c07a52"></i></div>
+  </div>
+  <div class="card">
+    <h4>Celestial</h4>
+    <p class="muted" style="margin:0 0 4px">Deep indigo and violet, silver and pale gold, a faint star-field
+    behind the panels. Cool where Otherworld is warm.</p>
+    <div class="swatches"><i class="sw" style="background:#0d0b2b"></i><i class="sw" style="background:#c9cbe8"></i><i class="sw" style="background:#e6c979"></i></div>
+  </div>
+  <div class="card">
+    <h4>Dark Academia</h4>
+    <p class="muted" style="margin:0 0 4px">Oxblood, ink, and aged parchment. A proper old-style serif throughout,
+    tight rules, library-card restraint.</p>
+    <div class="swatches"><i class="sw" style="background:#1a1512"></i><i class="sw" style="background:#e8dcc4"></i><i class="sw" style="background:#8c3a2e"></i></div>
+  </div>
+  <div class="card">
+    <h4>Seaglass</h4>
+    <p class="muted" style="margin:0 0 4px">Bright and coastal. Soft off-white, muted blue-green, sand. The
+    lightest vibe — the one for reading outdoors.</p>
+    <div class="swatches"><i class="sw" style="background:#f2f6f5"></i><i class="sw" style="background:#5c8a86"></i><i class="sw" style="background:#d9c3a0"></i></div>
+  </div>
+</div>
+
+<h3>Design decisions behind the vibe system</h3>
+<table>
+  <tr><th>Decision</th><th>Why</th></tr>
+  <tr><td><strong>Visual only, not copy</strong></td>
+      <td>Renaming "The TBR Pile" per vibe is charming once and confusing forever — it breaks muscle memory,
+      complicates search, and doubles the surface to maintain. Deferred, not discarded.</td></tr>
+  <tr><td><strong>One token file per vibe</strong></td>
+      <td>Every vibe sets the same fixed set of CSS custom properties on <code>:root</code>. Components never
+      reference a vibe by name, so a new vibe is one new file and one line in a registry — never a component edit.</td></tr>
+  <tr><td><strong>Applied before first paint</strong></td>
+      <td>An inline script in <code>&lt;head&gt;</code> reads the saved vibe and stamps
+      <code>data-vibe</code> on <code>&lt;html&gt;</code> before stylesheets resolve. No flash of the wrong theme
+      on a cold start.</td></tr>
+  <tr><td><strong>Contrast is non-negotiable</strong></td>
+      <td>Each vibe ships with measured contrast ratios. A vibe that can't hit WCAG AA on body text and
+      interactive elements doesn't ship, however pretty it is.</td></tr>
+  <tr><td><strong>Theme-color follows the vibe</strong></td>
+      <td>The PWA <code>theme-color</code> meta and the status bar update on switch, so an installed app doesn't
+      have a dark-fantasy notch above a cream page.</td></tr>
+  <tr><td><strong>Vibe is per-device, then synced</strong></td>
+      <td>Stored locally so it applies instantly offline, and mirrored to the cloud profile so a new device
+      inherits your look instead of reverting to default.</td></tr>
+</table>
+
+<h2 id="search"><span class="num">06</span>Finding a book</h2>
+<p>Today, adding a book means typing a title and an author into two boxes, with nothing checking your spelling.
+This replaces that with a single search field that suggests real books as you type.</p>
+
+<h3>The flow</h3>
+<ol class="flow">
+  <li><strong>Tap "+ Add".</strong> One field, focused, labelled <em>Title or author</em>.</li>
+  <li><strong>Type.</strong> After a short pause (≈300&nbsp;ms) and at least 3 characters, results appear beneath —
+      up to 6, each showing cover thumbnail, title, author, and first-published year. Ranked by edition count, so
+      the well-known book sorts above the obscure one with a similar name.</li>
+  <li><strong>Pick one.</strong> The book is added with full metadata. Done — no second screen, no confirm.</li>
+  <li><strong>Or don't.</strong> Below the results sits a permanent <em>Add "<span class="muted">what you typed</span>"
+      manually</em> row, which opens the current two-field form. Self-published books, ARCs, a friend's manuscript,
+      and anything Open Library has never heard of all still work.</li>
+</ol>
+
+<h3>Behaviour details</h3>
+<table>
+  <tr><th>Case</th><th>What happens</th></tr>
+  <tr><td>Offline</td><td>The search field falls back to manual entry with a quiet note. Adding a book never
+      requires a network.</td></tr>
+  <tr><td>Slow response</td><td>Results are requested with a timeout. Past it, manual entry is offered — the UI
+      never sits on a spinner.</td></tr>
+  <tr><td>Stale responses</td><td>Each keystroke's request supersedes the last; an out-of-order reply is discarded
+      rather than overwriting fresher results.</td></tr>
+  <tr><td>Duplicate</td><td>If the picked book already sits on the TBR or in Finished, the result row says so and
+      offers to jump to it instead of silently creating a second copy.</td></tr>
+  <tr><td>Keyboard</td><td>Arrow keys move through results, Enter picks, Escape closes. The list is a proper
+      <code>listbox</code> so screen readers announce position and count.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Source: Open Library.</strong> Free, no API key, no rate-limit registration, permissive cross-origin
+  access — and it's a project of the Internet Archive rather than a retailer, which suits the ethos. Verified
+  working: a search for <em>piranesi</em> returns title, author, year, and cover ID in a single request.
+</div>
+
+<h2 id="reading"><span class="num">07</span>Reading &amp; finishing</h2>
+<p>This flow is already right and changes very little. It's specified here because it's the spine of the app.</p>
+<ol class="flow">
+  <li><strong>Set a current read</strong> — from the TBR pile, from search, or by typing directly into the Current
+      Read card. One book at a time, deliberately. (See <a href="#open">Open questions</a>.)</li>
+  <li><strong>It sits at the top of the app</strong> for as long as you're reading it. Title, author, and cover if
+      there is one. Edit and Finish are the only actions.</li>
+  <li><strong>Finish &amp; rate</strong> opens a small modal: <em>How was it?</em> (one of three feelings) and
+      <em>Vibe</em> (any number of mood chips, optional). Both can be skipped.</li>
+  <li><strong>Save.</strong> The book moves to the top of Finished with today's date. Current Read empties and
+      invites the next one.</li>
+</ol>
+<p class="muted">The moods captured here — Cozy, Epic, Dark, Comfort-read, Romantic, Twisty, Slow-burn, Funny,
+Mind-expanding, Practical — are the same vocabulary the AI recommender uses. That's not a coincidence; it's the
+point. The more you finish, the better it knows your taste.</p>
+
+<h2 id="ai"><span class="num">08</span>Reading by vibe</h2>
+<p>The feature for when you've finished something and don't know what's next. You describe the reading experience
+you want, in your own words, and get a short list of real books back.</p>
+
+<h3>The flow</h3>
+<ol class="flow">
+  <li><strong>"Find me something…"</strong> — a button on the TBR panel. Opens a sheet with mood chips (the same
+      vocabulary as the finish form) and a free-text field: <em>what are you in the mood for?</em></li>
+  <li><strong>Ask.</strong> Chips and text are sent along with a compressed picture of your taste: your recent
+      loved books, your most-used moods, and — critically — a list of titles to <em>exclude</em> (everything on
+      your shelf and everything you've already passed on).</li>
+  <li><strong>Five suggestions come back</strong>, each with a title, an author, and one or two sentences on
+      <em>why this, for you</em> — tied to the mood you asked for and books you've loved. Not a blurb; a reason.</li>
+  <li><strong>Triage each one, in place.</strong> Three actions per card:
+      <span class="tag">+ TBR</span> <span class="tag">Already read</span> <span class="tag">Pass</span>.
+      Cards animate out as you decide. "Already read" drops it into Finished with no feeling set, so you can fill
+      that in later. "Pass" remembers it so it's never suggested again.</li>
+  <li><strong>Ask again</strong> if none of them landed. The exclusion list now includes everything you just
+      passed on, so the second round is genuinely different.</li>
+</ol>
+
+<h3>How it works</h3>
+<table>
+  <tr><th>Concern</th><th>Approach</th></tr>
+  <tr><td><strong>Where the key lives</strong></td>
+      <td>Not in the browser. A small serverless function (Cloudflare Worker) holds the Anthropic API key and is
+      the only thing that ever talks to the model. See <a href="plan.html#phase-5">Plan, Phase 5</a>.</td></tr>
+  <tr><td><strong>Who can call it</strong></td>
+      <td>Signed-in users only. The browser sends its Firebase ID token; the Worker verifies it and derives the
+      user ID from the token — never from the request body.</td></tr>
+  <tr><td><strong>How much</strong></td>
+      <td>A per-user daily cap (starting at 10 calls/day). The remaining count is shown in the sheet before you
+      ask, so hitting the limit is never a surprise.</td></tr>
+  <tr><td><strong>Model</strong></td>
+      <td><code>claude-opus-5</code>, with structured output so the response is always a valid list of
+      <code>{title, author, why}</code> — no prose parsing, no malformed-response handling in the UI.</td></tr>
+  <tr><td><strong>Hallucinated books</strong></td>
+      <td>Every suggestion is checked against Open Library before it's shown. Anything that doesn't resolve to a
+      real work is dropped silently. You never see a book that doesn't exist.</td></tr>
+  <tr><td><strong>Failure</strong></td>
+      <td>Any error — offline, over quota, model unavailable — surfaces as one plain sentence and a Retry, inside
+      the sheet. The rest of the app is unaffected.</td></tr>
+</table>
+
+<div class="note warn">
+  <strong>Cost, honestly.</strong> At roughly 1.5k tokens in and 800 out per request, Opus 5 works out to about
+  <strong>2¢ per recommendation</strong> — so a user hitting the full 10/day cap costs about $0.24/day, or ~$7/month.
+  Fine for you and a handful of friends; it does not scale to strangers on the open internet. Two levers exist if
+  it needs to: lower the daily cap, or switch the Worker to Haiku 4.5 (~0.5¢/call, a quarter of the cost). The
+  Worker is one line away from either. Decide when there's a real bill, not before.
+</div>
+
+<h2 id="borrow"><span class="num">09</span>Getting the book</h2>
+<p>The part that makes this more than a list. Every book on the TBR pile can answer "can I get this right now?" —
+and the answer is grounded in a real library's collection, not a guess.</p>
+
+<h3>Setting up your library</h3>
+<ol class="flow">
+  <li>The Libraries panel gains an <strong>Add library</strong> flow that searches actual library systems by name
+      or place, rather than asking for a name and a URL.</li>
+  <li>Picking one stores its OverDrive key. That key is what unlocks availability.</li>
+  <li><strong>Name it yourself.</strong> The next field is <em>What do you call it?</em>, pre-filled with the
+      library's official name and fully editable. "Mom's card", "the good one", "County" — whatever you'd
+      actually say out loud. That label is what the app shows everywhere afterwards; the official name is kept
+      underneath, in smaller type, only where two entries would otherwise be indistinguishable. Renaming is
+      always available from Edit and never touches the stored key, so a rename can't break availability.</li>
+  <li>Multiple libraries are supported — many readers have a city card and a county card, which is exactly why
+      the names have to be yours. The first one is treated as primary for availability checks, and the order is
+      yours to change.</li>
+  <li>Bookshops and plain links are still first-class and named the same way: an entry can be a <em>library</em>,
+      a <em>bookshop</em>, or a <em>bookmark</em>. Only libraries get availability.</li>
+</ol>
+
+<h3>On a TBR book</h3>
+<p>Once a library is set, each TBR entry shows a borrow row:</p>
+<table>
+  <tr><th>State</th><th>Shown as</th><th>Tapping it</th></tr>
+  <tr><td>Available now</td><td><span class="tag" style="border-color:rgba(139,211,164,.5);color:var(--ok)">Available now</span> · ebook / audiobook</td><td>Opens the title in Libby, ready to borrow.</td></tr>
+  <tr><td>On hold</td><td><span class="tag warn">~15 day wait</span> · 168 holds on 164 copies</td><td>Opens the title in Libby, ready to place a hold.</td></tr>
+  <tr><td>Not in collection</td><td><span class="muted">Not at County</span> — the row uses your name for the
+      library, not its official one</td><td>Offers a Libby search, plus a link to buy it from an independent bookshop.</td></tr>
+  <tr><td>No library set</td><td><span class="muted">Add a library to see availability</span></td><td>Jumps to the Libraries panel.</td></tr>
+  <tr><td>Lookup failed / offline</td><td>Row is hidden entirely</td><td>—</td></tr>
+</table>
+
+<div class="note">
+  <strong>Feasibility, checked.</strong> OverDrive's public catalogue endpoint (the one Libby's own web app uses)
+  returns availability, hold counts, and estimated wait days for a given library, and permits cross-origin
+  requests. A live query against a real library system for <em>Piranesi</em> returned <code>ownedCopies: 164</code>,
+  <code>holdsCount: 168</code>, <code>estimatedWaitDays: 15</code> — exactly the data this design needs.
+</div>
+
+<div class="note warn">
+  <strong>And the risk.</strong> That endpoint is undocumented and unsupported. It can change or start refusing
+  browser requests without warning. So availability is designed as an <em>enhancement, never a dependency</em>:
+  if the lookup fails for any reason, the borrow row simply doesn't render, and the plain "Search this on Libby"
+  link — which is a normal URL and cannot break — is always present underneath. Every phase of this feature must
+  be shippable with the enhancement switched off.
+</div>
+
+<h3>Buying, when borrowing isn't an option</h3>
+<p>Where a purchase link is warranted, it goes to <strong>Bookshop.org</strong>, which splits revenue with
+independent bookshops, or to a specific local shop the reader has added themselves. There is no Amazon link
+anywhere in the app, and no affiliate tracking of any kind unless the reader is told about it plainly.</p>
+
+<h2 id="privacy"><span class="num">10</span>Data &amp; privacy</h2>
+<table>
+  <tr><th>Question</th><th>Answer</th></tr>
+  <tr><td>Where does my shelf live?</td><td>In your browser when signed out. In your own document in Firestore
+      when signed in, readable and writable only by you.</td></tr>
+  <tr><td>Can anyone else see it?</td><td>No. There is no sharing surface, no public URL, no feed.</td></tr>
+  <tr><td>What leaves the device?</td><td>Book searches go to Open Library. Availability checks go to OverDrive
+      with a library key and a title — no account, no card number, no identity. AI requests go to the Worker with
+      your moods, a short taste summary, and your sign-in token.</td></tr>
+  <tr><td>Does the AI see my whole shelf?</td><td>No — a compressed summary: recent loved titles, frequent moods,
+      and an exclusion list. Not your full history, not your dates, not your notes.</td></tr>
+  <tr><td>Is anything logged?</td><td>The Worker logs a per-user call count for rate limiting and nothing else.
+      No prompts, no results, no titles.</td></tr>
+  <tr><td>Can I leave?</td><td>Export to JSON, and delete-everything, are both first-class actions. Leaving should
+      be as easy as arriving.</td></tr>
+</table>
+
+<h2 id="a11y"><span class="num">11</span>Accessibility &amp; performance</h2>
+<div class="grid">
+  <div class="card">
+    <h4>Targets</h4>
+    <ul style="margin:0;padding-left:18px">
+      <li>WCAG AA contrast in every vibe, verified per release</li>
+      <li>Every action reachable by keyboard; visible focus rings</li>
+      <li>Modals trap focus and restore it on close</li>
+      <li>16px minimum on inputs (no iOS zoom-on-focus)</li>
+      <li>44px minimum tap targets</li>
+      <li>Live regions announce shelf changes</li>
+      <li><code>prefers-reduced-motion</code> honoured for all transitions</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Budgets</h4>
+    <ul style="margin:0;padding-left:18px">
+      <li>Interactive in under 1s on a mid-range phone, cold</li>
+      <li>Full offline function for everything except search, availability, and AI</li>
+      <li>Under 150&nbsp;KB of JavaScript, uncompressed, excluding the Firebase SDK</li>
+      <li>No layout shift on load — the vibe applies before first paint</li>
+      <li>No blocking spinner anywhere; every remote call has a timeout and a fallback</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="decisions"><span class="num">12</span>Decisions &amp; non-goals</h2>
+<table>
+  <tr><th>Decision</th><th>Rationale</th></tr>
+  <tr><td><strong>No build step</strong></td>
+      <td>Native ES modules and plain CSS, served straight from GitHub Pages. Deploying stays <code>git push</code>,
+      and the project can be picked up after six months away without fighting a toolchain.</td></tr>
+  <tr><td><strong>Static frontend + one serverless function</strong></td>
+      <td>The only thing that genuinely needs a server is holding the AI key. Everything else the browser can do
+      itself. A single Worker beats a whole backend to maintain.</td></tr>
+  <tr><td><strong>Enhancements degrade, never block</strong></td>
+      <td>Search, availability, and AI are all optional layers over a shelf that works offline with nothing but
+      typing. Any one of them can fail and the app is still the app.</td></tr>
+  <tr><td><strong>Vibes are visual only (for now)</strong></td>
+      <td>Ships in a fraction of the time, and keeps every label stable while the app is still growing.</td></tr>
+  <tr><td><strong>Open Library over Google Books</strong></td>
+      <td>No key, no quota registration, and a non-commercial custodian. Better fit for a library-first app.</td></tr>
+  <tr><td><strong>Suggestions are verified before display</strong></td>
+      <td>A recommender that invents books is worse than no recommender. Cross-checking costs one request and buys
+      complete trust in the list.</td></tr>
+</table>
+
+<h4>Explicitly not building</h4>
+<ul>
+  <li><strong>Social features</strong> — no following, no feeds, no comments, no public shelves.</li>
+  <li><strong>Reading challenges, streaks, or stats dashboards</strong> — counting is not the point.</li>
+  <li><strong>Progress tracking</strong> (page counts, % complete) — a book is either current or it isn't.</li>
+  <li><strong>Amazon or Goodreads integration</strong> — against the premise.</li>
+  <li><strong>User-authored custom vibes</strong> — deferred; a theme editor is its own product.</li>
+  <li><strong>Native apps</strong> — the PWA installs to the home screen and that's enough.</li>
+</ul>
+
+<h2 id="open"><span class="num">13</span>Open questions</h2>
+<table>
+  <tr><th>Question</th><th>Leaning</th></tr>
+  <tr><td>Should more than one book be "current" at once? Plenty of people read a novel and a non-fiction book
+      in parallel.</td>
+      <td>Yes, eventually — but as a small list capped at two or three, not an unbounded shelf. Revisit after
+      Phase&nbsp;3, when the data model is cleaner.</td></tr>
+  <tr><td>Should a "did not finish" state exist, distinct from finishing with <em>Not for me</em>?</td>
+      <td>Probably. DNF is a real and different feeling. Cheap to add; needs a home in the finish modal.</td></tr>
+  <tr><td>Should series be tracked, so book 2 can be suggested automatically?</td>
+      <td>Open Library exposes some series data, inconsistently. Interesting, low confidence, not before Phase&nbsp;5.</td></tr>
+  <tr><td>Should the AI be able to see the <em>whole</em> finished list rather than a summary?</td>
+      <td>Better suggestions, more cost, more data leaving the device. Start with the summary and see whether the
+      results are good enough.</td></tr>
+  <tr><td>Is there ever a shared shelf — a partner or a book club seeing the same TBR?</td>
+      <td>Genuinely useful, and the single biggest departure from "private by default." Needs its own spec.</td></tr>
+</table>
+
+<hr>
+<footer class="doc">
+  <p>Otherworld Reads — made for quiet hours and strange moons.<br>
+  Implementation phases and deliverables: <a href="plan.html">plan.html</a></p>
+</footer>
+
+</div>
+</body>
+</html>

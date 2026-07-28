@@ -39,13 +39,19 @@ if(!configured){
   const app = initializeApp(cfg);
   const auth = getAuth(app);
   let db;
+  // experimentalForceLongPolling: some environments reach Firestore over plain
+  // HTTPS (one-shot requests return 200) but can't hold the streaming WebChannel
+  // session, leaving the client stuck offline. Forcing long-polling uses simple
+  // request/response polling instead, which those setups pass through. Slightly
+  // less efficient, but this is a tiny personal app and reliability wins.
   try {
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      experimentalForceLongPolling: true
     });
   } catch(e){
     // Fall back to default (memory) cache if persistence can't initialize.
-    db = initializeFirestore(app, {});
+    db = initializeFirestore(app, { experimentalForceLongPolling: true });
   }
   const provider = new GoogleAuthProvider();
   let unsub = null;
