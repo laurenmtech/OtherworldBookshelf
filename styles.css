@@ -57,6 +57,19 @@ body{
 .field label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
 .field input, .field textarea{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:rgba(0,0,0,0.25); color:inherit }
 
+/* Selectable chips (finish form: feeling + mood vibe) */
+.chips{ display:flex; flex-wrap:wrap; gap:8px }
+.chip{ font:inherit; font-size:13px; padding:6px 12px; border-radius:999px; cursor:pointer;
+  border:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.25); color:var(--muted) }
+.chip:hover{ border-color:var(--accent) }
+.chip.selected{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#081013; border-color:transparent }
+.chip:active{ transform:translateY(1px) }
+
+/* Mood tags shown on finished-list entries */
+.mood-row{ display:flex; flex-wrap:wrap; gap:5px; margin-top:5px }
+.mood-tag{ font-size:11px; padding:2px 9px; border-radius:999px;
+  border:1px solid rgba(139,211,199,0.25); color:var(--accent) }
+
 .actions{ display:flex; gap:8px; margin-top:8px }
 .btn{ background:transparent; color:var(--accent); border:1px solid rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; cursor:pointer }
 .btn.primary{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#081013; border:none }

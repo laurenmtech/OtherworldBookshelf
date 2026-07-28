@@ -126,14 +126,17 @@ if(!configured){
         const fromServer = !snap.metadata.fromCache;
         const hasCloudData = snap.exists() && !isEmptyState(snap.data());
 
+        // Any snapshot with data (cache or server) is real data — show it and
+        // call it synced. Waiting for a server-only confirmation can hang, since
+        // Firestore may not re-fire when the cached doc already matches.
         if(hasCloudData){
           window.__applyRemoteState(snap.data());
           seeded = true; // cloud already holds data; never seed over it
-          setStatus(fromServer ? 'Synced' : 'Connecting…');
+          setStatus('Synced');
           return;
         }
 
-        // Cloud doc is missing or empty. Only act on a server-confirmed read so
+        // No cloud data. Only seed from local once the SERVER confirms empty, so
         // we don't overwrite another device's data based on a stale local cache.
         if(fromServer && !seeded){
           seeded = true;

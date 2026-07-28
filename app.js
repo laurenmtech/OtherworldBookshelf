@@ -1,7 +1,7 @@
 // Simple localStorage-backed reading tracker
 const LS_KEY = 'otherworld_reads_v1'
 // Bump this with every release; it's shown in the footer and matches the SW cache name.
-const APP_VERSION = 'v11'
+const APP_VERSION = 'v12'
 // When signed in, saves also go to the cloud (set by sync.js).
 let cloudMode = false
 
@@ -44,9 +44,55 @@ const editCurrentBtn = document.getElementById('edit-current')
 const finishDisplayBtn = document.getElementById('finish-current-display')
 const finishModal = document.getElementById('finish-form')
 const finishFormInner = document.getElementById('finish-form-inner')
-const ratingInput = document.getElementById('rating')
-const notesInput = document.getElementById('notes')
+const feelingChips = document.getElementById('feeling-chips')
+const moodChips = document.getElementById('mood-chips')
 const cancelFinishBtn = document.getElementById('cancel-finish')
+
+// Finish form: how a book felt + its vibe (replaces the old 1-5 rating + notes).
+const FEELINGS = [
+  { key: 'loved', label: '💛 Loved' },
+  { key: 'liked', label: 'Liked' },
+  { key: 'not-for-me', label: 'Not for me' }
+]
+const MOODS = ['Cozy','Epic','Dark','Comfort-read','Romantic','Twisty','Slow-burn','Funny','Mind-expanding','Practical']
+const feelingLabel = k => (FEELINGS.find(f => f.key === k) || {}).label
+let selectedFeeling = null
+const selectedMoods = new Set()
+
+function buildFinishChips(){
+  if(feelingChips){
+    feelingChips.innerHTML = ''
+    FEELINGS.forEach(f => {
+      const b = document.createElement('button')
+      b.type = 'button'; b.className = 'chip'; b.textContent = f.label
+      b.addEventListener('click', ()=>{
+        selectedFeeling = (selectedFeeling === f.key) ? null : f.key
+        feelingChips.querySelectorAll('.chip').forEach((c,i)=>
+          c.classList.toggle('selected', FEELINGS[i].key === selectedFeeling))
+      })
+      feelingChips.appendChild(b)
+    })
+  }
+  if(moodChips){
+    moodChips.innerHTML = ''
+    MOODS.forEach(m => {
+      const b = document.createElement('button')
+      b.type = 'button'; b.className = 'chip'; b.textContent = m
+      b.addEventListener('click', ()=>{
+        if(selectedMoods.has(m)) selectedMoods.delete(m); else selectedMoods.add(m)
+        b.classList.toggle('selected', selectedMoods.has(m))
+      })
+      moodChips.appendChild(b)
+    })
+  }
+}
+function resetFinishForm(){
+  selectedFeeling = null
+  selectedMoods.clear()
+  if(feelingChips) feelingChips.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'))
+  if(moodChips) moodChips.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'))
+}
+buildFinishChips()
 
 const wishlistForm = document.getElementById('wishlist-form')
 const wishTitle = document.getElementById('wish-title')
@@ -108,12 +154,14 @@ editCurrentBtn.addEventListener('click', ()=>{
 // The display-level finish button opens the finish modal
 finishDisplayBtn && finishDisplayBtn.addEventListener('click', ()=>{
   if(!state.current) return alert('No current book to finish')
+  resetFinishForm()
   finishModal.hidden = false
 })
 
 finishBtn.addEventListener('click', ()=>{
   if(!state.current) return alert('No current book to finish')
   // show modal using the boolean `hidden` attribute to avoid CSS flicker on load
+  resetFinishForm()
   finishModal.hidden = false
 })
 
@@ -123,14 +171,16 @@ cancelFinishBtn.addEventListener('click', ()=>{
 
 finishFormInner.addEventListener('submit', e=>{
   e.preventDefault()
-  const rating = Number(ratingInput.value) || 0
-  const notes = notesInput.value.trim() || ''
-  const finishedItem = { ...state.current, finishedAt: new Date().toISOString(), rating, notes }
+  const finishedItem = {
+    ...state.current,
+    finishedAt: new Date().toISOString(),
+    feeling: selectedFeeling,
+    moods: Array.from(selectedMoods)
+  }
   state.finished.unshift(finishedItem)
   state.current = null
   saveState(state)
-  ratingInput.value = 5
-  notesInput.value = ''
+  resetFinishForm()
   finishModal.hidden = true
   renderAll()
 })
@@ -325,7 +375,13 @@ function renderFinished(){
   state.finished.forEach((it, idx)=>{
     const li = document.createElement('li')
     const left = document.createElement('div')
-    left.innerHTML = `<div><strong>${escapeHtml(it.title)}</strong> <span class=muted>by ${escapeHtml(it.author||'')}</span><div class=muted>Rated ${it.rating} · ${new Date(it.finishedAt).toLocaleDateString()}</div></div>`
+    // feeling label (fall back to a legacy 1-5 rating for older entries)
+    const feel = feelingLabel(it.feeling) || (it.rating ? `Rated ${it.rating}` : '')
+    const date = new Date(it.finishedAt).toLocaleDateString()
+    const moodTags = (it.moods && it.moods.length)
+      ? `<div class="mood-row">${it.moods.map(m=>`<span class="mood-tag">${escapeHtml(m)}</span>`).join('')}</div>`
+      : ''
+    left.innerHTML = `<div><strong>${escapeHtml(it.title)}</strong> <span class=muted>by ${escapeHtml(it.author||'')}</span><div class=muted>${escapeHtml(feel)}${feel?' · ':''}${date}</div>${moodTags}</div>`
   const actions = document.createElement('div')
   actions.className = 'list-actions'
 
@@ -341,17 +397,19 @@ function renderFinished(){
   const menu = document.createElement('div')
   menu.className = 'dropdown-menu'
 
-  const notesBtn = document.createElement('button')
-  notesBtn.className='btn'
-  notesBtn.textContent='Notes'
-  notesBtn.addEventListener('click', ()=> alert(it.notes || 'No notes'))
-
   const delBtn = document.createElement('button')
   delBtn.className='btn'
   delBtn.innerHTML = `<svg><use href="#icon-trash"></use></svg>Remove`
   delBtn.addEventListener('click', ()=> removeFinished(idx))
 
-  menu.appendChild(notesBtn)
+  // Legacy entries may still carry freeform notes; surface them if present.
+  if(it.notes){
+    const notesBtn = document.createElement('button')
+    notesBtn.className='btn'
+    notesBtn.textContent='Notes'
+    notesBtn.addEventListener('click', ()=> alert(it.notes))
+    menu.appendChild(notesBtn)
+  }
   menu.appendChild(delBtn)
   dropdown.appendChild(toggle)
   dropdown.appendChild(menu)

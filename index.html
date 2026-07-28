@@ -86,12 +86,12 @@
         <form id="finish-form-inner" class="finish-inner">
           <h3>Finish</h3>
           <div class="field">
-            <label for="rating">Rating (1-5)</label>
-            <input id="rating" type="number" min="1" max="5" value="5">
+            <label>How was it?</label>
+            <div id="feeling-chips" class="chips"></div>
           </div>
           <div class="field">
-            <label for="notes">Notes</label>
-            <textarea id="notes" rows="4" placeholder="Thoughts, favorite quotes, impressions..."></textarea>
+            <label>Vibe <span class="muted">(optional)</span></label>
+            <div id="mood-chips" class="chips"></div>
           </div>
           <div class="actions">
             <button type="submit" class="btn primary">Save</button>
