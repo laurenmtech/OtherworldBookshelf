@@ -7,7 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, persistentSingleTabManager,
-  doc, getDoc, setDoc, onSnapshot
+  doc, setDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const cfg = window.FIREBASE_CONFIG || {};
@@ -116,20 +116,38 @@ if(!configured){
     window.__setCloudMode(true);
     setStatus('Connecting…');
 
-    // First login: if the cloud doc is empty, seed it with this device's local data.
-    try {
-      const snap = await getDoc(ref);
-      if(!snap.exists() || isEmptyState(snap.data())){
-        const local = window.__getLocalState ? window.__getLocalState() : null;
-        if(local && !isEmptyState(local)){
-          await setDoc(ref, JSON.parse(JSON.stringify(local)));
-        }
-      }
-    } catch(e){ console.error('initial sync', e); }
+    // Attach the live listener immediately (no blocking getDoc first) so cloud
+    // data shows as soon as the first snapshot arrives. includeMetadataChanges
+    // lets us tell a cached snapshot from a server-confirmed one, so "Synced"
+    // only appears once the server has actually answered.
+    let seeded = false;
+    unsub = onSnapshot(ref, { includeMetadataChanges: true },
+      (snap)=>{
+        const fromServer = !snap.metadata.fromCache;
+        const hasCloudData = snap.exists() && !isEmptyState(snap.data());
 
-    // Live updates from any device.
-    unsub = onSnapshot(ref,
-      (snap)=>{ if(snap.exists()) window.__applyRemoteState(snap.data()); setStatus('Synced'); },
+        if(hasCloudData){
+          window.__applyRemoteState(snap.data());
+          seeded = true; // cloud already holds data; never seed over it
+          setStatus(fromServer ? 'Synced' : 'Connecting…');
+          return;
+        }
+
+        // Cloud doc is missing or empty. Only act on a server-confirmed read so
+        // we don't overwrite another device's data based on a stale local cache.
+        if(fromServer && !seeded){
+          seeded = true;
+          const local = window.__getLocalState ? window.__getLocalState() : null;
+          if(local && !isEmptyState(local)){
+            setStatus('Uploading…');
+            setDoc(ref, JSON.parse(JSON.stringify(local)))
+              .then(()=> setStatus('Synced'))
+              .catch(err=>{ console.error('seed', err); setStatus('Save failed'); });
+          } else {
+            setStatus('Synced'); // genuinely empty on both sides
+          }
+        }
+      },
       (err)=>{ console.error('snapshot', err); setStatus('Sync error'); }
     );
   });
