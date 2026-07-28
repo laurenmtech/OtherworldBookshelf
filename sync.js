@@ -6,7 +6,7 @@ import {
   getRedirectResult, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   doc, setDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -41,7 +41,7 @@ if(!configured){
   let db;
   try {
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
   } catch(e){
     // Fall back to default (memory) cache if persistence can't initialize.
@@ -116,15 +116,20 @@ if(!configured){
     window.__setCloudMode(true);
     setStatus('Connecting…');
 
+    // Show whatever we have locally right away so the app is usable even if the
+    // cloud handshake is slow or unreachable — "Connecting" never blocks the UI.
+    if(window.__loadLocal) window.__loadLocal();
+
     // Attach the live listener immediately (no blocking getDoc first) so cloud
     // data shows as soon as the first snapshot arrives. includeMetadataChanges
-    // lets us tell a cached snapshot from a server-confirmed one, so "Synced"
-    // only appears once the server has actually answered.
+    // lets us tell a cached snapshot from a server-confirmed one.
     let seeded = false;
+    let synced = false;
     unsub = onSnapshot(ref, { includeMetadataChanges: true },
       (snap)=>{
         const fromServer = !snap.metadata.fromCache;
         const hasCloudData = snap.exists() && !isEmptyState(snap.data());
+        console.debug('[sync] snapshot', { fromServer, exists: snap.exists(), hasCloudData });
 
         // Any snapshot with data (cache or server) is real data — show it and
         // call it synced. Waiting for a server-only confirmation can hang, since
@@ -132,6 +137,7 @@ if(!configured){
         if(hasCloudData){
           window.__applyRemoteState(snap.data());
           seeded = true; // cloud already holds data; never seed over it
+          synced = true;
           setStatus('Synced');
           return;
         }
@@ -144,14 +150,19 @@ if(!configured){
           if(local && !isEmptyState(local)){
             setStatus('Uploading…');
             setDoc(ref, JSON.parse(JSON.stringify(local)))
-              .then(()=> setStatus('Synced'))
+              .then(()=>{ synced = true; setStatus('Synced'); })
               .catch(err=>{ console.error('seed', err); setStatus('Save failed'); });
           } else {
+            synced = true;
             setStatus('Synced'); // genuinely empty on both sides
           }
         }
       },
-      (err)=>{ console.error('snapshot', err); setStatus('Sync error'); }
+      (err)=>{ console.error('snapshot', err); setStatus('Sync error: ' + (err && err.code ? err.code : 'error')); }
     );
+
+    // Safety net: if the server never answers (blocked WebChannel, offline),
+    // stop pretending to connect — the local copy above is already showing.
+    setTimeout(()=>{ if(!synced) setStatus('Offline — showing local copy'); }, 6000);
   });
 }
