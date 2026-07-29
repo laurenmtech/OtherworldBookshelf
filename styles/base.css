@@ -21,9 +21,15 @@ body{
   white-space:nowrap; border:0;
 }
 
+/* The app runs edge-to-edge (viewport-fit=cover + a translucent status bar),
+   so the header starts underneath the clock and the camera cutout unless it
+   pays the top inset back. env() resolves to 0px everywhere else, and carries
+   an explicit fallback so a browser without support doesn't invalidate the
+   whole calc() and lose the base padding with it. */
 .site-header{
   position:relative;
-  padding:28px 24px 8px; text-align:center;
+  padding: calc(28px + env(safe-area-inset-top, 0px)) 24px 8px;
+  text-align:center;
 }
 .site-title{
   font-family: var(--font-display); font-size:28px; letter-spacing:1px;
@@ -94,20 +100,20 @@ body{
   .container{ gap:14px; padding:14px }
   .finished-grid{ grid-template-columns: 1fr }
   .panel{ min-height:0; padding:14px }
-  .site-header{ padding:20px 16px 0 }
+  .site-header{ padding: calc(20px + env(safe-area-inset-top, 0px)) 16px 0 }
   .site-title{ font-size:24px }
 
   /* The bar is fixed, so the page owes it that much room back — otherwise it
      sits on top of the last row of every list. env() covers the iOS home
      indicator, which is the part a simulator will happily let you get wrong. */
-  body{ padding-bottom: calc(58px + env(safe-area-inset-bottom)) }
+  body{ padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) }
 
   .tab-bar{
     position:fixed; left:0; right:0; bottom:0; z-index:60;
     margin:0; gap:0;
     background:var(--bg-2);
     border-top:1px solid var(--line-3);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .tab-link{
     flex:1; flex-direction:column; gap:3px; justify-content:center;
