@@ -1,0 +1,97 @@
+/* Panels, cards, lists, buttons, chips, dropdowns, modals. */
+
+.btn-add{ font-size:13px; padding:6px 10px }
+
+.card{ display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:10px; background:var(--glass); border:1px solid var(--line-1) }
+.card.empty{ padding:8px }
+.field{ margin-bottom:10px }
+.field.two{ display:flex; gap:12px }
+.field label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
+.field input, .field textarea{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--line-2); background:var(--sunken); color:inherit }
+
+/* Selectable chips (finish form: feeling + mood vibe) */
+.chips{ display:flex; flex-wrap:wrap; gap:8px }
+.chip{ font:inherit; font-size:13px; padding:6px 12px; border-radius:999px; cursor:pointer;
+  border:1px solid var(--line-3); background:var(--sunken); color:var(--muted) }
+.chip:hover{ border-color:var(--accent) }
+.chip.selected{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:var(--on-accent); border-color:transparent }
+.chip:active{ transform:translateY(1px) }
+
+/* Mood tags shown on finished-list entries */
+.mood-row{ display:flex; flex-wrap:wrap; gap:5px; margin-top:5px }
+.mood-tag{ font-size:11px; padding:2px 9px; border-radius:999px;
+  border:1px solid var(--accent-soft); color:var(--accent) }
+
+.actions{ display:flex; gap:8px; margin-top:8px }
+.btn{ background:transparent; color:var(--accent); border:1px solid var(--line-1); padding:8px 12px; border-radius:8px; cursor:pointer }
+.btn.primary{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:var(--on-accent); border:none }
+.btn:active{ transform:translateY(1px) }
+
+.card-display{ display:flex; gap:12px; align-items:flex-start }
+.meta h3{ margin:0 0 6px; font-family:var(--font-display); color:var(--accent-2) }
+.muted{ color:var(--muted); font-size:13px }
+.card-actions{ margin-top:10px }
+
+.list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px }
+.list li{ padding:12px; border-radius:8px; background:var(--surface-2); display:flex; flex-direction:column; gap:8px; align-items:flex-start }
+.list li .small-meta{ color:var(--muted); font-size:13px }
+
+/* wishlist title highlight */
+.wishlist-title{ color: var(--accent-2); font-weight:600 }
+
+/* library link styling */
+.library-panel .list a{ color:var(--accent-2); text-decoration:underline }
+
+.list-actions{ display:flex; gap:8px; margin-top:6px }
+.list-actions .btn{ padding:6px 10px; font-size:13px }
+
+/* Button icons */
+.btn svg{ width:14px; height:14px; margin-right:8px; vertical-align:middle; fill:currentColor }
+
+/* Hover/press and subtle elevation */
+.btn{ transition:all .14s ease }
+.btn:hover{ transform:translateY(-3px); box-shadow: 0 8px 18px var(--shadow-1) }
+.btn:active{ transform:translateY(1px); box-shadow:none }
+
+/* entrance animation for action rows */
+@keyframes fadeUp { from { opacity:0; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }
+.list-actions{ animation: fadeUp .18s ease-out }
+
+/* align actions: right on wide screens, centered on narrow */
+.list-actions{ align-self:flex-end }
+@media (max-width:760px){ .list-actions{ align-self:center } }
+
+/* Dropdown for finished items */
+.dropdown{ position:relative }
+.dropdown-toggle{ display:inline-flex; align-items:center; gap:6px }
+.dropdown-menu{ display:none; position:absolute; right:0; top:calc(100% + 8px); background:var(--card); padding:8px; border-radius:8px; box-shadow:0 8px 20px var(--shadow-2); min-width:120px; flex-direction:column; }
+.dropdown.open .dropdown-menu{ display:flex }
+.dropdown-menu .btn{ width:100%; justify-content:flex-start }
+
+/* Collapsible Finished Books */
+.finished-details > summary{
+  cursor:pointer; list-style:none; user-select:none;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:16px; color:var(--accent); margin:0 0 12px;
+}
+.finished-details > summary::-webkit-details-marker{ display:none }
+.finished-details > summary::after{ content:"\25B8"; color:var(--muted); transition:transform .18s ease }
+.finished-details[open] > summary::after{ transform:rotate(90deg) }
+
+/* Ordering here is load-bearing, and was inherited from the original single
+   stylesheet. `.hidden` must come AFTER `.card-display` — otherwise a hidden
+   current-read card would still be display:flex and show through — and BEFORE
+   `.modal`, because the modal elements keep their `hidden` class permanently
+   and are toggled via the `hidden` attribute; `.modal{display:flex}` has to win
+   over `.hidden{display:none}` for a modal to ever open. Don't move this. */
+.hidden{ display:none }
+
+.modal{ position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, var(--scrim-1), var(--scrim-2)); }
+.modal[hidden]{ display:none !important; }
+.finish-inner{ background:var(--card); padding:18px; border-radius:12px; width:320px }
+
+@media (max-width:760px){
+  /* comfortable tap targets and no zoom-on-focus (16px inputs) */
+  .field input, .field textarea, .small-form input{ font-size:16px; padding:10px 12px }
+  .btn{ padding:10px 14px }
+}
