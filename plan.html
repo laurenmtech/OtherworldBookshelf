@@ -140,10 +140,12 @@ doing — each one still shippable on its own, and each one still optional.</p>
           <td>Every deploy that touches a precached file increments <code>BUILD</code> in <code>sw.js</code>.
           This is the cache buster: skip it and installed apps keep serving the old files forever. It is not
           tied to the version number and has no meaning beyond "this is newer than the last one".</td></tr>
-      <tr><td><strong>Bump the version, every phase</strong></td>
-          <td><code>APP_VERSION</code> in <code>js/main.js</code> is the footer stamp and tracks
-          <em>phases</em>, not deploys: it reads <code>0.N</code> once phase&nbsp;N is complete. Completing
-          Phase&nbsp;7 is what makes it <code>1.0</code>. Most releases leave it alone.</td></tr>
+      <tr><td><strong>Bump the version, every deploy</strong></td>
+          <td><code>APP_VERSION</code> in <code>js/main.js</code> is the footer stamp, formatted
+          <code>0.&lt;phase&gt;&lt;release&gt;</code>: Phase&nbsp;2 shipped as <code>0.2</code>, its next release is
+          <code>0.21</code>, finishing Phase&nbsp;3 resets to <code>0.3</code>. Phase&nbsp;7 makes it
+          <code>1.0</code>. The footer shows the build alongside it, read from the cache the service worker
+          actually installed — so "did my phone get the fix?" has an answer you can read off the screen.</td></tr>
       <tr><td><strong>Update the SW file list</strong></td>
           <td>Splitting one JS file into fifteen means fifteen entries the service worker must precache. This is
           the single easiest thing to get wrong during the refactor — see the Phase&nbsp;1 risk.</td></tr>

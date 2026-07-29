@@ -5,7 +5,7 @@
 // human-facing milestone that sits still for whole phases at a time, while this
 // is the cache buster. A deploy that doesn't move BUILD serves stale files to
 // everyone who already has the app installed.
-const BUILD = 18;
+const BUILD = 19;
 const CACHE = 'otherworld-reads-build-' + BUILD;
 const ASSETS = [
   './',
