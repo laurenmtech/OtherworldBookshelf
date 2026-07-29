@@ -152,9 +152,16 @@ document without wiping the newer field. Remove that mirror in Phase 4.
 3. Mount it in `main.js`.
 4. **Add the file to `ASSETS` in `sw.js`** — a missing entry fails the whole
    precache and the service worker never activates.
-5. Bump `BUILD` in `sw.js`. Do this on every deploy — it is what invalidates the
-   old cache. `APP_VERSION` in `js/main.js` is separate: it tracks plan phases
-   (`0.N` after phase N, `1.0` at phase 7), so most deploys leave it alone.
+5. Bump **both** numbers, every deploy:
+   - `BUILD` in `sw.js` — what invalidates the old cache. Enforced by the
+     pre-push hook.
+   - `APP_VERSION` in `js/main.js` — the footer stamp. `0.<phase><release>`:
+     phase 2 shipped as `0.2`, its next release is `0.21`, finishing phase 3
+     resets to `0.3`. Phase 7 makes it `1.0`.
+
+   The footer shows both (`0.21 · build 19`). The build is read from the cache
+   the service worker actually installed, so it's the one that can't be stale
+   or forgotten — which is what makes "did the fix reach my phone?" answerable.
 
 ## The pre-push hook
 

@@ -12,11 +12,14 @@ import { mountReading } from './routes/reading.js'
 import { mountFinished } from './routes/finished.js'
 import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 
-// Shown in the footer. Tracks the plan's phases, not individual releases: it
-// reads 0.N once phase N is complete, so finishing phase 7 — the "ready to
-// share" milestone — is what makes this 1.0. Most releases leave it untouched.
-// This is NOT the cache buster; sw.js has its own BUILD counter for that.
-export const APP_VERSION = '0.2'
+// Shown in the footer, and bumped on EVERY release so you can tell at a glance
+// whether your phone has the newest one.
+//
+// The digit after the point is the plan phase; the digit after that counts
+// releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
+// finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
+// is what makes this 1.0.
+export const APP_VERSION = '0.21'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
@@ -65,8 +68,25 @@ function mountAll(){
 
   // The running version, as a plain label — there is nothing to tap. Updates
   // arrive on their own (see registerServiceWorker below).
-  const versionEl = document.getElementById('app-version')
-  if(versionEl) versionEl.textContent = APP_VERSION
+  showVersion()
+}
+
+// The footer also shows the build, read from the cache the service worker
+// actually installed rather than from a constant over here — which could only
+// ever tell you what this file believes, not what your phone is running. It's
+// the one number that can't be stale or forgotten: the pre-push hook enforces
+// it, and it comes from the cache itself.
+async function showVersion(){
+  const el = document.getElementById('app-version')
+  if(!el) return
+  el.textContent = APP_VERSION
+  try{
+    const builds = (await caches.keys())
+      .map(k => /^otherworld-reads-build-(\d+)$/.exec(k))
+      .filter(Boolean)
+      .map(m => Number(m[1]))
+    if(builds.length) el.textContent = `${APP_VERSION} · build ${Math.max(...builds)}`
+  }catch(e){ /* no cache API, or blocked — the version alone is fine */ }
 }
 
 // Updates apply themselves, but never on top of someone mid-sentence: if a

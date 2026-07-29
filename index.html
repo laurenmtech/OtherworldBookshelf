@@ -13,7 +13,14 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- "black", not "black-translucent". Translucent makes the web view fill the
+       entire screen including behind the clock and the camera, leaving CSS to
+       push everything back down via env(safe-area-inset-top) — which iOS does
+       not reliably report in standalone mode. "black" has iOS lay the content
+       out below the status bar itself, so nothing depends on that. The safe-area
+       padding stays in the CSS: it costs nothing here (the inset is then 0) and
+       is still correct anywhere the inset is real. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Otherworld">
 
   <link rel="stylesheet" href="styles/tokens.css">
