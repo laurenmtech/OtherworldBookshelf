@@ -1,4 +1,4 @@
-Otherworld Reads — a tiny dark-fantasy personal reading tracker
+My personal library
 
 What this is
 - Static single-page site that opens to your Current Read.
