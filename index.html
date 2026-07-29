@@ -16,7 +16,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Otherworld">
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@300;600&display=swap" rel="stylesheet">
@@ -172,30 +174,10 @@
     <span class="version" id="app-version"></span>
   </footer>
 
-  <script src="app.js"></script>
+  <!-- firebase-config.js is a plain script: it sets window.FIREBASE_CONFIG,
+       which the auth module reads. main.js does everything else, including
+       registering the service worker. -->
   <script src="firebase-config.js"></script>
-  <script type="module" src="sync.js"></script>
-  <script>
-    // Register the service worker for offline support / installability,
-    // and auto-update: check on (re)launch and reload once a new version takes over.
-    if ('serviceWorker' in navigator) {
-      const hadController = !!navigator.serviceWorker.controller;
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!hadController || refreshing) return; // skip the first claim on a fresh install
-        refreshing = true;
-        window.location.reload();
-      });
-      window.addEventListener('load', () => {
-        // updateViaCache:'none' -> always fetch sw.js fresh so new versions are detected.
-        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
-          const check = () => reg.update().catch(() => {});
-          // Re-check whenever the app comes back to the foreground (e.g. reopened from home screen).
-          document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
-          check();
-        }).catch((err) => console.warn('SW registration failed', err));
-      });
-    }
-  </script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

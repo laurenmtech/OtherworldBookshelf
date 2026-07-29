@@ -81,7 +81,7 @@
   <p class="lede">A quiet, personal reading tracker that helps you find your next book by feel — and sends you
   to a library or a local bookshop to get it. Not a social network, not a marketplace. A shelf that's yours.</p>
   <div class="meta">
-    <span>Version 1.0 · 27 July 2026</span>
+    <span>Version 1.1 · 28 July 2026</span>
     <span>Companion: <a href="plan.html">plan.html</a></span>
     <span>Current build: v13</span>
   </div>
@@ -98,17 +98,22 @@
     <li><a href="#reading">Reading &amp; finishing</a></li>
     <li><a href="#ai">Reading by vibe (AI)</a></li>
     <li><a href="#borrow">Getting the book</a></li>
+    <li><a href="#clubs">Reading together</a></li>
+    <li><a href="#soon">Coming soon (preorders)</a></li>
+    <li><a href="#authors">Authors</a></li>
     <li><a href="#privacy">Data &amp; privacy</a></li>
     <li><a href="#a11y">Accessibility &amp; performance</a></li>
+    <li><a href="#sustain">Keeping it running</a></li>
     <li><a href="#decisions">Decisions &amp; non-goals</a></li>
     <li><a href="#open">Open questions</a></li>
   </ol>
 </nav>
 
 <h2 id="vision"><span class="num">01</span>What this is</h2>
-<p>Otherworld Reads is a private reading shelf. You keep one <strong>current read</strong>, a <strong>TBR pile</strong>
-of what's next, a record of what you've <strong>finished</strong> and how it felt, and a short list of the
-<strong>libraries and bookshops</strong> you actually use.</p>
+<p>Otherworld Reads is a private reading shelf. You keep what you're <strong>currently reading</strong> — one book,
+or the two or three you're genuinely alternating between — a <strong>TBR pile</strong> of what's next, a record of
+what you've <strong>finished</strong> and how it felt, and a short list of the <strong>libraries and bookshops</strong>
+you actually use.</p>
 
 <p>It already does the first part well. This spec covers what it becomes: a shelf you can dress in a look you like,
 that knows real books so you never mistype a title, that can suggest something when you only know the
@@ -116,8 +121,12 @@ that knows real books so you never mistype a title, that can suggest something w
 
 <div class="note">
   <strong>The one-sentence test.</strong> If a feature doesn't help you (a) remember what you read, (b) decide what
-  to read next, or (c) actually get hold of it — it doesn't ship.
+  to read next, (c) actually get hold of it, or (d) read it alongside someone — it doesn't ship.
 </div>
+<p class="muted">Clause (d) is new in version 1.1 and is the one that changed the shape of this document. Reading
+together (§10), knowing a favourite author has something coming (§11), and authors themselves (§12) are all
+downstream of it. Everything added under it stays subject to the other three: a club is built around a book you're
+reading, an announcement is only ever about getting hold of a book, and neither one is allowed to become a feed.</p>
 
 <h2 id="principles"><span class="num">02</span>Principles</h2>
 <div class="grid">
@@ -127,9 +136,10 @@ that knows real books so you never mistype a title, that can suggest something w
     before it leads anywhere else. No Amazon links. Availability is shown honestly, including the wait.</p>
   </div>
   <div class="card">
-    <h4>Private by default</h4>
-    <p class="muted" style="margin:0">Your shelf is yours. No feed, no followers, no public profile. Sharing, if it
-    ever exists, is an explicit one-off act — never a default state.</p>
+    <h4>Private by default, shared by invitation</h4>
+    <p class="muted" style="margin:0">Your shelf is yours. No feed, no followers, no public profile — and readers
+    are never searchable. The only thing anyone else sees is a book you deliberately put in a club with them, and
+    even then, only that book. Authors and clubs <em>are</em> findable; the people reading are not.</p>
   </div>
   <div class="card">
     <h4>Feeling over rating</h4>
@@ -176,17 +186,111 @@ that knows real books so you never mistype a title, that can suggest something w
     <td>Was shown the app, wants their own shelf, is not technical.</td>
     <td>Sign in with Google and start. Zero setup, zero config, zero API keys.</td>
   </tr>
+  <tr>
+    <td><strong>The club</strong><br><span class="muted">(a handful of friends)</span></td>
+    <td>To read the same book at the same time and talk about it without a group chat that spoils everything.</td>
+    <td>An invite link, one shared book, and reactions that stay hidden until you've caught up.</td>
+  </tr>
+  <tr>
+    <td><strong>The author</strong><br><span class="muted">(the second role — see §12)</span></td>
+    <td>To tell the people who already love their books that a new one is coming, without buying ads.</td>
+    <td>Verification that makes the claim trustworthy, and a reach that is opt-in on the reader's side only.</td>
+  </tr>
 </table>
+<p class="muted">Note that <strong>author is a role, not an account type</strong>. An author is a reader who has
+additionally proven they wrote something; they keep the same shelf, the same sign-in, and the same app. There is no
+separate author product, and nothing in the reader experience changes if the author features never ship.</p>
 
 <h2 id="model"><span class="num">04</span>The shelf model</h2>
-<p>Four surfaces, one book moving between them. On a phone they stack in this order; on a wide screen they sit
-in a three-column grid.</p>
+<p>One book, moving between a small number of surfaces:</p>
 
-<pre>Current Read  ──finish──▶  Finished
+<pre>Current Reads  ──finish──▶  Finished
+   (1–3)                      │
      ▲                        │
    set current            (already read)
      │                        ▲
-  TBR Pile  ◀──add──  Search · AI suggestions · Libraries</pre>
+  TBR Pile  ◀──add──  Search · AI suggestions · Coming soon · Clubs</pre>
+
+<h3>Getting around</h3>
+<p>Version 1.0 of this spec put every surface in a single phone-length scroll. That worked when there were four of
+them and the Finished list was short. It does not survive this document: with Current Reads, TBR, Coming Soon,
+Libraries, Clubs and a Finished list that grows forever, the daily-use surfaces end up buried under an archive.</p>
+<p>So the app gets <strong>a small amount of navigation</strong> — a bottom tab bar on a phone, which is the one
+navigation pattern an installed PWA can wear without looking like a website in a costume.</p>
+
+<pre>┌──────────────────────────┐
+│  ☾ Otherworld        ⚙  │
+├──────────────────────────┤
+│  CURRENT READS           │
+│  ┌──┐ Piranesi           │
+│  │  │ Susanna Clarke     │
+│  └──┘ [Edit] [Finish]    │
+│  · Braiding Sweetgrass   │
+│  + Add                   │
+│                          │
+│  THE TBR PILE            │
+│  · The Priory of the…    │
+│  · Babel                 │
+│  + Add                   │
+│                          │
+│  COMING SOON             │
+│  · March 2027 · Clarke   │
+├──────────────────────────┤
+│ 📖 Reading │ ✓ Finished │ ◇ Clubs │
+└──────────────────────────┘</pre>
+
+<table>
+  <tr><th>Tab</th><th>Holds</th><th>Why it's its own place</th></tr>
+  <tr><td><strong>Reading</strong> <span class="tag gold">default</span></td>
+      <td>Current Reads, the TBR pile, and Coming Soon</td>
+      <td>Everything you touch daily, and nothing you don't. This is the app; the other tabs are where you go on
+      purpose.</td></tr>
+  <tr><td><strong>Finished</strong></td>
+      <td>The full record, newest first</td>
+      <td>It grows without limit and is browsed rather than managed — a fundamentally different activity from
+      deciding what to read next. Given its own page it can finally afford to be good: grouped by year, filterable
+      by feeling and mood, searchable.</td></tr>
+  <tr><td><strong>Clubs</strong> <span class="muted">(Phase 11)</span></td>
+      <td>The clubs you're in</td>
+      <td>Shared, conversational, and paced by other people. It doesn't belong in the same scroll as a private
+      shelf.</td></tr>
+</table>
+
+<h4>Rules</h4>
+<ul>
+  <li><strong>The bar grows with the app.</strong> Until clubs exist there are two tabs, not three. A tab is never
+      shown leading to a feature that isn't built, and a disabled feature removes its tab entirely rather than
+      greying it out.</li>
+  <li><strong>Cold start always opens Reading.</strong> The app does not remember which tab you were on. Opening
+      it should always land you in the same place — that predictability is worth more than restoring state.</li>
+  <li><strong>Within a session, each tab keeps its scroll position.</strong> Switching to Finished and back
+      doesn't throw you to the top of a list you were halfway down.</li>
+  <li><strong>No badges, no counts, no dots.</strong> An app with no streaks does not get to put a red number on
+      its own navigation. The tab bar is a way to get somewhere, not a reason to.</li>
+  <li><strong>Real URLs.</strong> Hash routing — <code>#/finished</code>, <code>#/clubs</code>,
+      <code>#/club/&lt;code&gt;</code> — so the back button behaves, a tab can be linked to, and a club invite is
+      an ordinary link. No build step and no server configuration, which keeps it deployable to GitHub Pages
+      exactly as it is today.</li>
+  <li><strong>Wide screens don't get a bottom bar.</strong> Above the breakpoint the tabs move into the header as
+      plain text links and each tab's contents use the existing multi-column grid. Desktop keeps being the bonus
+      layout.</li>
+</ul>
+
+<h4>The settings sheet</h4>
+<p>The header's ⚙ opens everything that is configuration rather than reading — and <strong>Libraries moves in
+with it</strong>. You choose your library once and then leave it alone for a year; it doesn't earn permanent space
+on the screen you look at every day. This costs nothing at the point of use, because the part of the library that
+matters — the borrow row, the availability, the Libby link — lives on the books themselves (§09), not in the panel.</p>
+<pre>⚙ Settings
+  ─────────────────
+  Vibe          Otherworld ›
+  Libraries              2 ›
+    County
+    Mom's card
+  Account    lauren@…      ›
+  Export / Delete          ›
+  ─────────────────
+  Support this app         ›</pre>
 
 <h3>Objects</h3>
 <table>
@@ -194,15 +298,17 @@ in a three-column grid.</p>
   <tr>
     <td><strong>Book</strong></td>
     <td><code>title</code>, <code>author</code>, <code>workKey</code>, <code>coverId</code>, <code>year</code>,
-        <code>isbn</code>, <code>source</code></td>
+        <code>isbn</code>, <code>source</code>, <code>seriesKey</code>, <code>seriesName</code>,
+        <code>seriesPosition</code></td>
     <td>Books added by search carry an Open Library <code>workKey</code> — the identity used for cover art
         and library lookups. Manually-added books have title + author only and degrade gracefully.</td>
   </tr>
   <tr>
     <td><strong>FinishedBook</strong></td>
-    <td>Book + <code>finishedAt</code>, <code>feeling</code>, <code>moods[]</code></td>
-    <td>Feeling is one of loved / liked / not-for-me. Moods are multi-select chips. Legacy entries with a numeric
-        <code>rating</code> or freeform <code>notes</code> keep rendering.</td>
+    <td>Book + <code>closedAt</code>, <code>state</code>, <code>feeling</code>, <code>moods[]</code></td>
+    <td><code>state</code> is <em>finished</em> or <em>set-down</em>. Feeling is one of loved / liked /
+        not-for-me, and is optional on a set-down entry. Moods are multi-select chips. Legacy entries with a
+        numeric <code>rating</code> or freeform <code>notes</code> keep rendering.</td>
   </tr>
   <tr>
     <td><strong>Library</strong></td>
@@ -210,14 +316,82 @@ in a three-column grid.</p>
     <td>Today this is a free-text name and link. It becomes a real entity: a picked library system with an
         OverDrive key (enabling availability), a local bookshop, or a plain bookmark. <code>label</code> is
         whatever the reader calls it and is what the UI shows; <code>officialName</code> is what the library calls
-        itself and is only used for disambiguation.</td>
+        itself and is only used for disambiguation. Managed in the settings sheet; <em>used</em> on the books
+        themselves.</td>
   </tr>
   <tr>
     <td><strong>Vibe</strong></td>
     <td><code>id</code></td>
     <td>A single stored string. The look is defined in CSS, not in data.</td>
   </tr>
+  <tr>
+    <td><strong>Club</strong></td>
+    <td><code>id</code>, <code>name</code>, <code>book</code>, <code>members[]</code>, <code>ownerUid</code>,
+        <code>checkpoints[]</code>, <code>joinCode</code>, <code>visibility</code></td>
+    <td>A small group reading one book at a time. Lives outside any single user's document — the one piece of
+        shared state in the app. <code>visibility</code> is <em>invite-only</em> or <em>listed</em>; listed clubs
+        appear in the club directory, invite-only ones are reachable by link alone.</td>
+  </tr>
+  <tr>
+    <td><strong>Membership</strong></td>
+    <td><code>uid</code>, <code>displayName</code>, <code>joinedAt</code>, <code>progress</code>,
+        <code>finishedAt</code>, <code>feeling</code>, <code>moods[]</code></td>
+    <td>What a member shares <em>within one club</em> — nothing more. <code>progress</code> is a checkpoint index,
+        not a page number. A member's own shelf is never readable by the club.</td>
+  </tr>
+  <tr>
+    <td><strong>AuthorWatch</strong></td>
+    <td><code>authorKey</code>, <code>authorName</code>, <code>addedAt</code>, <code>source</code></td>
+    <td>Stored on the reader's own document. <code>source</code> records whether it was added by hand or suggested
+        from a loved book. The watched author is never told who is watching.</td>
+  </tr>
+  <tr>
+    <td><strong>Release</strong></td>
+    <td><code>title</code>, <code>authorKey</code>, <code>releaseDate</code>, <code>isbn</code>,
+        <code>source</code>, <code>preorderUrl</code>, <code>libraryHold</code></td>
+    <td>A forthcoming book by a watched author. <code>source</code> is <em>catalogue</em> (found in a public data
+        source) or <em>author</em> (announced by a verified author in §12) — the two are labelled differently in
+        the UI because they carry different confidence.</td>
+  </tr>
+  <tr>
+    <td><strong>AuthorProfile</strong></td>
+    <td><code>authorKey</code>, <code>name</code>, <code>uid</code>, <code>verifiedAt</code>,
+        <code>verificationMethod</code>, <code>links[]</code></td>
+    <td>The second role, attached to an ordinary reader account. Exists only after verification; an unverified
+        claim stores nothing and shows nothing. See §12.</td>
+  </tr>
 </table>
+
+<h3>Series</h3>
+<p>Books arrive in series, and an app that ignores that will keep making the same two mistakes: failing to tell
+you the sequel to something you loved is coming, and cheerfully offering you book four of something you gave up
+on in book one. Series is captured when a search result provides it, and drives one rule in each direction.</p>
+<table>
+  <tr><th>Rule</th><th>Behaviour</th></tr>
+  <tr><td><strong>A loved series is followed</strong></td>
+      <td>A forthcoming book sharing a <code>seriesKey</code> with something you loved is surfaced in Coming Soon
+      (§11) with the connection stated — "book three of the series you loved" rather than an anonymous new
+      title. This is the single most valuable thing that feature can say.</td></tr>
+  <tr><td><strong>An abandoned series is dropped whole</strong></td>
+      <td>If the earliest book you read in a series was marked <em>not for me</em> — whether you finished it or
+      set it down (§07) — the rest of that series is never suggested by the recommender (§08) and never appears in
+      Coming Soon (§11). One clear "no" should not have to be repeated per book.</td></tr>
+  <tr><td><strong>"Not right now" does not abandon</strong></td>
+      <td>Setting a book down as <em>not right now</em> is explicitly not a judgment, so it leaves the series
+      fully suggestible. The distinction in §07 exists precisely so this rule can be confident.</td></tr>
+  <tr><td><strong>Silence when the data is absent</strong></td>
+      <td>Open Library's series data is inconsistent and often missing. Where there is no <code>seriesKey</code>,
+      neither rule applies and nothing is shown — no empty "Series: —" labels, no guessing from title patterns.
+      Series is an enhancement on top of a shelf that works without it.</td></tr>
+</table>
+
+<div class="note">
+  <strong>One shared collection, and only one.</strong> Everything above except <code>Club</code>,
+  <code>Membership</code> and <code>AuthorProfile</code> lives inside the reader's own
+  <code>users/{uid}</code> document, exactly as it does today. Those three are the first data in this app that
+  more than one person can read — which is why the security rules for them are treated as a feature in their own
+  right rather than a detail (see <a href="plan.html#phase-11">Plan, Phase&nbsp;11</a>).
+</div>
 
 <div class="note warn">
   <strong>A deliberate reversal.</strong> Cover art was removed from the Current Read in v11 because typing an
@@ -234,7 +408,7 @@ of copy stays identical across vibes, so switching never costs you your bearings
 <h3>The flow</h3>
 <ol class="flow">
   <li><strong>First launch.</strong> Before the shelf appears, a full-screen picker: a grid of vibe cards, each
-      rendering a miniature of the real UI in that vibe (a Current Read card, a chip, a button). No copy explaining
+      rendering a miniature of the real UI in that vibe (a Current Reads card, a chip, a button). No copy explaining
       them — you can see them.</li>
   <li><strong>Tap one.</strong> The whole page transitions into it immediately behind the picker. There's no
       "confirm" step; the preview <em>is</em> the confirmation.</li>
@@ -342,8 +516,8 @@ This replaces that with a single search field that suggests real books as you ty
 <h2 id="reading"><span class="num">07</span>Reading &amp; finishing</h2>
 <p>This flow is already right and changes very little. It's specified here because it's the spine of the app.</p>
 <ol class="flow">
-  <li><strong>Set a current read</strong> — from the TBR pile, from search, or by typing directly into the Current
-      Read card. One book at a time, deliberately. (See <a href="#open">Open questions</a>.)</li>
+  <li><strong>Set a current read</strong> — from the TBR pile, from search, or with the <strong>+ Add</strong>
+      control on the Current Reads panel itself.</li>
   <li><strong>It sits at the top of the app</strong> for as long as you're reading it. Title, author, and cover if
       there is one. Edit and Finish are the only actions.</li>
   <li><strong>Finish &amp; rate</strong> opens a small modal: <em>How was it?</em> (one of three feelings) and
@@ -355,6 +529,78 @@ This replaces that with a single search field that suggests real books as you ty
 Mind-expanding, Practical — are the same vocabulary the AI recommender uses. That's not a coincidence; it's the
 point. The more you finish, the better it knows your taste.</p>
 
+<h3>More than one at once</h3>
+<p>Plenty of people read a novel at bedtime, a non-fiction book on the commute, and an audiobook while cooking.
+The Current Read panel becomes <strong>Current Reads</strong> — a short list rather than a single slot.</p>
+<table>
+  <tr><th>Decision</th><th>Detail</th></tr>
+  <tr><td><strong>Capped at three</strong></td>
+      <td>Enough for the real pattern (fiction / non-fiction / audio), few enough that the panel stays a glance
+      rather than a second TBR pile. Attempting a fourth suggests finishing or shelving one first — it doesn't
+      just refuse. The cap is one constant, easy to revisit once there's evidence.</td></tr>
+  <tr><td><strong>The panel gains "+ Add"</strong></td>
+      <td>The same search-and-pick flow as §06, so a book can start life as a current read without passing
+      through the TBR pile. This is the affordance the single-slot design never needed.</td></tr>
+  <tr><td><strong>One is primary</strong></td>
+      <td>The first in the list renders large, with its cover; the others render as compact rows beneath it.
+      Reorder by drag to change which one is the headline. No "primary" flag is stored — position <em>is</em>
+      the ordering, which keeps the data honest.</td></tr>
+  <tr><td><strong>Finishing is unchanged</strong></td>
+      <td>Each entry has its own Finish button and its own feeling-and-mood modal. Finishing one leaves the
+      others exactly where they were.</td></tr>
+  <tr><td><strong>Format, optionally</strong></td>
+      <td>An entry may carry a format tag — <em>print</em>, <em>ebook</em>, <em>audio</em> — shown as a small
+      chip. It exists so three simultaneous books are distinguishable at a glance, not as tracking. Always
+      optional, never prompted for.</td></tr>
+  <tr><td><strong>Empty means empty</strong></td>
+      <td>With nothing current, the panel shows one invitation, not three empty slots.</td></tr>
+</table>
+
+<h3>Setting a book down</h3>
+<p>Not every book gets finished, and "I stopped reading it" is not the same as "I read it and didn't like it".
+Collapsing the two loses the more useful fact. So a current read has a third action — <strong>Set down</strong> —
+alongside Edit and Finish.</p>
+<p>It asks one question, and the two answers mean genuinely different things:</p>
+<table>
+  <tr><th>Answer</th><th>What it means</th><th>What happens</th></tr>
+  <tr><td><strong>Not right now</strong></td>
+      <td>Wrong book, wrong week. Nothing is wrong with it and you may well come back.</td>
+      <td>Returns to the TBR pile. Not recorded as an opinion, still suggestible, and it does not abandon the
+      series (§04).</td></tr>
+  <tr><td><strong>Not for me</strong></td>
+      <td>You gave it a fair go and it isn't going to happen.</td>
+      <td>Goes into the record marked <em>set down</em>, never suggested again, and abandons the series it
+      belongs to.</td></tr>
+</table>
+<p>Feeling and moods stay optional on both — a book you set down at chapter three usually hasn't earned an
+opinion, and the modal shouldn't demand one. Set-down entries appear in the Finished list with a distinct marker
+and their own filter, because the record of what didn't work is part of knowing your own taste.</p>
+<p class="muted">The distinction matters more now that three books can be current at once: the third one is
+frequently the one that gets abandoned, and without this it either sits there indefinitely or gets misfiled as a
+book you disliked.</p>
+
+<h3>The Finished page</h3>
+<p>Moving Finished onto its own tab (§04) is what finally lets it be more than a list at the bottom of a scroll.
+It's the part of the app that gets better every year you use it, and the only screen worth opening for its own
+sake.</p>
+<ul>
+  <li><strong>Grouped by year</strong>, newest first, with a quiet count per year — the one place a number is
+      welcome, because it's a memory rather than a target.</li>
+  <li><strong>Filter by feeling, mood, or set-down</strong> — "everything I loved", "everything cozy",
+      "everything I gave up on". The moods captured at finish time already exist; this is the payoff for having
+      captured them.</li>
+  <li><strong>Search</strong> across title and author, for when you know you read it but not when.</li>
+  <li><strong>No stats, no charts, no pace.</strong> Books per year is a memory; a graph of books per year is a
+      target, and this app doesn't set targets.</li>
+</ul>
+
+<div class="note">
+  <strong>Migration.</strong> The stored shape moves from <code>current</code> (an object or null) to
+  <code>currentReads</code> (an array). The migration runs on load, is safe to run twice, and is invisible: a
+  reader with one current book sees exactly what they saw before. Old clients that still write
+  <code>current</code> are tolerated for one release, then dropped.
+</div>
+
 <h2 id="ai"><span class="num">08</span>Reading by vibe</h2>
 <p>The feature for when you've finished something and don't know what's next. You describe the reading experience
 you want, in your own words, and get a short list of real books back.</p>
@@ -365,7 +611,7 @@ you want, in your own words, and get a short list of real books back.</p>
       vocabulary as the finish form) and a free-text field: <em>what are you in the mood for?</em></li>
   <li><strong>Ask.</strong> Chips and text are sent along with a compressed picture of your taste: your recent
       loved books, your most-used moods, and — critically — a list of titles to <em>exclude</em> (everything on
-      your shelf and everything you've already passed on).</li>
+      your shelf, everything you've already passed on, and every series you've abandoned per §04).</li>
   <li><strong>Five suggestions come back</strong>, each with a title, an author, and one or two sentences on
       <em>why this, for you</em> — tied to the mood you asked for and books you've loved. Not a blurb; a reason.</li>
   <li><strong>Triage each one, in place.</strong> Three actions per card:
@@ -381,7 +627,7 @@ you want, in your own words, and get a short list of real books back.</p>
   <tr><th>Concern</th><th>Approach</th></tr>
   <tr><td><strong>Where the key lives</strong></td>
       <td>Not in the browser. A small serverless function (Cloudflare Worker) holds the Anthropic API key and is
-      the only thing that ever talks to the model. See <a href="plan.html#phase-5">Plan, Phase 5</a>.</td></tr>
+      the only thing that ever talks to the model. See <a href="plan.html#phase-6">Plan, Phase 6</a>.</td></tr>
   <tr><td><strong>Who can call it</strong></td>
       <td>Signed-in users only. The browser sends its Firebase ID token; the Worker verifies it and derives the
       user ID from the token — never from the request body.</td></tr>
@@ -391,6 +637,11 @@ you want, in your own words, and get a short list of real books back.</p>
   <tr><td><strong>Model</strong></td>
       <td><code>claude-opus-5</code>, with structured output so the response is always a valid list of
       <code>{title, author, why}</code> — no prose parsing, no malformed-response handling in the UI.</td></tr>
+  <tr><td><strong>How much it knows</strong></td>
+      <td>A compressed taste summary — recent loved books, most-used moods, exclusions — not the full finished
+      list. This is a deliberate starting point rather than a permanent limit: it is cheaper, it keeps far less
+      data leaving the device, and it may simply be good enough. Judge it on the quality of real suggestions
+      before spending more on either count.</td></tr>
   <tr><td><strong>Hallucinated books</strong></td>
       <td>Every suggestion is checked against Open Library before it's shown. Anything that doesn't resolve to a
       real work is dropped silently. You never see a book that doesn't exist.</td></tr>
@@ -413,7 +664,7 @@ and the answer is grounded in a real library's collection, not a guess.</p>
 
 <h3>Setting up your library</h3>
 <ol class="flow">
-  <li>The Libraries panel gains an <strong>Add library</strong> flow that searches actual library systems by name
+  <li>Libraries — now in the settings sheet (§04) — gains an <strong>Add library</strong> flow that searches actual library systems by name
       or place, rather than asking for a name and a URL.</li>
   <li>Picking one stores its OverDrive key. That key is what unlocks availability.</li>
   <li><strong>Name it yourself.</strong> The next field is <em>What do you call it?</em>, pre-filled with the
@@ -436,7 +687,7 @@ and the answer is grounded in a real library's collection, not a guess.</p>
   <tr><td>On hold</td><td><span class="tag warn">~15 day wait</span> · 168 holds on 164 copies</td><td>Opens the title in Libby, ready to place a hold.</td></tr>
   <tr><td>Not in collection</td><td><span class="muted">Not at County</span> — the row uses your name for the
       library, not its official one</td><td>Offers a Libby search, plus a link to buy it from an independent bookshop.</td></tr>
-  <tr><td>No library set</td><td><span class="muted">Add a library to see availability</span></td><td>Jumps to the Libraries panel.</td></tr>
+  <tr><td>No library set</td><td><span class="muted">Add a library to see availability</span></td><td>Opens the settings sheet at Libraries, and returns you here afterwards.</td></tr>
   <tr><td>Lookup failed / offline</td><td>Row is hidden entirely</td><td>—</td></tr>
 </table>
 
@@ -460,35 +711,357 @@ and the answer is grounded in a real library's collection, not a guess.</p>
 independent bookshops, or to a specific local shop the reader has added themselves. There is no Amazon link
 anywhere in the app, and no affiliate tracking of any kind unless the reader is told about it plainly.</p>
 
-<h2 id="privacy"><span class="num">10</span>Data &amp; privacy</h2>
+<h2 id="clubs"><span class="num">10</span>Reading together</h2>
+<p>A book club is a small group of people reading <strong>one book at the same time</strong>. It is the only place
+in the app where anyone sees anything of yours — and what they see is that book, and nothing else.</p>
+
+<div class="note warn">
+  <strong>This is the app's biggest departure, and it should be treated as one.</strong> Everything before this
+  section is a single-player app with a sync backend. A club is genuinely multi-user: shared writes, security
+  rules that matter, other people's words on your screen, and the possibility of someone being unpleasant in a
+  space you built. It ships last, behind everything else, and it is the one feature allowed to be cut on the
+  grounds of "this is more than I want to maintain."
+</div>
+
+<h3>What a club is</h3>
+<table>
+  <tr><th>Property</th><th>Decision</th></tr>
+  <tr><td><strong>Small</strong></td><td>Capped at twelve members. Small enough that the group is the moderation
+      system; large enough for a real club.</td></tr>
+  <tr><td><strong>One book</strong></td><td>A club reads a single book at a time. Finishing it archives that
+      round; the club can then pick its next book and carry its members forward. No club has a library.</td></tr>
+  <tr><td><strong>Joined by link, or listed</strong></td><td>Every club has an invite link. A club may
+      additionally be <em>listed</em>, making it findable in the club directory by the book it's reading. Listing
+      is a choice the founder makes, and can be undone.</td></tr>
+  <tr><td><strong>Owned by one person</strong></td><td>Whoever created it. The owner can remove a member, change
+      the book, and delete the club. There is no second admin tier — at twelve people, hierarchy is overhead.</td></tr>
+  <tr><td><strong>Named by its members</strong></td><td>A club name and nothing else. No description, no rules
+      page, no photo. The book is the identity.</td></tr>
+</table>
+
+<h3>The flow</h3>
+<ol class="flow">
+  <li><strong>Start a club</strong> from a book — on a TBR entry or a current read, "Read this with people"
+      creates a club around that book and hands you an invite link.</li>
+  <li><strong>People join.</strong> Following the link shows the book, the member count, and one button. Joining
+      copies the book onto their own Current Reads (respecting the cap of three — if they're full, it goes to
+      their TBR and the club still works).</li>
+  <li><strong>Set a pace, or don't.</strong> The owner can add <strong>checkpoints</strong> — "through chapter 12",
+      "part two" — with optional dates. A club with no checkpoints is a valid club; it just has one implicit
+      checkpoint called <em>finished</em>.</li>
+  <li><strong>Read, and mark where you are.</strong> Each member taps the checkpoint they've reached. That single
+      number is the only progress data in the app, and it exists solely to power the spoiler gate below.</li>
+  <li><strong>Talk.</strong> One flat thread per club. Every message is posted <em>at</em> the checkpoint its
+      author has reached, and is hidden from anyone who hasn't reached it. No replies, no threading, no reactions
+      beyond the feelings below — a club conversation is a conversation, not a forum.</li>
+  <li><strong>Finish.</strong> Marking the book finished in the club finishes it on your own shelf too, through
+      the normal feeling-and-moods modal — one action, both places. Your feeling becomes visible to the club at
+      that moment, and everyone else's becomes visible to you.</li>
+</ol>
+
+<h3>Spoiler safety is the whole design</h3>
+<p>Every reading group in the world has the same failure: someone posts a reaction to chapter 30 and ruins it for
+the person on chapter 8. The checkpoint model exists to make that structurally impossible rather than a matter of
+etiquette.</p>
+<table>
+  <tr><th>Rule</th><th>Why</th></tr>
+  <tr><td>A message is visible only to members at or past its checkpoint</td>
+      <td>The gate is on read, not on trust. You cannot see a spoiler for a part you haven't reached, even if
+      someone posts one carelessly.</td></tr>
+  <tr><td>Feelings and moods stay hidden until you finish</td>
+      <td>"Ana loved it" is itself a spoiler. The club shows <em>who has finished</em>, never <em>how they felt</em>,
+      until you've finished too.</td></tr>
+  <tr><td>Nothing is retro-hidden</td>
+      <td>Moving your checkpoint forward reveals messages; it never conceals ones you've already read. The gate
+      only ever opens.</td></tr>
+  <tr><td>The gate is enforced server-side</td>
+      <td>Hidden-in-the-UI is not hidden. The security rules make out-of-range messages unreadable, so a
+      determined member with the console sees no more than a polite one does.</td></tr>
+</table>
+
+<h3>What a club can and cannot see</h3>
+<div class="grid">
+  <div class="card">
+    <h4>Members see</h4>
+    <ul style="margin:0;padding-left:18px">
+      <li>The club's book</li>
+      <li>Each member's display name</li>
+      <li>Which checkpoint each member has reached</li>
+      <li>Messages at or below their own checkpoint</li>
+      <li>Feelings and moods — only once they've finished</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Members never see</h4>
+    <ul style="margin:0;padding-left:18px">
+      <li>Your shelf, TBR, or finished list</li>
+      <li>Anything about your other current reads</li>
+      <li>Your libraries, your vibe, your email</li>
+      <li>Your other clubs</li>
+      <li>Anything at all after you leave</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Leaving, removing, and ending</h3>
+<table>
+  <tr><th>Action</th><th>What happens</th></tr>
+  <tr><td>You leave a club</td><td>You're removed immediately. You're offered <em>leave</em> or <em>leave and
+      delete my messages</em> — the choice is yours, not the club's. The book stays on your shelf; it's yours
+      now.</td></tr>
+  <tr><td>The owner removes you</td><td>Same as leaving, minus the choice — your messages remain unless you'd
+      already deleted them. You lose access immediately and are not told a reason the app invented.</td></tr>
+  <tr><td>You block a member</td><td>Their messages are hidden from you everywhere, in every club. Blocking is
+      per-reader and needs no one's permission.</td></tr>
+  <tr><td>The owner deletes the club</td><td>The club and every message in it are gone. Each member's own shelf
+      is untouched.</td></tr>
+  <tr><td>The club goes quiet</td><td>Nothing. There are no nudges, no "your club misses you", no streak. A club
+      that stops is allowed to stop.</td></tr>
+</table>
+
+<div class="note warn">
+  <strong>Moderation, honestly.</strong> At twelve invited people there is no moderation queue and no report
+  button that reaches a human, because there is no human on the other end. The safety model is: clubs are small,
+  joining is by invitation or explicit choice, the owner can remove anyone, and any reader can block anyone
+  permanently. That is genuinely enough for friends reading a book together, and genuinely <em>not</em> enough
+  for a public platform — which is precisely why readers are never searchable and why club listing is opt-in.
+  If clubs ever grow beyond that, this section needs rewriting before the feature does.
+</div>
+
+<h2 id="soon"><span class="num">11</span>Coming soon</h2>
+<p>The moment a favourite author announces a new book is one of the few genuinely delightful pieces of news a
+reading app can deliver. Today you find out by accident, months late. This is the fix.</p>
+
+<h3>The flow</h3>
+<ol class="flow">
+  <li><strong>Watch an author.</strong> Any author already in your library — finished, current, or TBR — has a
+      <em>Watch</em> control on their name. One tap, no configuration.</li>
+  <li><strong>Or be offered it.</strong> When you finish a book and mark it 💛 Loved, the finish modal quietly
+      offers to watch that author. Offered once per author, never nagged.</li>
+  <li><strong>A "Coming soon" panel appears</strong> — only once you're watching someone and something is
+      actually coming. It lists forthcoming titles by release date, nearest first, each with the author, the
+      date, and how confident that date is.</li>
+  <li><strong>Act on it.</strong> Each entry offers <em>+ TBR</em> (so it's waiting for you), <em>place a hold</em>
+      where your library already lists the title as on order, and <em>preorder</em> from Bookshop.org or a shop
+      you've added. Library first, exactly as in §09.</li>
+  <li><strong>It ages out.</strong> On release day the entry moves to your TBR if you added it, and otherwise
+      quietly disappears. Nothing accumulates.</li>
+</ol>
+
+<h3>Where the data comes from — and the honest problem</h3>
+<p>This is the hardest feature in the spec to source, because catalogues are built to describe books that exist.
+Forthcoming titles are patchy everywhere, and no single source is sufficient.</p>
+<table>
+  <tr><th>Source</th><th>Gives</th><th>Confidence</th></tr>
+  <tr><td><strong>Open Library</strong></td>
+      <td>Author identity and their known works — the anchor for "is this new to me?"</td>
+      <td>Good for identity, <span class="muted">poor for unreleased titles</span></td></tr>
+  <tr><td><strong>Google Books</strong></td>
+      <td>Volumes carrying a future <code>publishedDate</code>, searchable by author</td>
+      <td>The best free source for dates, <span class="muted">inconsistent coverage</span></td></tr>
+  <tr><td><strong>OverDrive / Libby</strong></td>
+      <td>Titles a specific library has on order, with an expected availability date</td>
+      <td>Strong where it exists — and it's the <em>library-first</em> answer</td></tr>
+  <tr><td><strong>The author</strong></td>
+      <td>A verified author announcing their own forthcoming book (§12)</td>
+      <td>Highest — the author knows. Covers indie and small-press books no catalogue indexes</td></tr>
+</table>
+
+<div class="note warn">
+  <strong>Unverified, and stated as such.</strong> Unlike the Open Library search and the OverDrive availability
+  endpoint — both of which were checked against live data before being written into this spec — the forthcoming-title
+  behaviour of these sources has <em>not</em> been verified. It must be, with real queries against real authors,
+  before any of Phase&nbsp;8 is built. If the coverage turns out to be too thin to be useful, the honest outcome
+  is to ship the author-announced path (§12) alone and drop the catalogue crawl entirely.
+</div>
+
+<h3>Behaviour details</h3>
+<table>
+  <tr><th>Concern</th><th>Approach</th></tr>
+  <tr><td><strong>When it checks</strong></td>
+      <td>On app open, at most once per author per day, staggered across authors so a reader watching thirty
+      people doesn't fire thirty requests on a cold start. Results cached with the release entry.</td></tr>
+  <tr><td><strong>No server needed</strong></td>
+      <td>Version one runs entirely in the browser against public endpoints. If a nightly server-side sweep is
+      ever wanted, the Worker from §08 is the place for it — but it is not required for the feature to work.</td></tr>
+  <tr><td><strong>Notifications</strong></td>
+      <td>Off. The default is a quiet panel you find when you open the app. Push notification is strictly
+      opt-in, per-reader, and — on iOS — only possible once the app is installed to the home screen. An app
+      with no streaks and no badges does not get to start pushing.</td></tr>
+  <tr><td><strong>Series</strong></td>
+      <td>The best thing this panel can say is "the next one is coming". A forthcoming book in a series you loved
+      is labelled with that connection rather than appearing as an unfamiliar title; a series you abandoned never
+      appears at all. Both rules are defined once in §04.</td></tr>
+  <tr><td><strong>False positives</strong></td>
+      <td>Re-issues, box sets, foreign editions and audiobook re-releases all look like new books to a catalogue.
+      Anything whose title closely matches a work already on your shelf is suppressed. A wrong entry is worse
+      than a missing one.</td></tr>
+  <tr><td><strong>Dates that move</strong></td>
+      <td>Publication dates slip constantly. A date is shown with its precision — "March 2027" rather than a
+      false "4 March 2027" — and updates silently when the source changes.</td></tr>
+  <tr><td><strong>Failure</strong></td>
+      <td>The panel doesn't render. No error, no empty state explaining a broken API. Same rule as availability
+      in §09: an enhancement, never a dependency.</td></tr>
+</table>
+
+<h2 id="authors"><span class="num">12</span>Authors</h2>
+<p>An author is a reader who has additionally proven they wrote something. Same account, same shelf, same sign-in
+— one extra, verified role that unlocks exactly two things: <strong>announcing their own forthcoming books</strong>,
+and <strong>hosting a club for one of them</strong>.</p>
+
+<div class="note">
+  <strong>Why this earns its place.</strong> It isn't a marketing surface bolted onto a reading app. It's the fix
+  for §11's weakest link: the one entity that reliably knows a book is coming, months before any catalogue does,
+  is the person writing it. For indie and small-press authors — precisely the ones a library-first, no-Amazon app
+  should serve — the author <em>is</em> the only source. Everything else here follows from keeping that channel
+  trustworthy.
+</div>
+
+<h3>What an author can do</h3>
+<div class="grid">
+  <div class="card">
+    <h4>Claim their name</h4>
+    <p class="muted" style="margin:0">Link a verified identity to an author key, so the books already on readers'
+    shelves connect to a real person.</p>
+  </div>
+  <div class="card">
+    <h4>Announce a forthcoming book</h4>
+    <p class="muted" style="margin:0">Title, release date, cover, and where to preorder — including a library
+    link where one exists. This appears in the Coming Soon panel of readers <em>already watching them</em>.</p>
+  </div>
+  <div class="card">
+    <h4>Host one club <span class="tag warn">later</span></h4>
+    <p class="muted" style="margin:0">A read-along for one of their own books, with the author actually present
+    in the thread. Same twelve-person cap, same checkpoint rules, no special powers in the conversation. Arrives
+    with clubs themselves (§10), which is the last thing built — authors work fully without it.</p>
+  </div>
+  <div class="card">
+    <h4>Correct their own metadata</h4>
+    <p class="muted" style="margin:0">Fix a wrong cover, a mangled series order, a misattributed title — for
+    their books only, and visible only inside this app.</p>
+  </div>
+</div>
+
+<h3>What an author cannot do — the load-bearing half</h3>
+<table>
+  <tr><th>Not possible</th><th>Why</th></tr>
+  <tr><td><strong>Reach a reader who hasn't opted in</strong></td>
+      <td>An announcement is delivered only to readers who chose to watch that author. There is no broadcast, no
+      "authors you might like", no announcement in anyone's shelf uninvited. Watching is the entire permission
+      model.</td></tr>
+  <tr><td><strong>Learn who their readers are — or how many</strong></td>
+      <td>No names, no shelves, no emails, no export, and <strong>no count either</strong>. A watcher count was
+      considered and deliberately left unbuilt: it would be the only metric in an app that has none, and no
+      author has asked for one. It waits for a real author to want it, for a better reason than "other platforms
+      have one". If it ever ships it is aggregate only, and withheld below a threshold so an author with three
+      watchers cannot deduce who they are from who they invited.</td></tr>
+  <tr><td><strong>Message readers</strong></td>
+      <td>There is no author-to-reader channel. The only place an author writes to readers is inside their own
+      club, where those readers chose to be, alongside them.</td></tr>
+  <tr><td><strong>Pay for anything</strong></td>
+      <td>No promoted placement, no boosted announcements, no paid inclusion in AI recommendations, ever. The
+      recommender is told nothing about who is an author. If money could move a book up a list, every list in
+      the app becomes worthless.</td></tr>
+  <tr><td><strong>Announce someone else's book</strong></td>
+      <td>Announcements are scoped to the author key they verified against. A publisher wanting to announce a
+      catalogue is out of scope — and stays out of scope.</td></tr>
+</table>
+
+<h3>Verification</h3>
+<p>Verification is the whole feature. An unverified author claim is worse than no author feature at all, because
+it converts "the author says a book is coming" from the highest-confidence source in §11 into an impersonation
+vector. So claiming is gated, and an unverified claim stores nothing and displays nothing.</p>
+<table>
+  <tr><th>Method</th><th>How it works</th><th>Suits</th></tr>
+  <tr><td><strong>Domain</strong></td>
+      <td>Sign in with an email at the author's own domain, or place a token file at a URL on their site — the
+      standard proof-of-control pattern, entirely automatic.</td>
+      <td>Authors with their own site</td></tr>
+  <tr><td><strong>Publisher referral</strong></td>
+      <td>A one-time link issued to a publisher or agent who confirms the author.</td>
+      <td>Traditionally published authors</td></tr>
+  <tr><td><strong>Manual review</strong></td>
+      <td>A human — at this scale, you — checks a claim against a public author page and approves it.</td>
+      <td>Everyone else, initially</td></tr>
+</table>
+
+<div class="note warn">
+  <strong>Manual review does not scale, and that's fine — for now.</strong> At the size this app is built for, a
+  handful of claims a month is a few minutes of work and produces a better outcome than any automated check.
+  It is, however, the first thing that breaks if the app grows, and it must not be pretended otherwise. Two
+  honest outcomes when it does: close claiming to domain-verified authors only, or stop accepting new claims
+  until there's a real process. Never lower the bar to keep up with volume — an unverified badge is a lie the
+  app is telling its readers.
+</div>
+
+<h3>Reader-side controls</h3>
+<ul>
+  <li><strong>Watching is the only switch</strong>, and it's yours. Unwatch and that author can never reach you
+      again.</li>
+  <li><strong>Author announcements are labelled as such</strong> — visibly distinct from a catalogue-sourced
+      release, so you always know whether a date came from a database or from the person writing the book.</li>
+  <li><strong>An author's announcement carries no more weight in the UI than a catalogue entry</strong>, beyond
+      that label. It doesn't jump the queue or render larger.</li>
+  <li><strong>You can turn the whole thing off.</strong> A single setting hides authors, watches, and the Coming
+      Soon panel entirely, returning the app to exactly what it is without them.</li>
+</ul>
+
+<h2 id="privacy"><span class="num">13</span>Data &amp; privacy</h2>
 <table>
   <tr><th>Question</th><th>Answer</th></tr>
   <tr><td>Where does my shelf live?</td><td>In your browser when signed out. In your own document in Firestore
       when signed in, readable and writable only by you.</td></tr>
-  <tr><td>Can anyone else see it?</td><td>No. There is no sharing surface, no public URL, no feed.</td></tr>
+  <tr><td>Can anyone else see it?</td><td>Your shelf, no — there is no public URL, no feed, and readers are not
+      searchable. The single exception is a club you joined, where the members you invited or joined see that
+      club's book and your progress in it. Nothing else on your shelf is ever readable by another person.</td></tr>
+  <tr><td>What does a club member learn about me?</td><td>Your display name, which checkpoint of that one book
+      you've reached, your messages in that club, and — only after you finish — your feeling and moods for that
+      book. Not your other current reads, not your TBR, not your finished list, not your other clubs.</td></tr>
+  <tr><td>Does an author know I'm watching them?</td><td>No — and at first they don't even see how many. The
+      watcher count isn't being built (§12). Watching is stored on your own document; the author's record is not
+      written to when you watch, so there is nothing on their side to read.</td></tr>
   <tr><td>What leaves the device?</td><td>Book searches go to Open Library. Availability checks go to OverDrive
-      with a library key and a title — no account, no card number, no identity. AI requests go to the Worker with
-      your moods, a short taste summary, and your sign-in token.</td></tr>
+      with a library key and a title — no account, no card number, no identity. Release checks go to Google Books
+      and Open Library with an author name. AI requests go to the Worker with your moods, a short taste summary,
+      and your sign-in token.</td></tr>
   <tr><td>Does the AI see my whole shelf?</td><td>No — a compressed summary: recent loved titles, frequent moods,
       and an exclusion list. Not your full history, not your dates, not your notes.</td></tr>
   <tr><td>Is anything logged?</td><td>The Worker logs a per-user call count for rate limiting and nothing else.
       No prompts, no results, no titles.</td></tr>
+  <tr><td>Is there any advertising or tracking?</td><td>No analytics, no ad network, no third-party script of any
+      kind. Where a purchase link earns a commission, the page says so in plain language at the point of the link
+      — see §15.</td></tr>
   <tr><td>Can I leave?</td><td>Export to JSON, and delete-everything, are both first-class actions. Leaving should
-      be as easy as arriving.</td></tr>
+      be as easy as arriving. Deleting your account removes you from every club and deletes your messages.</td></tr>
 </table>
 
-<h2 id="a11y"><span class="num">11</span>Accessibility &amp; performance</h2>
+<h2 id="a11y"><span class="num">14</span>Accessibility &amp; performance</h2>
 <div class="grid">
   <div class="card">
     <h4>Targets</h4>
     <ul style="margin:0;padding-left:18px">
       <li>WCAG AA contrast in every vibe, verified per release</li>
       <li>Every action reachable by keyboard; visible focus rings</li>
-      <li>Modals trap focus and restore it on close</li>
+      <li>Modals and the settings sheet trap focus and restore it on close</li>
       <li>16px minimum on inputs (no iOS zoom-on-focus)</li>
-      <li>44px minimum tap targets</li>
+      <li>44px minimum tap targets, tab bar included</li>
+      <li>The tab bar is a <code>nav</code> landmark; the active tab is marked <code>aria-current</code></li>
+      <li>Changing tabs moves focus to the new view's heading and announces it — a router that only repaints is
+          invisible to a screen reader</li>
+      <li>The bar clears the iOS home indicator via <code>env(safe-area-inset-bottom)</code>, and never covers the
+          last row of a list</li>
       <li>Live regions announce shelf changes</li>
       <li><code>prefers-reduced-motion</code> honoured for all transitions</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Staying current</h4>
+    <ul style="margin:0;padding-left:18px">
+      <li>Updates arrive on their own — no prompt, no gesture, nothing to know</li>
+      <li>Checked on launch and on every return to the foreground</li>
+      <li>Applied on the next reload, once, never in a loop</li>
+      <li>Never applied over someone mid-input</li>
+      <li>The version is shown as a label, not a button</li>
     </ul>
   </div>
   <div class="card">
@@ -503,7 +1076,145 @@ anywhere in the app, and no affiliate tracking of any kind unless the reader is 
   </div>
 </div>
 
-<h2 id="decisions"><span class="num">12</span>Decisions &amp; non-goals</h2>
+<h3>How updates reach people</h3>
+<p>A reader should never have to know this app has versions. There is no "update available" banner, no changelog
+to dismiss, and nothing to tap: a new version is fetched in the background and applied the next time the app is
+opened or brought back to the foreground.</p>
+<p class="muted">This already works today and is not new — the service worker takes over immediately on install
+rather than waiting for every tab to close, which is the step most PWAs get wrong and the reason so many of them
+feel permanently out of date. The one thing being removed is a hidden tap-the-version-to-check gesture, which
+duplicated behaviour that happens on its own.</p>
+<table>
+  <tr><th>Rule</th><th>Why</th></tr>
+  <tr><td><strong>Never reload over someone</strong></td>
+      <td>An update that arrives while you're typing a title into a modal and throws the text away is worse than
+      an update that waits ten seconds. If a modal is open or a field has content, the new version is held and
+      applied at the next quiet moment.</td></tr>
+  <tr><td><strong>Once, never in a loop</strong></td>
+      <td>A reload triggered by a worker taking control must be guarded, or a bad state becomes an app that
+      reloads forever. It fires once per update and never on first install.</td></tr>
+  <tr><td><strong>The version stays visible</strong></td>
+      <td>As a plain label in the footer, not a button. It is the first thing worth knowing when something looks
+      wrong — but reading it is all anyone should ever need to do with it.</td></tr>
+  <tr><td><strong>Offline is unaffected</strong></td>
+      <td>An update check that fails changes nothing. The cached app keeps working, and the new version arrives
+      whenever the network next does.</td></tr>
+</table>
+
+<div class="note warn">
+  <strong>The cost of this convenience.</strong> Automatic updates mean a broken release reaches every reader
+  within a minute of being pushed, and there is no way for anyone to stay on the version that worked. That is a
+  genuine trade, made deliberately: the alternative is readers stranded on old versions with no idea why the app
+  is misbehaving. It is also exactly why testing locally before deploying is a hard rule
+  (<a href="plan.html#phase-0">Plan, Phase&nbsp;0</a>) rather than a preference — with auto-update, "push it and
+  see" is a decision about everyone's app, not just yours. The rollback path is the same as the release path:
+  revert the commit, bump the cache name, push.
+</div>
+
+<h2 id="sustain"><span class="num">15</span>Keeping it running</h2>
+<p>The good news first: this app is nearly free to run, and that is a design achievement rather than an accident.
+A static site on GitHub Pages, a database with a generous free tier, and one serverless function means the fixed
+cost of Otherworld Reads existing is <strong>about zero</strong>. Only one thing costs real money per user, and
+it's the AI.</p>
+
+<h3>What it actually costs</h3>
+<table>
+  <tr><th>Component</th><th>Cost</th><th>Free-tier ceiling</th></tr>
+  <tr><td><strong>Hosting</strong> (GitHub Pages)</td><td>$0</td><td>Effectively unlimited for a static site</td></tr>
+  <tr><td><strong>Database</strong> (Firestore, Spark plan)</td><td>$0</td><td>~50k reads and ~20k writes per day,
+      1&nbsp;GiB stored. A shelf is a single small document — hundreds of readers stay comfortably inside this.
+      Clubs are the first feature that meaningfully increases writes.</td></tr>
+  <tr><td><strong>Worker</strong> (Cloudflare, free plan)</td><td>$0</td><td>~100k requests/day — orders of
+      magnitude more than this will ever need</td></tr>
+  <tr><td><strong>Domain</strong> (optional)</td><td>~$12/year</td><td>Only if you want a name that isn't
+      <code>github.io</code></td></tr>
+  <tr><td><strong>AI recommendations</strong></td><td><strong>~2.8¢ per request</strong></td>
+      <td>No free tier. This is the entire variable cost of the app.</td></tr>
+</table>
+
+<div class="note warn">
+  <strong>The whole problem in one number.</strong> At roughly 1.5k tokens in and 800 out, Claude Opus 5
+  ($5 per million input, $25 per million output) works out to about <strong>2.8¢ per recommendation</strong>. A
+  reader using the full 10/day allowance costs about <strong>28¢ a day — roughly $8.50 a month</strong>. Ten such
+  readers is $85/month. That is the number every option below is trying to solve, and switching the Worker to
+  Haiku&nbsp;4.5 ($1/$5 per million) drops it to about 0.55¢ per request — <strong>a fifth of the cost</strong>,
+  or roughly $1.70/month for the same heavy reader. One line in the Worker.
+</div>
+
+<h3>The options, judged</h3>
+<table>
+  <tr><th>Option</th><th>Verdict</th><th>Reasoning</th></tr>
+  <tr><td><strong>Donations</strong><br><span class="muted">Ko-fi, GitHub Sponsors, Buy Me a Coffee</span></td>
+      <td><span class="tag" style="border-color:rgba(139,211,164,.5);color:var(--ok)">Yes — primary</span></td>
+      <td>Fits the ethos exactly, costs nothing to add, and asks nothing of people who can't pay. Ko-fi takes no
+      platform cut on one-off tips and GitHub Sponsors charges individuals no fee, so nearly all of a donation
+      arrives (payment processing still applies). It won't cover a large bill and shouldn't be expected to — it
+      covers a domain and a modest API spend, which is exactly the size of this problem.</td></tr>
+  <tr><td><strong>Bookshop.org affiliate</strong></td>
+      <td><span class="tag" style="border-color:rgba(139,211,164,.5);color:var(--ok)">Yes — secondary</span></td>
+      <td>The app already links to Bookshop.org on principle; their affiliate programme pays a commission on
+      sales (commonly cited around 10% — verify the current rate before relying on it) and splits revenue with
+      independent bookshops. It earns only when the app does its actual job. <strong>Non-negotiable condition:</strong>
+      §09 already promises no affiliate tracking unless the reader is told plainly — so the disclosure ships in
+      the same release as the link, at the point of the link, not buried in a policy page.</td></tr>
+  <tr><td><strong>Libro.fm affiliate</strong> <span class="muted">(audiobooks)</span></td>
+      <td><span class="tag gold">Worth a look</span></td>
+      <td>The audiobook equivalent, also independent-bookshop-aligned. Same disclosure rule. Only relevant once
+      the format tag from §07 exists to know an audiobook is wanted.</td></tr>
+  <tr><td><strong>Bring your own key</strong></td>
+      <td><span class="tag" style="border-color:rgba(139,211,164,.5);color:var(--ok)">Yes — ship early</span></td>
+      <td>A reader pastes their own Anthropic API key and gets uncapped recommendations at their own expense.
+      Costs you nothing, needs no payment infrastructure, and removes the cost ceiling entirely for the technical
+      few. Useless to a non-technical friend — which is fine, because it's a release valve, not the plan.</td></tr>
+  <tr><td><strong>One-time supporter unlock</strong></td>
+      <td><span class="tag warn">Only if needed</span></td>
+      <td>A single payment that permanently raises your daily AI cap. Not a subscription — you pay once and keep
+      it. The honest flaw: a one-time payment against a recurring cost eventually loses, so the raised cap must
+      stay <em>capped</em>, not become unlimited. Build only when there's a real bill.</td></tr>
+  <tr><td><strong>Advertising</strong></td>
+      <td><span class="tag risk" style="border-color:rgba(217,139,139,.5);color:#d98b8b">No</span></td>
+      <td>Four independent reasons, any one of which is sufficient. It requires third-party tracking scripts,
+      which contradicts every promise in §13. It adds weight and blocks the performance budget in §14. At a few
+      thousand page views a month it pays single-digit dollars — less than the donations it would displace. And
+      book ads come from exactly the retailers §09 refuses to link to. It's not a close call.</td></tr>
+  <tr><td><strong>Subscriptions</strong></td>
+      <td><span class="tag risk" style="border-color:rgba(217,139,139,.5);color:#d98b8b">No — ruled out</span></td>
+      <td>Explicitly off the table. Recorded here as a decision so it doesn't get relitigated every time the bill
+      arrives. It also carries a real obligation this project shouldn't take on: a subscription is a promise of
+      indefinite maintenance to strangers.</td></tr>
+  <tr><td><strong>Charging authors</strong></td>
+      <td><span class="tag risk" style="border-color:rgba(217,139,139,.5);color:#d98b8b">No</span></td>
+      <td>The obvious idea once §12 exists, and the one that would quietly ruin it. The moment an author pays for
+      reach, every list in the app is suspect and §12's "cannot pay for anything" rule collapses. Authors are a
+      reason the app is worth using, not a revenue line.</td></tr>
+</table>
+
+<h3>Cost control is the real lever</h3>
+<p>Revenue is the smaller half of this. The app is cheap enough that <em>not spending</em> solves the problem more
+reliably than earning does:</p>
+<ul>
+  <li><strong>The daily cap already exists</strong> (§08) and is the single biggest control. Lowering it from 10
+      to 5 halves the worst case immediately.</li>
+  <li><strong>A monthly budget ceiling with a graceful off-switch.</strong> When the month's AI spend hits a set
+      figure, the feature says so plainly — "the recommender is resting until the 1st" — and the rest of the app
+      carries on untouched. A known, boring limit beats a surprise invoice.</li>
+  <li><strong>The model swap is one line.</strong> Haiku 4.5 at roughly a fifth the cost is a config change, not
+      a rewrite. Try it on real prompts before assuming the quality difference matters for this task.</li>
+  <li><strong>Growth is invitation-shaped.</strong> Readers aren't searchable and there's no feed, so the app
+      grows by people sending it to people. That caps cost by design — an accidental side effect of the privacy
+      model that happens to be the best cost control in the list.</li>
+  <li><strong>Set a billing alert</strong> on the Anthropic account before the first person who isn't you touches
+      the feature. Not a suggestion.</li>
+</ul>
+
+<div class="note">
+  <strong>The recommendation.</strong> Ship a quiet donation link and bring-your-own-key first — both are an
+  afternoon's work and neither changes the product. Add the Bookshop.org affiliate with its disclosure when the
+  purchase links land. Keep the daily cap and add the monthly ceiling. Revisit only when there is an actual bill
+  to look at, and never make the app worse to fund the app.
+</div>
+
+<h2 id="decisions"><span class="num">16</span>Decisions &amp; non-goals</h2>
 <table>
   <tr><th>Decision</th><th>Rationale</th></tr>
   <tr><td><strong>No build step</strong></td>
@@ -522,11 +1233,38 @@ anywhere in the app, and no affiliate tracking of any kind unless the reader is 
   <tr><td><strong>Suggestions are verified before display</strong></td>
       <td>A recommender that invents books is worse than no recommender. Cross-checking costs one request and buys
       complete trust in the list.</td></tr>
+  <tr><td><strong>A tab bar, not a longer scroll</strong></td>
+      <td>Daily-use surfaces and a permanent archive are different activities and stop fitting on one screen the
+      moment the archive grows. Hash routing buys real URLs, a working back button, and linkable club invites
+      without a build step or any server configuration.</td></tr>
+  <tr><td><strong>Configuration lives behind the gear</strong></td>
+      <td>Libraries, vibe and account are set once and left alone. Keeping them off the reading screen costs
+      nothing, because the library's actual value shows up on the books themselves.</td></tr>
+  <tr><td><strong>Sharing is a place, not a state</strong></td>
+      <td>Clubs are the only shared surface, and you are either in one or you are not. There is no partial
+      visibility, no "friends of friends", no setting whose meaning you have to remember. Readers stay
+      unsearchable; only clubs and authors are findable.</td></tr>
+  <tr><td><strong>Author is a role, not a product</strong></td>
+      <td>One verified flag on an ordinary account, unlocking two things. Every author capability is opt-in on the
+      reader's side, so the reader experience is identical whether or not authors exist.</td></tr>
+  <tr><td><strong>No advertising, and no paid placement of any kind</strong></td>
+      <td>Both would require breaking a promise made elsewhere in this spec — tracking scripts against §13,
+      third-party weight against §14, retailer money against §09. Funded by donations, affiliate commission on
+      links the app would make anyway, and keeping costs near zero.</td></tr>
+  <tr><td><strong>No subscriptions</strong></td>
+      <td>A deliberate constraint, not an oversight. It also avoids promising strangers indefinite maintenance of
+      a personal project.</td></tr>
 </table>
 
 <h4>Explicitly not building</h4>
 <ul>
-  <li><strong>Social features</strong> — no following, no feeds, no comments, no public shelves.</li>
+  <li><strong>A social network</strong> — no feeds, no followers, no public shelves, no reader search, no
+      profiles. Clubs are a room you're invited into, not a network you join.</li>
+  <li><strong>Direct messaging</strong> — the only place anyone writes to anyone is a club thread about the book
+      that club is reading.</li>
+  <li><strong>Author-to-reader broadcast</strong> — an author reaches only readers who chose to watch them, and
+      never learns who they are.</li>
+  <li><strong>Ads, sponsored placement, or paid ranking</strong> — see §15.</li>
   <li><strong>Reading challenges, streaks, or stats dashboards</strong> — counting is not the point.</li>
   <li><strong>Progress tracking</strong> (page counts, % complete) — a book is either current or it isn't.</li>
   <li><strong>Amazon or Goodreads integration</strong> — against the premise.</li>
@@ -534,22 +1272,40 @@ anywhere in the app, and no affiliate tracking of any kind unless the reader is 
   <li><strong>Native apps</strong> — the PWA installs to the home screen and that's enough.</li>
 </ul>
 
-<h2 id="open"><span class="num">13</span>Open questions</h2>
+<h2 id="open"><span class="num">17</span>Open questions</h2>
+<p class="muted">Several questions from earlier versions are now answered and have moved into the spec proper:
+multiple current reads (§07), the shared-shelf question resolved into clubs (§10), a did-not-finish state (§07),
+series tracking and the abandoned-series rule (§04), the AI starting from a taste summary rather than the full
+list (§08), and the donation link living in Settings and nowhere else (§15).</p>
 <table>
   <tr><th>Question</th><th>Leaning</th></tr>
-  <tr><td>Should more than one book be "current" at once? Plenty of people read a novel and a non-fiction book
-      in parallel.</td>
-      <td>Yes, eventually — but as a small list capped at two or three, not an unbounded shelf. Revisit after
-      Phase&nbsp;3, when the data model is cleaner.</td></tr>
-  <tr><td>Should a "did not finish" state exist, distinct from finishing with <em>Not for me</em>?</td>
-      <td>Probably. DNF is a real and different feeling. Cheap to add; needs a home in the finish modal.</td></tr>
-  <tr><td>Should series be tracked, so book 2 can be suggested automatically?</td>
-      <td>Open Library exposes some series data, inconsistently. Interesting, low confidence, not before Phase&nbsp;5.</td></tr>
-  <tr><td>Should the AI be able to see the <em>whole</em> finished list rather than a summary?</td>
-      <td>Better suggestions, more cost, more data leaving the device. Start with the summary and see whether the
-      results are good enough.</td></tr>
-  <tr><td>Is there ever a shared shelf — a partner or a book club seeing the same TBR?</td>
-      <td>Genuinely useful, and the single biggest departure from "private by default." Needs its own spec.</td></tr>
+  <tr><td>Does Coming Soon belong on the Reading tab, or somewhere of its own?</td>
+      <td>On Reading for now, because it's short and it feeds the TBR pile directly. If it ever grows past a few
+      entries it's competing with the books you're actually reading, and it should move.</td></tr>
+  <tr><td>Should a club with unread messages be able to signal that on the tab bar?</td>
+      <td>Leaning no, and the "no badges" rule in §04 currently forbids it. But a club conversation nobody knows
+      is happening is a club that dies quietly — this is the one place the rule might genuinely be wrong. Revisit
+      with a real club, not in the abstract.</td></tr>
+  <tr><td>Can a club read something other than a book — a series, or "whatever we pick monthly"?</td>
+      <td>Probably a series eventually, since that's how real clubs behave. But one book at a time is what makes
+      the checkpoint model coherent, so this needs care rather than enthusiasm.</td></tr>
+  <tr><td>What happens when a club's owner disappears?</td>
+      <td>Unresolved, and it will happen. Options: the club freezes, ownership passes to the longest-standing
+      member, or any member can dissolve it. Leaning toward automatic transfer after a long inactivity window —
+      but it needs deciding before clubs ship, not after.</td></tr>
+  <tr><td>Should checkpoints be per-club or per-book?</td>
+      <td>Per-club is specified, because a club's owner knows their group. Per-book (shared chapter markers,
+      created once and reused) would be less repetitive work but requires trusted shared metadata the app doesn't
+      have. Revisit if the same book is clubbed repeatedly.</td></tr>
+  <tr><td>Does an author need a watcher count at all?</td>
+      <td><strong>Not at first — it isn't being built.</strong> It would be the only metric in an app that has
+      none, and no author has asked for it yet. It waits for a real author to say they need it, and for a reason
+      better than "other platforms have one". Nothing depends on it, so adding it later is cheap. If it ever
+      arrives: aggregate only, never names, and withheld below a threshold so a small following can't be deduced
+      from who was invited.</td></tr>
+  <tr><td>What happens to a club when the author hosting it stops showing up?</td>
+      <td>Nothing special, ideally — an author-hosted club should degrade into an ordinary club rather than dying.
+      Needs confirming once §12 exists.</td></tr>
 </table>
 
 <hr>

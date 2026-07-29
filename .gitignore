@@ -1,0 +1,47 @@
+# --- Secrets / local config ---
+# firebase-config.js is intentionally COMMITTED: Firebase web config values are
+# public by design (security comes from Firestore rules + authorized domains).
+# Anything with a real secret goes here instead:
+.env
+.env.*
+*.local
+service-account*.json
+*-serviceaccount.json
+.firebaserc
+firebase-debug.log
+.firebase/
+
+# --- Claude Code local settings ---
+.claude/settings.local.json
+
+# --- Dependencies / build output (if this ever gets a toolchain) ---
+node_modules/
+dist/
+build/
+.cache/
+*.tsbuildinfo
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS junk ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# --- Scratch ---
+tmp/
+scratch/
+*.bak
+*.orig

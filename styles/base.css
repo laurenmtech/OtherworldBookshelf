@@ -1,0 +1,80 @@
+/* Reset, typography, page chrome, and the layout grid. */
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;padding:0;
+  font-family: var(--font-body);
+  background: radial-gradient(1200px 800px at 10% 10%, var(--bg-glow-1), transparent),
+              radial-gradient(800px 600px at 90% 80%, var(--bg-glow-2), transparent),
+              linear-gradient(180deg,var(--bg-1),var(--bg-2));
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+.site-header{
+  padding:28px 24px 8px; text-align:center;
+}
+.site-title{
+  font-family: var(--font-display); font-size:28px; letter-spacing:1px;
+  color:var(--accent-2);
+}
+.site-sub{ color:var(--muted); font-size:12px; margin-top:6px }
+
+/* Account / sync controls */
+.auth{ display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:12px }
+.user-info{ display:flex; align-items:center; gap:8px }
+.user-info.hidden{ display:none }
+.user-avatar{ width:26px; height:26px; border-radius:50%; object-fit:cover; border:1px solid var(--line-4) }
+.sync-status{ font-size:11px; opacity:0.7 }
+
+.container{
+  display:grid; grid-template-columns: 1fr 360px 360px; gap:18px; padding:20px; max-width:1200px; margin:0 auto;
+  grid-template-areas:
+    "current wishlist finished"
+    "library wishlist finished";
+}
+
+.panel{ background:linear-gradient(180deg, var(--surface-2), var(--surface-1)); border-radius:12px; padding:16px; box-shadow: 0 6px 20px var(--shadow-2); min-height:220px }
+.panel h2{ margin:0 0 12px; font-size:16px; color:var(--accent) }
+
+/* panel header with an action button (e.g. library "+ Add") */
+.panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px }
+.panel-head h2{ margin:0 }
+
+/* boxed inner area for current read and library */
+.box{ background: linear-gradient(180deg, var(--surface-2), var(--surface-1)); padding:12px; border-radius:10px }
+
+.site-footer{ text-align:center; padding:18px; color:var(--muted); font-size:13px }
+.site-footer .version{ display:block; margin-top:4px; font-size:11px; opacity:0.6 }
+
+/* NOTE: `.hidden` deliberately lives in components.css, not here. Its position
+   in the cascade is load-bearing — see the comment there before moving it. */
+
+/* assign panels to grid areas */
+.current-panel{ grid-area: current }
+.library-panel{ grid-area: library }
+.wishlist-panel{ grid-area: wishlist }
+.finished-panel{ grid-area: finished }
+
+@media (max-width:1100px){ .container{ grid-template-columns: 1fr 360px; } .finished-panel{ display:none } }
+@media (max-width:1200px){ .container{ grid-template-columns: 1fr 360px 360px } }
+
+@media (max-width:760px){
+  /* Single-column stack: Current Read → TBR Pile → Library → Finished */
+  .container{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "current"
+      "wishlist"
+      "library"
+      "finished";
+    gap:14px;
+    padding:14px;
+  }
+  .panel{ min-height:0; padding:14px }
+  .finished-panel{ display:block } /* shown on mobile, collapsed by default */
+  .site-header{ padding:20px 16px 4px }
+  .site-title{ font-size:24px }
+}

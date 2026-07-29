@@ -1,13 +1,40 @@
 // Service worker for Otherworld Reads — offline support via cache-first for the app shell.
-const CACHE = 'otherworld-reads-v14';
+//
+// BUILD must increase on EVERY deploy that changes any file in ASSETS. It is
+// deliberately independent of APP_VERSION in js/main.js: the version is a
+// human-facing milestone that sits still for whole phases at a time, while this
+// is the cache buster. A deploy that doesn't move BUILD serves stale files to
+// everyone who already has the app installed.
+const BUILD = 16;
+const CACHE = 'otherworld-reads-build-' + BUILD;
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
-  './firebase-config.js',
-  './sync.js',
   './manifest.webmanifest',
+  './firebase-config.js',
+
+  './styles/tokens.css',
+  './styles/base.css',
+  './styles/components.css',
+
+  './js/main.js',
+  './js/state/store.js',
+  './js/state/migrate.js',
+  './js/state/persist-local.js',
+  './js/state/persist-cloud.js',
+  './js/state/auth.js',
+  './js/components/header.js',
+  './js/components/current-reads.js',
+  './js/components/tbr-pile.js',
+  './js/components/finished-list.js',
+  './js/components/libraries.js',
+  './js/components/modals/finish-modal.js',
+  './js/components/modals/book-modal.js',
+  './js/components/modals/library-modal.js',
+  './js/ui/dom.js',
+  './js/ui/modal.js',
+  './js/ui/chips.js',
+
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png'

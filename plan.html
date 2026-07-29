@@ -87,10 +87,12 @@
 <header class="doc">
   <p class="eyebrow">Build Plan</p>
   <h1>Otherworld Reads — Phases &amp; Deliverables</h1>
-  <p class="lede">Six phases, each one shippable on its own. The refactor comes first so everything after it is
-  cheap; every feature phase after that adds a layer that can fail without taking the app down with it.</p>
+  <p class="lede">Eleven phases, each one shippable on its own. The refactor comes first so everything after it is
+  cheap; every feature phase after that adds a layer that can fail without taking the app down with it. Phase&nbsp;7
+  is the point where it's ready to send to a friend — the four after it are optional, in descending order of
+  certainty.</p>
   <div class="meta">
-    <span>Version 1.0 · 27 July 2026</span>
+    <span>Version 1.1 · 28 July 2026</span>
     <span>Companion: <a href="spec.html">spec.html</a></span>
     <span>Starting from build v13</span>
   </div>
@@ -100,12 +102,20 @@
 <table>
   <tr><td>Phase 0</td><td><a href="#phase-0">Ground rules</a></td><td class="muted">Conventions every phase follows</td></tr>
   <tr><td>Phase 1</td><td><a href="#phase-1">Refactor: modules &amp; a real state store</a></td><td class="muted">Split the monolith, no new features</td></tr>
-  <tr><td>Phase 2</td><td><a href="#phase-2">Vibes</a></td><td class="muted">Choose and change your library's look</td></tr>
-  <tr><td>Phase 3</td><td><a href="#phase-3">Book search &amp; autofill</a></td><td class="muted">Stop typing titles by hand</td></tr>
-  <tr><td>Phase 4</td><td><a href="#phase-4">Libraries, Libby &amp; local shops</a></td><td class="muted">Real availability, real borrow links</td></tr>
-  <tr><td>Phase 5</td><td><a href="#phase-5">Backend + AI recommendations</a></td><td class="muted">The Worker, and reading by vibe</td></tr>
-  <tr><td>Phase 6</td><td><a href="#phase-6">Ready to share</a></td><td class="muted">Onboarding, export, polish</td></tr>
+  <tr><td>Phase 2</td><td><a href="#phase-2">Navigation &amp; the shell</a></td><td class="muted">Tab bar, routes, settings sheet</td></tr>
+  <tr><td>Phase 3</td><td><a href="#phase-3">Vibes</a></td><td class="muted">Choose and change your library's look</td></tr>
+  <tr><td>Phase 4</td><td><a href="#phase-4">Book search &amp; autofill</a></td><td class="muted">Stop typing titles by hand</td></tr>
+  <tr><td>Phase 5</td><td><a href="#phase-5">Libraries, Libby &amp; local shops</a></td><td class="muted">Real availability, real borrow links</td></tr>
+  <tr><td>Phase 6</td><td><a href="#phase-6">Backend + AI recommendations</a></td><td class="muted">The Worker, and reading by vibe</td></tr>
+  <tr><td>Phase 7</td><td><a href="#phase-7">Ready to share</a></td><td class="muted">Onboarding, export, polish</td></tr>
+  <tr><td>Phase 8</td><td><a href="#phase-8">Coming soon</a></td><td class="muted">Watch authors, catch preorders</td></tr>
+  <tr><td>Phase 9</td><td><a href="#phase-9">Keeping it running</a></td><td class="muted">Donations, disclosure, cost ceilings</td></tr>
+  <tr><td>Phase 10</td><td><a href="#phase-10">Authors</a></td><td class="muted">The second role, verified</td></tr>
+  <tr><td>Phase 11</td><td><a href="#phase-11">Reading together</a></td><td class="muted">Book clubs — needs the most growth</td></tr>
 </table>
+<p class="muted" style="margin:0 0 0 4px;font-size:13.5px">Phase&nbsp;7 is the "send it to a friend" milestone and
+was the end of version 1.0 of this plan. Phases&nbsp;8–11 are what comes after that, in the order they're worth
+doing — each one still shippable on its own, and each one still optional.</p>
 </div>
 
 <!-- ═══════════════ PHASE 0 ═══════════════ -->
@@ -113,18 +123,27 @@
   <div class="head">
     <span class="pnum">Phase 0 · Ongoing</span>
     <h2>Ground rules</h2>
-    <p class="goal">Conventions that apply to every phase below, so they don't have to be repeated six times.</p>
+    <p class="goal">Conventions that apply to every phase below, so they don't have to be repeated eleven times.</p>
   </div>
   <div class="body">
     <table>
       <tr><th>Rule</th><th>Detail</th></tr>
+      <tr><td><strong>Test locally before pushing</strong> <span class="tag gold">non-negotiable</span></td>
+          <td>Nothing goes to GitHub Pages to find out whether it works. Every change is run and checked on
+          <code>localhost</code> first; the deploy is how it reaches your phone, not how you discover a bug.
+          Pushing broken code to <code>main</code> also means the live app is broken for anyone else using it,
+          and a service-worker mistake can leave them stuck on it. See <em>Running it locally</em> below.</td></tr>
       <tr><td><strong>Ship each phase</strong></td>
-          <td>Every phase ends on <code>main</code>, deployed to GitHub Pages, working on your phone. No long-lived
-          branches, no half-landed refactors.</td></tr>
-      <tr><td><strong>Bump the version</strong></td>
-          <td>Each release bumps <code>APP_VERSION</code> in the app <em>and</em> the <code>CACHE</code> name in
-          <code>sw.js</code>, together. A version bump without a cache bump ships an app that never updates
-          itself.</td></tr>
+          <td>Every phase ends on <code>main</code>, deployed to GitHub Pages, working on your phone — after it
+          already worked locally. No long-lived branches, no half-landed refactors.</td></tr>
+      <tr><td><strong>Bump the build, every deploy</strong></td>
+          <td>Every deploy that touches a precached file increments <code>BUILD</code> in <code>sw.js</code>.
+          This is the cache buster: skip it and installed apps keep serving the old files forever. It is not
+          tied to the version number and has no meaning beyond "this is newer than the last one".</td></tr>
+      <tr><td><strong>Bump the version, every phase</strong></td>
+          <td><code>APP_VERSION</code> in <code>js/main.js</code> is the footer stamp and tracks
+          <em>phases</em>, not deploys: it reads <code>0.N</code> once phase&nbsp;N is complete. Completing
+          Phase&nbsp;7 is what makes it <code>1.0</code>. Most releases leave it alone.</td></tr>
       <tr><td><strong>Update the SW file list</strong></td>
           <td>Splitting one JS file into fifteen means fifteen entries the service worker must precache. This is
           the single easiest thing to get wrong during the refactor — see the Phase&nbsp;1 risk.</td></tr>
@@ -135,8 +154,44 @@
           <td>Search, availability, and AI each have an explicit off-state that leaves the app fully usable. Test
           each phase with the network disabled before calling it done.</td></tr>
       <tr><td><strong>Manual QA pass</strong></td>
-          <td>Same checklist each release: cold start offline, sign in/out, add via search and manually, finish a
-          book, switch vibe, two devices in sync. Takes five minutes; catches nearly everything.</td></tr>
+          <td>Same checklist each release, run locally first: cold start offline, sign in/out, add via search and
+          manually, finish a book, set one down, switch vibe, two windows in sync. Takes five minutes; catches
+          nearly everything.</td></tr>
+    </table>
+
+    <h4>Running it locally</h4>
+    <p>The app can't be opened as a <code>file://</code> path — ES modules, the service worker, and Firebase auth
+    all need an origin. It does not need a build step or any dependencies; it needs a static server:</p>
+<pre><span class="c"># from the repo root</span>
+python3 -m http.server 8000
+<span class="c">→ http://localhost:8000</span></pre>
+    <p>That's the whole dev environment. <code>localhost</code> counts as a secure context, so the service worker
+    registers, the PWA installs, and Firebase auth works there exactly as it does in production —
+    <code>localhost</code> is an authorised domain in Firebase by default (worth confirming once in the console
+    rather than assuming).</p>
+
+    <table>
+      <tr><th>Situation</th><th>How to handle it</th></tr>
+      <tr><td><strong>Your changes don't appear</strong></td>
+          <td>Almost always the service worker serving its cache. In DevTools → Application → Service Workers,
+          tick <em>Update on reload</em> and <em>Bypass for network</em> while developing. This is the single
+          most common time-waster in this project, and it looks exactly like a bug in your code.</td></tr>
+      <tr><td><strong>Testing sync between devices</strong></td>
+          <td>Two browser windows on <code>localhost</code> — one normal, one private — signed into the same
+          account is enough for almost everything, since both talk to the same Firestore project.</td></tr>
+      <tr><td><strong>Testing on a real phone</strong></td>
+          <td>A phone hitting <code>http://&lt;your-ip&gt;:8000</code> gets no service worker, because that origin
+          isn't secure — so offline and install behaviour can't be tested that way. Use USB port-forwarding
+          (Chrome DevTools remote devices) or an HTTPS tunnel such as <code>cloudflared</code>, which does give a
+          secure origin. Add the tunnel's hostname to Firebase's authorised domains if you need to sign in.</td></tr>
+      <tr><td><strong>Anything destructive</strong></td>
+          <td>Local dev writes to the <em>real</em> Firestore project. For migrations, deletion, or club rules
+          (Phase&nbsp;11), use the Firebase emulator suite instead of your live data —
+          Phase&nbsp;11 needs the emulator regardless, for its rules tests.</td></tr>
+      <tr><td><strong>Before you push</strong></td>
+          <td>Confirm the QA checklist passes locally, then deploy and verify the <em>upgrade</em> path from the
+          previous build on a device that already has the app — a fresh install hides exactly the service-worker
+          bugs that matter.</td></tr>
     </table>
   </div>
 </div>
@@ -161,7 +216,24 @@
     <p>Today <code>app.js</code> is 476 lines holding DOM lookups, event wiring, business logic, rendering, and the
     cloud-sync bridge all at once, communicating with <code>sync.js</code> through four
     <code>window.__*</code> globals. It works — but adding vibes, search, availability, and AI on top of it means
-    four more features tangled into the same file. Every hour spent here is repaid three times over in Phases 2–5.</p>
+    four more features tangled into the same file. Every hour spent here is repaid three times over in Phases 2–7.</p>
+
+    <div class="note">
+      <strong>Auto-update is already built — don't rebuild it.</strong> <code>sw.js</code> already calls
+      <code>skipWaiting()</code> on install and <code>clients.claim()</code> on activate;
+      <code>index.html</code> already registers with <code>updateViaCache:'none'</code>, calls
+      <code>reg.update()</code> on load and on every return to the foreground, and reloads exactly once on
+      <code>controllerchange</code> (guarded against both the first-install claim and reload loops). That is the
+      complete, correct mechanism. This phase only removes the redundant tap gesture and adds the mid-input
+      guard — the moving parts stay as they are.
+    </div>
+
+    <div class="note">
+      <strong>Components are built mount-agnostic.</strong> Phase&nbsp;2 introduces routing, and a component that
+      assumes it lives at a fixed spot on one long page is a component that gets rewritten then. So each one
+      takes a mount point, renders into it, and tears itself down cleanly — costing nothing here and saving the
+      rework next phase.
+    </div>
 
     <h4>Structure</h4>
     <p>Native ES modules, no bundler, no build step — this deploys to GitHub Pages exactly as it does today.</p>
@@ -182,7 +254,7 @@
       auth.js         <span class="c">— Google sign-in, session state</span>
 
     <span class="c">/components</span>
-      current-read.js
+      current-reads.js  <span class="c">— each takes a mount point; none assumes a page position</span>
       tbr-pile.js
       finished-list.js
       libraries.js
@@ -209,9 +281,13 @@
 store.subscribe(fn)           <span class="c">— called on every change</span>
 store.dispatch(action)        <span class="c">— the only way to change anything</span>
 
-<span class="c">Actions: setCurrent, finishCurrent, addToTbr, editTbr, removeTbr,
-         removeFinished, addLibrary, editLibrary, removeLibrary,
+<span class="c">Actions: addCurrent, editCurrent, reorderCurrent, finishCurrent,
+         addToTbr, editTbr, removeTbr, removeFinished,
+         addLibrary, editLibrary, removeLibrary,
          setVibe, applyRemote, loadLocal</span></pre>
+    <p>Note the current-read actions are already plural-shaped. The UI still renders a single book in this phase —
+    but writing <code>setCurrent</code> here would mean rewriting every call site in Phase&nbsp;4 for no reason.
+    The data model goes to an array now; the interface catches up later.</p>
     <p>Persistence hangs off <code>subscribe</code>: every change writes to <code>localStorage</code>, and also to
     Firestore when signed in. That replaces the <code>window.__applyRemoteState</code> /
     <code>__getLocalState</code> / <code>__setCloudMode</code> / <code>__loadLocal</code> /
@@ -222,13 +298,23 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
     <ul class="deliv">
       <li>File structure above, in place and working</li>
       <li><code>store.js</code> with actions, subscribe, and immutable reads</li>
+      <li><strong>Migration <code>current</code> → <code>currentReads[]</code></strong> — the stored shape becomes
+          an array now, while the UI still renders only the first entry. Zero visible change; it means Phase&nbsp;4
+          ships a component, not a data migration on top of a component</li>
       <li>Persistence split into local and cloud adapters behind one interface</li>
       <li>All four <code>window.__*</code> globals removed</li>
-      <li>Every panel a self-mounting component with its own render</li>
+      <li>Every panel a self-mounting component that takes a mount point, renders into it, and tears down cleanly</li>
+      <li><strong>Delete the tap-to-check-for-updates gesture</strong> on the footer version. Auto-update already
+          works without it (see below); the tap is vestigial, and a hidden gesture that duplicates automatic
+          behaviour is just something else to maintain. The version stays visible as a plain label — it's the
+          first thing worth knowing when something's wrong</li>
+      <li><strong>Guard the auto-reload.</strong> The one real gap in the current mechanism: an update can reload
+          the page while someone is typing in a modal. Hold the reload while a modal is open or an input has
+          content, and apply it at the next quiet moment instead</li>
       <li>Shared modal behaviour extracted once (open, close, backdrop, Escape, focus trap) instead of
           re-implemented per modal</li>
       <li><code>styles.css</code> split into tokens / base / components, with every colour promoted to a custom
-          property — the groundwork Phase&nbsp;2 depends on</li>
+          property — the groundwork Phase&nbsp;3 depends on</li>
       <li><code>sw.js</code> precache list updated for every new file</li>
       <li>Short <code>ARCHITECTURE.md</code>: where things live and how state flows</li>
     </ul>
@@ -238,11 +324,17 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
       <li>Every existing feature behaves identically — set current, edit, finish with feeling and moods, TBR
           add/edit/remove, libraries, collapsible finished list</li>
       <li>Existing saved data loads untouched, including legacy <code>rating</code> and <code>notes</code> entries</li>
+      <li>A shelf saved before this phase migrates to <code>currentReads[]</code> on load, renders identically, and
+          survives a second load without duplicating the entry</li>
       <li>Sign in on two devices; a change on one appears on the other</li>
       <li>Sign out reverts to the local shelf; sign in re-attaches without duplicating or wiping</li>
       <li>Cold start offline, from the home screen, works</li>
-      <li>Tapping the footer version still forces an update check</li>
+      <li>A deployed change reaches an already-installed device on next foreground, with no interaction</li>
+      <li>The footer version is a plain label — tapping it does nothing</li>
+      <li>No reload happens while a modal is open or a field has text in it</li>
       <li>No console errors on any path</li>
+      <li><strong>Nothing looks or behaves differently.</strong> Screenshot the app before and after; the only
+          difference should be the version number</li>
     </ul>
 
     <div class="risk">
@@ -262,7 +354,7 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
 
     <div class="note">
       <strong>On separating frontend and backend.</strong> This phase separates the frontend <em>internally</em>.
-      The actual backend split lands in Phase&nbsp;5, where the Cloudflare Worker appears — because that's the
+      The actual backend split lands in Phase&nbsp;6, where the Cloudflare Worker appears — because that's the
       first thing that genuinely can't run in the browser. Firebase already plays the backend role for auth and
       data, and doesn't need replacing.
     </div>
@@ -272,7 +364,107 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
 <!-- ═══════════════ PHASE 2 ═══════════════ -->
 <div class="phase" id="phase-2">
   <div class="head">
-    <span class="pnum">Phase 2 · Feature</span>
+    <span class="pnum">Phase 2 · Foundation</span>
+    <h2>Navigation &amp; the shell</h2>
+    <p class="goal">Replace the single phone-length scroll with a tab bar and real routes, and move configuration
+    behind a settings sheet. The first change anyone will notice — and the frame every later phase mounts into.</p>
+    <div class="badges">
+      <span class="tag">Needs Phase 1</span>
+      <span class="tag gold">Shapes Phases 3–11</span>
+      <span class="tag ok">Small, but do it early</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <h4>Why now, and not later</h4>
+    <p>The single scroll worked with four panels and a short Finished list. It doesn't survive this plan: Current
+    Reads, TBR, Coming Soon, Libraries, Clubs and an archive that grows forever leaves the daily-use surfaces
+    buried under history. Doing this <em>before</em> the feature phases means Coming Soon (Phase&nbsp;8) and Clubs
+    (Phase&nbsp;10) arrive into a structure that already has a place for them, rather than each one negotiating
+    for space on a page that's already full. The design is <a href="spec.html#model">Spec §04</a>.</p>
+    <p>It's deliberately its own phase rather than part of the refactor. Phase&nbsp;1 promises that nothing changes
+    visibly, and that promise is worth keeping intact — it's what makes the refactor safe to ship and trivial to
+    verify. This phase is where visible change is the whole point.</p>
+
+    <h4>Structure</h4>
+<pre>  <span class="c">/js</span>
+    <span class="c">/routes</span>
+      router.js       <span class="c">— hash routing, back-button behaviour, focus on change</span>
+      reading.js      <span class="c">— #/          current reads + TBR (+ coming soon later)</span>
+      finished.js     <span class="c">— #/finished  the archive, with room to be good</span>
+
+    <span class="c">/components</span>
+      tab-bar.js
+      settings-sheet.js <span class="c">— vibe, libraries, account, export</span>
+      libraries.js      <span class="c">— moved: now rendered inside the sheet</span>
+
+    <span class="c">/ui</span>
+      sheet.js          <span class="c">— the sheet's own open/close/focus behaviour</span></pre>
+    <p><strong>Hash routing, not the History API.</strong> Hash routes need no server rewrite rules, which keeps
+    this deployable to GitHub Pages exactly as it is today. Phase&nbsp;10 needs routing regardless, because a club
+    invite has to be a link.</p>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li><code>routes/router.js</code> — <code>#/</code> and <code>#/finished</code> to start, correct
+          back-button behaviour, unknown routes falling back to Reading, and room for <code>#/clubs</code> and
+          <code>#/club/&lt;code&gt;</code> later without rework</li>
+      <li><strong>Tab bar</strong> — two tabs for now (Reading, Finished), fixed to the bottom on a phone with
+          <code>env(safe-area-inset-bottom)</code> honoured, moving into the header as plain text links above the
+          wide breakpoint. Built to take a third tab without a redesign</li>
+      <li>Reading route: Current Reads and the TBR pile — everything touched daily, nothing else</li>
+      <li><strong>Finished route</strong>, and the things it could never afford at the bottom of a scroll: grouped
+          by year with a per-year count, filterable by feeling and mood, searchable by title or author. Filters
+          are built over an open set of states so Phase&nbsp;4 can add "set down" without reworking them.
+          <span class="muted">No charts, no pace, no stats — a count is a memory, a graph is a target</span></li>
+      <li>Per-tab scroll position preserved within a session; cold start always lands on Reading, never on the
+          last tab used</li>
+      <li>No badges, no counts, no dots on the tab bar — the rule written down before anything wants to break it</li>
+      <li><strong>Settings sheet</strong> behind the header ⚙: vibe, libraries, account, export and delete, with
+          <code>libraries.js</code> moved off the main screen into it</li>
+      <li>Sheet reuses the Phase&nbsp;1 focus-trap helper rather than growing a second implementation</li>
+      <li><code>sw.js</code> precache list updated for the new files</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>Reading and Finished are separate places, and the daily screen no longer scrolls past an archive</li>
+      <li>The back button moves between tabs and never unexpectedly leaves the app</li>
+      <li><code>#/finished</code> opens the Finished tab directly, from a cold start and from a pasted link</li>
+      <li>Switching tabs and returning preserves scroll position; quitting and reopening lands on Reading</li>
+      <li>Changing tabs moves focus to the new view's heading and is announced by a screen reader</li>
+      <li>The tab bar clears the iOS home indicator and never covers the last row of any list</li>
+      <li>Every library action still works, from inside the sheet</li>
+      <li>The finished list can be filtered to "everything I loved" and searched by author</li>
+      <li>On a wide screen there is no bottom bar, and the existing multi-column layout is intact</li>
+      <li>Fully keyboard-operable; the sheet traps focus and restores it on close</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — a cached shell serving new routes.</strong> A hash fragment never reaches the service worker,
+      so <code>#/finished</code> is served by whatever is cached for the page — which after this phase may be a
+      shell with no tab bar in it. <em>Mitigation:</em> the cache-name bump Phase&nbsp;0 already requires covers
+      it, but verify by opening <code>#/finished</code> on a device running the <em>previous</em> build rather
+      than a fresh install.
+    </div>
+    <div class="risk">
+      <strong>Risk — the bar covering content.</strong> A fixed bottom bar eats the last row of every scrollable
+      list, and on a notched phone it collides with the home indicator. <em>Mitigation:</em>
+      <code>env(safe-area-inset-bottom)</code> plus bottom padding on every route, checked on a real device — the
+      simulator is forgiving about exactly this.
+    </div>
+    <div class="note">
+      <strong>Keep it to two tabs.</strong> The temptation is to build the three-tab bar now because Clubs is
+      coming. Don't — a tab pointing at nothing is worse than a bar that grows. Phase&nbsp;10 adds the third tab,
+      and all this phase owes it is not making that hard.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 3 ═══════════════ -->
+<div class="phase" id="phase-3">
+  <div class="head">
+    <span class="pnum">Phase 3 · Feature</span>
     <h2>Vibes</h2>
     <p class="goal">Let a reader choose the look of their library, and change it whenever they like. Visual only —
     every label stays put. The first phase where the refactor pays off.</p>
@@ -336,15 +528,15 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
   </div>
 </div>
 
-<!-- ═══════════════ PHASE 3 ═══════════════ -->
-<div class="phase" id="phase-3">
+<!-- ═══════════════ PHASE 4 ═══════════════ -->
+<div class="phase" id="phase-4">
   <div class="head">
-    <span class="pnum">Phase 3 · Feature</span>
+    <span class="pnum">Phase 4 · Feature</span>
     <h2>Book search &amp; autofill</h2>
     <p class="goal">Replace hand-typed titles with a search field that suggests real books — bringing correct
     spelling, covers, publication years, and the stable identifiers that Phases&nbsp;4 and 5 both depend on.</p>
     <div class="badges">
-      <span class="tag gold">Enables Phase 4 &amp; 5</span>
+      <span class="tag gold">Enables Phase 5 &amp; 6</span>
       <span class="tag ok">No key required</span>
       <span class="tag">Data model change</span>
     </div>
@@ -373,12 +565,28 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
           Book shape</li>
       <li>Typeahead component: cover thumbnail, title, author, year; arrow-key navigation; proper
           <code>listbox</code> semantics</li>
-      <li>Search-first add flow on both the TBR pile and the Current Read card</li>
+      <li>Search-first add flow on both the TBR pile and the Current Reads panel</li>
+      <li><strong>Current Reads becomes a list.</strong> The panel gains its own <em>+ Add</em> control using the
+          same typeahead, holds up to three books, renders the first large and the rest as compact rows, and
+          supports drag-to-reorder. Each entry keeps its own Edit and Finish. At three, adding suggests finishing
+          or shelving one rather than refusing outright. <span class="muted">The data migration for this already
+          landed in Phase&nbsp;1 — this is UI only</span></li>
+      <li>Optional format chip on a current read — print / ebook / audio — never prompted for, purely so three
+          simultaneous books are distinguishable at a glance</li>
+      <li><strong>Set it down (DNF).</strong> A third action beside Edit and Finish, opening the same modal with
+          two outcomes: <em>not right now</em> (returns to the TBR pile, changes nothing else) and
+          <em>not for me</em> (goes to the record marked as set down, and is excluded from future suggestions).
+          Feeling and moods stay optional on both</li>
+      <li>Set-down entries render in the Finished list with a distinct marker and are covered by the filters built
+          in Phase&nbsp;2</li>
+      <li><strong>Series capture</strong> — <code>seriesKey</code>, <code>seriesName</code> and
+          <code>seriesPosition</code> stored from the search result when Open Library provides them, absent when
+          it doesn't. Nothing in this phase uses them; Phases&nbsp;6 and 8 do</li>
       <li>Permanent "add manually" escape hatch below every result list</li>
       <li>Duplicate detection against TBR and Finished, with a jump-to-existing action</li>
       <li>Book model extended with <code>workKey</code>, <code>coverId</code>, <code>year</code>,
           <code>source</code>; migration leaves existing books untouched and fully functional</li>
-      <li>Cover art returns to the Current Read card and list rows — only where a cover exists, never a placeholder</li>
+      <li>Cover art returns to the Current Reads panel and list rows — only where a cover exists, never a placeholder</li>
       <li>Cover images lazy-loaded, with the service worker caching them for offline viewing</li>
     </ul>
 
@@ -390,7 +598,14 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
       <li>Offline, the search field degrades to manual entry with a clear note — adding never blocks</li>
       <li>Rapid typing never leaves a stale result list on screen</li>
       <li>Existing hand-entered books keep working, with no cover and no errors</li>
-      <li>Fully keyboard-operable and announced correctly by a screen reader</li>
+      <li>Three books can be current at once; finishing one leaves the other two exactly as they were</li>
+      <li>A book set down as <em>not right now</em> is back on the TBR pile and still suggestible; one set down as
+          <em>not for me</em> is in the record and never suggested again</li>
+      <li>Books whose series is unknown behave exactly as before — no empty series labels anywhere</li>
+      <li>Reordering changes which book renders as the headline, and survives a reload and a device switch</li>
+      <li>A reader with one current book sees no difference from before the phase</li>
+      <li>Fully keyboard-operable and announced correctly by a screen reader — including reordering, which must
+          have a keyboard path and not be drag-only</li>
     </ul>
 
     <div class="risk">
@@ -402,16 +617,16 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
   </div>
 </div>
 
-<!-- ═══════════════ PHASE 4 ═══════════════ -->
-<div class="phase" id="phase-4">
+<!-- ═══════════════ PHASE 5 ═══════════════ -->
+<div class="phase" id="phase-5">
   <div class="head">
-    <span class="pnum">Phase 4 · Feature</span>
+    <span class="pnum">Phase 5 · Feature</span>
     <h2>Libraries, Libby &amp; local shops</h2>
     <p class="goal">Turn the Libraries panel from a list of bookmarks into something that answers "can I get this
     right now?" — with real availability from a real library, and a link that lands on the right title in Libby.</p>
     <div class="badges">
       <span class="tag gold">The ethos, made real</span>
-      <span class="tag">Needs Phase 3</span>
+      <span class="tag">Needs Phase 4</span>
       <span class="tag risk">Undocumented API</span>
     </div>
   </div>
@@ -477,23 +692,23 @@ https://share.libbyapp.com/title/&lt;id&gt;                          <span class
     <div class="risk">
       <strong>Risk — title matching.</strong> Matching a book from Open Library to the same book in OverDrive is
       done by title-and-author text, which will occasionally match the wrong edition or miss entirely.
-      <em>Mitigation:</em> prefer ISBN matching where Phase&nbsp;3 captured one; show the matched title in the
+      <em>Mitigation:</em> prefer ISBN matching where Phase&nbsp;4 captured one; show the matched title in the
       row so a wrong match is visible rather than silent; treat "not found" and "not owned" as the same neutral
       state rather than asserting the library doesn't have it.
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ PHASE 5 ═══════════════ -->
-<div class="phase" id="phase-5">
+<!-- ═══════════════ PHASE 6 ═══════════════ -->
+<div class="phase" id="phase-6">
   <div class="head">
-    <span class="pnum">Phase 5 · Backend + Feature</span>
+    <span class="pnum">Phase 6 · Backend + Feature</span>
     <h2>Backend + AI recommendations</h2>
     <p class="goal">Stand up the one piece of real backend the app needs — a serverless function holding the API
     key — and use it for the headline feature: describe a mood, get books back, triage them in one tap.</p>
     <div class="badges">
       <span class="tag gold">The headline feature</span>
-      <span class="tag">Needs Phase 3</span>
+      <span class="tag">Needs Phase 4</span>
       <span class="tag warn">Costs real money</span>
     </div>
   </div>
@@ -533,7 +748,12 @@ https://share.libbyapp.com/title/&lt;id&gt;                          <span class
           remaining daily count shown before you ask</li>
       <li>Taste summary builder — recent loved books and most-used moods, compressed; the full shelf never leaves
           the device</li>
-      <li>Exclusion list assembled from TBR, Finished, and previously passed suggestions</li>
+      <li>Exclusion list assembled from TBR, Finished, books set down as <em>not for me</em>, and previously
+          passed suggestions</li>
+      <li><strong>Abandoned-series suppression</strong> — a series whose earliest-read entry was marked
+          <em>not for me</em> or set down that way is excluded whole, so book two of something you bounced off is
+          never offered. Uses the <code>seriesKey</code> captured in Phase&nbsp;4; where series data is missing the
+          rule simply doesn't apply</li>
       <li>Verification pass against Open Library; unresolvable suggestions dropped silently</li>
       <li>Suggestion cards with the model's reason, and three one-tap actions: <em>+ TBR</em>,
           <em>Already read</em>, <em>Pass</em></li>
@@ -545,6 +765,10 @@ https://share.libbyapp.com/title/&lt;id&gt;                          <span class
     <ul class="crit">
       <li>Asking for a mood returns five real, existing books in a few seconds</li>
       <li>Nothing already on the shelf or previously passed is ever suggested</li>
+      <li>No book from a series whose first read was <em>not for me</em> is ever suggested</li>
+      <li>The taste summary — recent loved titles, frequent moods, exclusions — is confirmed good enough in
+          practice before anyone considers sending the full finished list. <span class="muted">Judged on results,
+          not assumed</span></li>
       <li>Each suggestion explains itself in a way that references the reader's actual taste</li>
       <li>Every action lands the book in the right place in one tap</li>
       <li>Asking twice in a row returns a materially different list</li>
@@ -578,14 +802,14 @@ https://share.libbyapp.com/title/&lt;id&gt;                          <span class
   </div>
 </div>
 
-<!-- ═══════════════ PHASE 6 ═══════════════ -->
-<div class="phase" id="phase-6">
+<!-- ═══════════════ PHASE 7 ═══════════════ -->
+<div class="phase" id="phase-7">
   <div class="head">
-    <span class="pnum">Phase 6 · Polish</span>
+    <span class="pnum">Phase 7 · Polish</span>
     <h2>Ready to share</h2>
     <p class="goal">The gap between "works for me" and "I can send this to a friend without explaining anything."</p>
     <div class="badges">
-      <span class="tag">Needs 1–5</span>
+      <span class="tag">Needs 1–6</span>
       <span class="tag ok">Low risk</span>
     </div>
   </div>
@@ -613,53 +837,525 @@ https://share.libbyapp.com/title/&lt;id&gt;                          <span class
   </div>
 </div>
 
+<!-- ═══════════════ PHASE 8 ═══════════════ -->
+<div class="phase" id="phase-8">
+  <div class="head">
+    <span class="pnum">Phase 8 · Feature</span>
+    <h2>Coming soon</h2>
+    <p class="goal">Tell a reader that an author they love has a book on the way — months before they'd otherwise
+    find out, and with a library hold or an independent preorder one tap away.</p>
+    <div class="badges">
+      <span class="tag">Needs Phase 4</span>
+      <span class="tag gold">Highest delight per line of code</span>
+      <span class="tag risk">Unverified data sources</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <div class="note warn">
+      <strong>Do the feasibility spike first — this phase is not approved until it passes.</strong> The Open
+      Library search and the OverDrive availability endpoints were both verified against live data before their
+      phases were written. Nothing in this one has been. Before building anything, spend an hour querying
+      Google Books and Open Library for forthcoming titles by five real authors with books known to be coming.
+      If fewer than three of five turn up with a usable date, <strong>stop</strong> and ship only the
+      author-announced path in Phase&nbsp;10 — which is a better source anyway. A Coming Soon panel that misses
+      the book you were waiting for is worse than no panel.
+    </div>
+
+    <h4>The sources</h4>
+<pre><span class="c">Forthcoming titles by an author (primary — has future publishedDate)</span>
+GET https://www.googleapis.com/books/v1/volumes?q=inauthor:&lt;name&gt;&amp;orderBy=newest
+    <span class="c">→ items[].volumeInfo: title, publishedDate, industryIdentifiers, imageLinks</span>
+    <span class="c">→ filter to publishedDate &gt; today</span>
+
+<span class="c">Author identity + known works (the "is this new to me?" anchor)</span>
+GET https://openlibrary.org/search/authors.json?q=&lt;name&gt;
+GET https://openlibrary.org/authors/&lt;key&gt;/works.json
+
+<span class="c">On order at the reader's own library (best answer — library first)</span>
+GET https://thunder.api.overdrive.com/v2/libraries/&lt;key&gt;/media?query=&lt;title&gt;
+    <span class="c">→ pre-release titles carry an expected availability date</span>
+
+<span class="c">Announced by the author (Phase 10 — highest confidence, covers indie)</span>
+Firestore: releases/{authorKey}/…</pre>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li><code>services/releases.js</code> — author resolution, forthcoming-title lookup across sources,
+          de-duplication, date-precision handling, timeouts, and a hard feature flag to disable the whole panel</li>
+      <li><code>Watch</code> control on any author name in Finished, TBR, or Current Reads; watches stored on the
+          reader's own document</li>
+      <li>Opt-in prompt in the finish modal when a book is marked 💛 Loved — offered once per author, never repeated</li>
+      <li>Coming Soon panel on the Reading tab, rendering only when there is something to show; sorted by date,
+          nearest first. It sits below the TBR pile and does not get its own tab — if it ever grows big enough to
+          want one, that's a signal it's competing with the books being read</li>
+      <li>Per-entry actions: <em>+ TBR</em>, <em>place a hold</em> where the library lists it, <em>preorder</em>
+          via Bookshop.org or a shop the reader added</li>
+      <li>Confidence labelling — a date from a catalogue and a date from an author look different on screen</li>
+      <li>Date precision respected: "March 2027" when that's all that's known, never a fabricated day</li>
+      <li>False-positive suppression: re-issues, box sets, translations and audiobook re-releases matching a work
+          already on the shelf are dropped</li>
+      <li><strong>Next in series</strong> — the highest-value case of this whole phase. A forthcoming book sharing
+          a <code>seriesKey</code> with something the reader loved is surfaced with that connection stated
+          ("book 3 of Piranesi's series"), not as an anonymous new title</li>
+      <li><strong>Abandoned series never surface</strong> — the same rule as the recommender: a series whose first
+          read was <em>not for me</em> is suppressed here too. Being told a sequel is coming to a book you gave up
+          on is worse than being told nothing</li>
+      <li>Daily per-author check limit, staggered across authors, cached with the entry — thirty watches must not
+          mean thirty requests on a cold start</li>
+      <li>Entries expire on release day: added to TBR if the reader asked, silently removed otherwise</li>
+      <li>Watch management in Settings — see everyone you watch, unwatch in one tap</li>
+    </ul>
+
+    <h4>Deliverables — deferred to a follow-up, deliberately</h4>
+    <ul class="deliv">
+      <li>Push notification on release day. Opt-in per reader, and on iOS only possible for a home-screen-installed
+          PWA. An app with no streaks and no badges does not earn the right to push until the panel itself has
+          proven useful</li>
+      <li>Nightly server-side sweep in the Worker. Only worth it if client-side checking proves too slow or too
+          spammy — it is not needed for the feature to work</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>Watching an author with a known forthcoming book surfaces it, with a correct date, within one app open</li>
+      <li>Watching an author with nothing coming produces no panel and no empty state</li>
+      <li>No book already on the reader's shelf ever appears as "coming soon"</li>
+      <li>A sequel to a loved book is surfaced with the series connection visible</li>
+      <li>No book from a series the reader abandoned ever appears</li>
+      <li>A re-issue of a book the reader has finished does not appear</li>
+      <li>Thirty watched authors do not produce a visible delay or a request storm on a cold start</li>
+      <li>With every source failing or offline, the panel does not render — no error, no spinner, no broken layout</li>
+      <li>With the feature flag off, every trace of watching and Coming Soon disappears cleanly</li>
+      <li>Unwatching an author removes their entries immediately</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — the data simply isn't there.</strong> This is the likeliest failure in the whole plan, and
+      unlike the OverDrive risk it can't be mitigated by a fallback link. <em>Mitigation:</em> the spike above,
+      run before any code. If coverage is thin, the feature narrows to author-announced releases rather than
+      shipping something that quietly misses half of what it promises.
+    </div>
+    <div class="risk">
+      <strong>Risk — wrong author, same name.</strong> Author names are not unique, and matching by name will
+      eventually attach a stranger's book to a watched author. <em>Mitigation:</em> resolve to an Open Library
+      author key at watch time and match on that key, never on the name string. Where only a name match is
+      possible, show the entry with the matched author's name visible so a wrong match is obvious rather than
+      silent.
+    </div>
+    <div class="risk">
+      <strong>Risk — dates that move.</strong> Publication dates slip constantly, and a wrong date erodes trust
+      in the panel faster than a missing entry does. <em>Mitigation:</em> show precision honestly, update silently
+      when a source changes, and never promise a day the source didn't give.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 9 ═══════════════ -->
+<div class="phase" id="phase-9">
+  <div class="head">
+    <span class="pnum">Phase 9 · Sustainability</span>
+    <h2>Keeping it running</h2>
+    <p class="goal">Make the running cost visible, bounded, and — if anyone feels like it — coverable. Small,
+    boring, and the difference between a project that survives a bill and one that quietly gets switched off.</p>
+    <div class="badges">
+      <span class="tag ok">A day's work</span>
+      <span class="tag">Needs Phase 6 for the caps</span>
+      <span class="tag gold">Do before wide sharing</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <p>Full reasoning, cost figures and the options that were rejected are in
+    <a href="spec.html#sustain">Spec §15</a>. This phase implements the four that were accepted, cheapest first.</p>
+
+    <h4>Deliverables — spending less</h4>
+    <ul class="deliv">
+      <li><strong>Monthly budget ceiling in the Worker.</strong> When the month's AI spend passes a configured
+          figure, the recommender returns a typed <code>budget_exhausted</code> response and the UI says so in one
+          plain sentence — "the recommender is resting until the 1st". The rest of the app is untouched. A known
+          limit beats a surprise invoice</li>
+      <li>Per-user daily cap made configurable rather than hard-coded, so lowering it from 10 to 5 is a config
+          change</li>
+      <li>Model choice as a Worker config value, so the Haiku 4.5 swap — roughly a fifth the cost — is one line
+          and one deploy</li>
+      <li>Billing alert on the Anthropic account, set before anyone who isn't you touches the feature.
+          <strong>This is not optional and it is not code</strong> — do it first</li>
+      <li>Rough spend visible to you: the Worker's existing per-user counter extended with a monthly total, readable
+          without adding any logging of prompts, titles or results</li>
+    </ul>
+
+    <h4>Deliverables — bringing some in</h4>
+    <ul class="deliv">
+      <li><strong>Bring your own key.</strong> A reader can paste their own Anthropic API key in Settings; when
+          present, their requests use it and bypass the shared cap entirely. Stored on their own device only —
+          never synced to Firestore, never sent anywhere but the Worker, clearable in one tap. Costs nothing and
+          removes the ceiling for the technical few</li>
+      <li><strong>A quiet donation link</strong> in Settings — Ko-fi or GitHub Sponsors, both of which take no
+          platform cut from an individual. One line of text, no modal, no badge, no counter, no reminder,
+          nothing in the reading flow</li>
+      <li><strong>Bookshop.org affiliate on the purchase links that already exist</strong>, with the disclosure
+          shipping in the same release as the tag — at the point of the link, in plain language, not in a policy
+          page. Spec §09 promised this; breaking it for revenue would cost more than the revenue is worth</li>
+      <li>A short, honest <em>About &amp; costs</em> page: what the app costs to run, what it earns, and where the
+          money goes. Two paragraphs</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>With the monthly ceiling reached, the AI feature explains itself in one sentence and everything else
+          works normally</li>
+      <li>Lowering the daily cap or switching the model requires a config change and a deploy, not a code edit</li>
+      <li>A reader's own API key works, never leaves their device except to the Worker, and can be removed</li>
+      <li>Every affiliate link is disclosed where it appears — verified by looking at each one, not by trusting
+          the implementation</li>
+      <li>No analytics, no ad network, no third-party script has been added anywhere</li>
+      <li>The donation link is impossible to encounter unless you go looking in Settings</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — the disclosure quietly not shipping.</strong> Affiliate tags are trivial to add and the
+      disclosure is easy to leave for later, at which point the app is doing something Spec §09 and §13 both
+      say it doesn't. <em>Mitigation:</em> treat them as one deliverable, not two. If the disclosure isn't
+      written, the tag doesn't go in.
+    </div>
+    <div class="risk">
+      <strong>Risk — a stored API key.</strong> A reader's own key in <code>localStorage</code> is a real
+      credential on a shared device. <em>Mitigation:</em> local-only and never synced (a synced key is a key in
+      someone else's database), an obvious clear action, and plain text at the input explaining exactly where the
+      key goes and that it is stored on this device alone.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 10 ═══════════════ -->
+<div class="phase" id="phase-10">
+  <div class="head">
+    <span class="pnum">Phase 10 · Feature</span>
+    <h2>Authors</h2>
+    <p class="goal">Let a verified author announce their own forthcoming books to readers who already chose to
+    watch them — and host a read-along for one. The second role, on the same account.</p>
+    <div class="badges">
+      <span class="tag">Needs Phase 8</span>
+      <span class="tag warn">Club hosting deferred to Phase 11</span>
+      <span class="tag risk">Verification is the whole feature</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <p>Design and the deliberately long list of things an author <em>cannot</em> do are in
+    <a href="spec.html#authors">Spec §12</a>. The short version: an author is a reader with one verified flag,
+    reaching only readers who opted in, learning nothing about who they are, and never able to pay for anything.</p>
+
+    <div class="note">
+      <strong>Why this is worth building last and not first.</strong> It is the fix for Phase&nbsp;8's weakest
+      link — the one entity that reliably knows a book is coming is the person writing it, and for indie and
+      small-press books it's the <em>only</em> source. But it's worth nothing until there are readers watching
+      authors, which is Phase&nbsp;8's job.
+    </div>
+
+    <h4>Data model</h4>
+<pre>authors/{authorKey}
+  name, uid, verifiedAt, verificationMethod, links[]
+  <span class="c">(no watcher count — deliberately not built yet, see below)</span>
+
+  releases/{releaseId}
+    title, releaseDate, datePrecision, isbn, coverUrl,
+    preorderUrl, libraryNote, announcedAt
+
+<span class="c">Rules: world-readable (an announcement is public by nature).
+       Writable only by the uid that verified against this authorKey.
+       Nothing here ever records who is watching.</span></pre>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li>Claim flow in Settings — search for your own author entry, then verify</li>
+      <li><strong>Domain verification</strong>: sign in with an email at the author's own domain, or place a token
+          file at a URL on their site. Fully automatic, and the only method that scales</li>
+      <li><strong>Manual review</strong> path for everyone else: a claim queue only you can see, approved against
+          a public author page</li>
+      <li>Announcement composer: title, release date with explicit precision, cover, preorder link, optional
+          library note. Editable and retractable</li>
+      <li>Announcements surfaced in the Coming Soon panel of watching readers only, <strong>visibly labelled as
+          author-announced</strong> and rendered no larger and no higher than a catalogue entry</li>
+      <li>Author metadata corrections, scoped to that author's own books and visible only inside this app</li>
+      <li>Author search in the club and watch surfaces, showing the verified badge; <strong>readers remain
+          unsearchable</strong></li>
+      <li>Reader-side off switch that hides authors, watches and Coming Soon entirely</li>
+      <li>Revocation: an author role can be removed, taking their announcements with it</li>
+    </ul>
+
+    <h4>Deliberately not in this phase</h4>
+    <ul class="deliv">
+      <li><strong>The watcher count.</strong> An author was going to see how many readers watch them, withheld
+          below a threshold. It isn't built. It is the only metric in an app that has none, and nobody has yet
+          asked for it — so it waits for an author to say they need it, and for a reason that isn't
+          "because other platforms have one". Nothing in the data model depends on it, and adding it later costs
+          an aggregate query. <span class="muted">If it does arrive: aggregate only, never names, and withheld
+          below a threshold so a small following can't be deduced from who was invited</span></li>
+      <li><strong>Author-hosted clubs</strong> — they need clubs, which is now Phase&nbsp;11. Ships there, not here</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>An unverified claim stores nothing, shows nothing, and grants nothing</li>
+      <li>A verified author's announcement reaches watching readers and <em>no one else</em> — verified by
+          checking a non-watching account sees nothing</li>
+      <li>An author can obtain no information about any individual reader through any surface in the app</li>
+      <li>An author sees no reader count of any kind — there is no number to find in this build</li>
+      <li>An author cannot write to any author key but their own — verified against the rules, not the UI</li>
+      <li>An author-announced date is visually distinguishable from a catalogue date</li>
+      <li>Nothing about authorship reaches the AI recommender's prompt</li>
+      <li>With the reader-side switch off, the app is identical to Phase&nbsp;9</li>
+      <li>Revoking a role removes the announcements with it</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — impersonation.</strong> An unverified author claim converts Phase&nbsp;8's most trusted
+      source into an attack on readers. <em>Mitigation:</em> nothing displays before verification, ever. There is
+      no "pending" badge, because a pending badge is a badge.
+    </div>
+    <div class="risk">
+      <strong>Risk — manual review doesn't scale.</strong> It is fine at this size and it is the first thing to
+      break if the app grows. <em>Mitigation:</em> named as a known limit in Spec §12 with two honest exits —
+      close claiming to domain-verified authors, or pause new claims. Never lower the bar to keep up with volume.
+    </div>
+    <div class="risk">
+      <strong>Risk — this becomes a marketing channel.</strong> Every feature request after launch will push
+      toward broadcast, promotion and paid reach, and each one individually will sound reasonable.
+      <em>Mitigation:</em> the "cannot do" table in Spec §12 is the spec, not a starting position. Watching is
+      the entire permission model; if that ever stops being true, the feature has become the thing this app was
+      built not to be.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PHASE 11 ═══════════════ -->
+<div class="phase" id="phase-11">
+  <div class="head">
+    <span class="pnum">Phase 11 · The big one</span>
+    <h2>Reading together</h2>
+    <p class="goal">Book clubs: a small group, one shared book, and a conversation that structurally cannot spoil
+    it. The first genuinely multi-user feature in the app.</p>
+    <div class="badges">
+      <span class="tag gold">The biggest departure</span>
+      <span class="tag">Needs 2 &amp; 4</span>
+      <span class="tag risk">Security rules are the feature</span>
+      <span class="tag risk">Largest maintenance surface</span>
+    </div>
+  </div>
+  <div class="body">
+
+    <div class="note warn">
+      <strong>Read this before starting.</strong> Every phase before this one is a single-player app with a sync
+      backend: the worst bug loses one person's data, and the security model is four lines. A club is shared
+      state — other people's writes, other people's words, and a rule set where a mistake shows a stranger
+      something private. It is also the only feature here with a moderation surface, however small.
+      <a href="spec.html#clubs">Spec §10</a> is unusually blunt about this on purpose. It is entirely reasonable
+      to stop before this one and never build it.
+    </div>
+
+    <h4>Data model</h4>
+<pre>clubs/{clubId}
+  name, book{}, ownerUid, joinCode, visibility, createdAt
+  checkpoints[]            <span class="c">— [{ id, label, dueAt? }], may be empty</span>
+  memberUids[]             <span class="c">— denormalised, for the rules to read cheaply</span>
+
+  members/{uid}
+    displayName, joinedAt, progress, finishedAt, feeling, moods[]
+
+  messages/{msgId}
+    uid, text, checkpointIndex, createdAt, deletedAt?
+
+users/{uid}
+  clubIds[]                <span class="c">— so a reader can list their clubs without a query</span>
+  blockedUids[]            <span class="c">— per-reader, applies everywhere</span></pre>
+    <p><strong>The spoiler gate lives in the rules, not the UI.</strong> A member may read a message only when
+    <code>message.checkpointIndex &lt;= their own members/{uid}.progress</code>. Hidden-in-the-UI is not hidden —
+    anyone can open a console. This single rule is the feature; if it can't be expressed and tested, the design
+    changes rather than the promise.</p>
+
+    <h4>Deliverables</h4>
+    <ul class="deliv">
+      <li>Firestore rules for clubs, members and messages — membership-gated reads, the checkpoint gate above,
+          owner-only club mutation, author-only message edit and delete</li>
+      <li><strong>A rules test suite</strong> run against the Firestore emulator, asserting the negative cases:
+          a non-member reads nothing; a member at checkpoint 2 cannot read a checkpoint 5 message; a member
+          cannot raise another member's progress; a non-owner cannot remove a member or change the book</li>
+      <li><strong>Clubs tab</strong> — the third tab appears in the bar built in Phase&nbsp;2, and disappears
+          again cleanly when the feature flag is off. Routes <code>#/clubs</code> and
+          <code>#/club/&lt;code&gt;</code>, the latter doubling as the invite link</li>
+      <li><strong>Author-hosted clubs</strong> — deferred here from Phase&nbsp;10: a verified author can create a
+          club for one of their own books, with no special powers inside the thread. Falls away cleanly if
+          Phase&nbsp;10 was skipped</li>
+      <li>Create a club from any TBR or current-read book; invite link with a join code</li>
+      <li>Join flow: preview the book and member count, one button, and the book lands on the joiner's Current
+          Reads — or their TBR if they're already at three</li>
+      <li>Checkpoints: owner-defined, optional labels and dates; a club with none has one implicit
+          <em>finished</em> checkpoint</li>
+      <li>Progress control — tap the checkpoint you've reached; the only progress data in the app</li>
+      <li>One flat message thread per club, each message pinned to its author's checkpoint, gated on read</li>
+      <li>Finish-in-club wired to the existing finish modal — one action finishes the book in both places, and
+          reveals feelings both ways at that moment</li>
+      <li>Member list showing name and checkpoint only</li>
+      <li>Leave, and <em>leave and delete my messages</em>, as two distinct actions</li>
+      <li>Owner tools: remove a member, change the book, delete the club</li>
+      <li>Per-reader block, applying across every club, needing no one's permission</li>
+      <li>Club directory: listed clubs findable by the book they're reading. Readers remain unsearchable — this
+          indexes clubs, not people</li>
+      <li>Offline: club content readable from cache, posting queued until reconnect, never blocking the shelf</li>
+      <li>Account deletion extended to remove the reader from every club and delete their messages</li>
+    </ul>
+
+    <h4>Acceptance criteria</h4>
+    <ul class="crit">
+      <li>Two real accounts on two devices can create a club, join, post, and see each other's messages</li>
+      <li>A member at an early checkpoint cannot see a later message — <strong>verified in the console, not the
+          UI</strong></li>
+      <li>Feelings stay invisible until the reader has finished, then appear for everyone at once</li>
+      <li>Nothing outside the club's book is ever readable by another member — verified by trying</li>
+      <li>Leaving removes access immediately, and the delete-my-messages option actually deletes them</li>
+      <li>A blocked member's messages are invisible in every club, permanently</li>
+      <li>The rules test suite passes, and every negative case genuinely fails when the rule is removed</li>
+      <li>Signed out, no club surface is reachable at all</li>
+      <li>A club with twelve members and several hundred messages stays inside the Firestore free tier</li>
+      <li>With clubs disabled by flag, the app is exactly what it was in Phase&nbsp;10</li>
+    </ul>
+
+    <div class="risk">
+      <strong>Risk — a rules mistake leaks something private.</strong> The highest-severity risk in this plan.
+      Every other failure mode degrades a feature; this one breaks a promise. <em>Mitigation:</em> the emulator
+      test suite is a deliverable, not a nice-to-have, and it asserts denials rather than successes. Write the
+      negative tests before the rules. Ship behind a flag and test with two real accounts before the flag comes off.
+    </div>
+    <div class="risk">
+      <strong>Risk — write volume.</strong> Clubs are the first feature that meaningfully multiplies Firestore
+      writes: every message, every progress tap, every member document. <em>Mitigation:</em> progress is one
+      integer on one document, messages are append-only with no counters to update, and the member list is
+      denormalised so reading a club is one query. Watch the free-tier numbers after the first real club.
+    </div>
+    <div class="risk">
+      <strong>Risk — someone is unpleasant.</strong> Small and invite-shaped makes this unlikely, not impossible,
+      and there is no moderation team. <em>Mitigation:</em> owner removal and per-reader block both ship in this
+      phase, not later. The honest limit is documented in Spec §10 rather than hidden — and it's the reason
+      readers stay unsearchable and listing is opt-in.
+    </div>
+    <div class="risk">
+      <strong>Risk — the owner disappears.</strong> Unresolved in the spec, and it will happen. <em>Mitigation:</em>
+      decide before building, not after. Leaning toward automatic transfer to the longest-standing member after a
+      long inactivity window, since a club that can never be dissolved is worse than one with a slightly arbitrary
+      owner.
+    </div>
+  </div>
+</div>
+
 <h2 id="sequencing">Sequencing &amp; dependencies</h2>
 <pre>Phase 1  Refactor          ████████  ← everything depends on this
-Phase 2  Vibes                     ████        needs 1
-Phase 3  Search                    ██████      needs 1
-Phase 4  Libby                          ██████ needs 3
-Phase 5  Backend + AI                   ██████ needs 3
-Phase 6  Share-ready                          ████ needs all</pre>
+Phase 2  Navigation            ████        needs 1  ← everything mounts into this
+Phase 3  Vibes                     ████        needs 1
+Phase 4  Search                    ██████      needs 1   (Current Reads list lands here)
+Phase 5  Libby                          ██████ needs 4
+Phase 6  Backend + AI                   ██████ needs 4
+Phase 7  Share-ready                          ████ needs 1–6
+
+           ── ship it to friends here ──
+
+Phase 8  Coming soon                              ██████ needs 2, 4
+Phase 9  Keeping it running                       ██     needs 6
+Phase 10 Authors                                      ████ needs 8
+Phase 11 Reading together                                 ████████ needs 2, 4</pre>
 <table>
   <tr><th>If you want to…</th><th>Do this</th></tr>
-  <tr><td>See something delightful fastest</td><td>1 → 2. Vibes are the highest delight per hour of work in the
-      whole plan, and they prove the refactor was worth it.</td></tr>
-  <tr><td>Make daily use better fastest</td><td>1 → 3. Never mistyping a title again is the change you'll feel
-      every single time you add a book.</td></tr>
-  <tr><td>Build the thing that makes this <em>different</em></td><td>1 → 3 → 4. Library-first borrowing is the
+  <tr><td>Fix the thing that annoys you daily</td><td>1 → 2. A Finished list that isn't buried under everything
+      else, and a reading screen that's only the books you're reading.</td></tr>
+  <tr><td>See something delightful fastest</td><td>1 → 3. Vibes are the highest delight per hour of work in the
+      whole plan, and they prove the refactor was worth it. Phase 2 isn't a prerequisite, but doing it first
+      means only styling the layout once.</td></tr>
+  <tr><td>Make daily use better fastest</td><td>1 → 4. Never mistyping a title again is the change you'll feel
+      every single time you add a book — and it's where reading three books at once arrives.</td></tr>
+  <tr><td>Build the thing that makes this <em>different</em></td><td>1 → 4 → 5. Library-first borrowing is the
       part no other reading tracker does honestly.</td></tr>
-  <tr><td>Get to the headline feature</td><td>1 → 3 → 5. Phase 4 is not a prerequisite for AI; they're siblings,
+  <tr><td>Get to the headline feature</td><td>1 → 4 → 6. Phase 5 is not a prerequisite for AI; they're siblings,
       and either order works.</td></tr>
+  <tr><td>Get the best moment-of-delight after launch</td><td>4 → 8. "Susanna Clarke has a book coming in March"
+      is the single nicest thing this app could tell someone — <em>if</em> the data spike passes.</td></tr>
+  <tr><td>Sleep well before sharing widely</td><td>9, on its own. It's a day, it needs almost nothing, and it's
+      the difference between a surprise bill and a known ceiling. Do it before Phase 7's friends arrive, not after.</td></tr>
+  <tr><td>Build the ambitious one</td><td>1 → 2 → 4 → 11. Clubs are the biggest change in the plan and the only
+      one that makes this app something other people participate in — and the one that needs an audience before it
+      makes sense, which is why it is now last. Also the one most reasonable to skip entirely.</td></tr>
 </table>
-<p class="muted">Phases 4 and 5 are independent of each other — both only need 3. Do whichever you're more
+<p class="muted">Phases 5 and 6 are independent of each other — both only need 4. Do whichever you're more
 excited about; excitement is the scarcest resource in a personal project.</p>
+<p class="muted">Phase&nbsp;2 is cheap and everything visual after it inherits its frame, so it's worth doing
+before the feature phases even though only 8 and 11 strictly depend on it. The exception is if vibes are what
+will keep you interested — in that case do 3 first and accept restyling the tab bar afterwards.</p>
+<p class="muted">After Phase&nbsp;7 the ordering is genuinely yours. 9 is nearly free and should come early. 8 is
+the most delight per line of code, gated on a one-hour spike. 10 is worth little until 8 exists, and 11 is the
+most work and by far the most risk. <strong>Stopping at 9 is a complete, coherent product</strong> — 10 and 11
+turn a personal shelf into something with other people in it, which is a different kind of commitment, not just a
+larger one. Clubs sit last because they need an audience to be worth anything: a book club with nobody in it is
+just a worse version of the shelf you already have.</p>
 
 <h2 id="risks">Risk register</h2>
 <table>
   <tr><th>Risk</th><th>Phase</th><th>Severity</th><th>Mitigation</th></tr>
   <tr><td>Stale service worker after the file split</td><td>1</td><td>High</td>
-      <td>Bump cache name first; test upgrading from v13, not from a fresh install</td></tr>
+      <td>Bump <code>BUILD</code> first; test upgrading from the previously deployed build (the old
+      <code>otherworld-reads-v15</code> cache), not from a fresh install</td></tr>
   <tr><td>Sync regression during the move</td><td>1</td><td>High</td>
       <td>Move sync logic intact; re-test first-login seeding with a fresh account</td></tr>
-  <tr><td>Hard-coded colours surviving the token split</td><td>2</td><td>Low</td>
+  <tr><td>Cached shell serves old tab bar to new routes</td><td>2</td><td>Medium</td>
+      <td>Hash routes never reach the SW; the cache bump covers it — verify by opening <code>#/finished</code> on a device running the previous build</td></tr>
+  <tr><td>Tab bar covers content or the iOS home indicator</td><td>2</td><td>Low</td>
+      <td><code>env(safe-area-inset-bottom)</code> plus bottom padding on every scrollable route; check on a real notched phone</td></tr>
+  <tr><td>Hard-coded colours surviving the token split</td><td>3</td><td>Low</td>
       <td>Grep for hex and rgba outside the token files</td></tr>
-  <tr><td>Open Library relevance on short queries</td><td>3</td><td>Medium</td>
+  <tr><td>Open Library relevance on short queries</td><td>4</td><td>Medium</td>
       <td>3-char minimum, rank by edition count, cap results; Google Books held in reserve</td></tr>
-  <tr><td>OverDrive endpoint changes or blocks browsers</td><td>4</td><td>Medium</td>
+  <tr><td>OverDrive endpoint changes or blocks browsers</td><td>5</td><td>Medium</td>
       <td>Strictly optional layer behind a flag; deep links work regardless</td></tr>
-  <tr><td>Wrong edition matched at the library</td><td>4</td><td>Low</td>
+  <tr><td>Wrong edition matched at the library</td><td>5</td><td>Low</td>
       <td>Prefer ISBN; show the matched title; treat not-found as neutral</td></tr>
-  <tr><td>AI suggests books that don't exist</td><td>5</td><td>High</td>
+  <tr><td>AI suggests books that don't exist</td><td>6</td><td>High</td>
       <td>Verify every suggestion against Open Library before rendering — non-negotiable</td></tr>
-  <tr><td>AI costs more than expected</td><td>5</td><td>Medium</td>
+  <tr><td>AI costs more than expected</td><td>6</td><td>Medium</td>
       <td>Daily cap, remaining count shown in the UI, billing alert, model swap available in one line</td></tr>
-  <tr><td>Someone else's token used to call the Worker</td><td>5</td><td>High</td>
+  <tr><td>Someone else's token used to call the Worker</td><td>6</td><td>High</td>
       <td>User ID derived from the verified token only; body-supplied IDs ignored entirely</td></tr>
+  <tr><td>Forthcoming-title data too sparse to be useful</td><td>8</td><td>High</td>
+      <td>One-hour spike against five real authors <em>before</em> building; if it fails, narrow to author-announced only</td></tr>
+  <tr><td>Wrong author matched by name</td><td>8</td><td>Medium</td>
+      <td>Resolve to an Open Library author key at watch time and match on the key, never the name string</td></tr>
+  <tr><td>Request storm from many watched authors</td><td>8</td><td>Low</td>
+      <td>Once per author per day, staggered, cached with the entry</td></tr>
+  <tr><td>Surprise AI bill</td><td>9</td><td>Medium</td>
+      <td>Billing alert first, monthly ceiling with a graceful off-switch, configurable cap and model</td></tr>
+  <tr><td>Affiliate link ships without its disclosure</td><td>9</td><td>Medium</td>
+      <td>Treat tag and disclosure as one deliverable — no disclosure, no tag</td></tr>
+  <tr><td>Reader's own API key synced or leaked</td><td>9</td><td>Medium</td>
+      <td>Local-only, never written to Firestore, one-tap clear, plain text explaining where it goes</td></tr>
+  <tr><td><strong>Author impersonation</strong></td><td>10</td><td><strong>High</strong></td>
+      <td>Nothing displays before verification; no "pending" state; domain proof preferred, manual review otherwise</td></tr>
+  <tr><td>Manual verification stops scaling</td><td>10</td><td>Medium</td>
+      <td>Two named exits — domain-only claiming, or pause new claims. Never lower the bar to keep up</td></tr>
+  <tr><td>Author features drift into a marketing channel</td><td>10</td><td>Medium</td>
+      <td>The "cannot do" table in Spec §12 is the spec; watching stays the entire permission model</td></tr>
+  <tr><td><strong>Firestore rules leak private data across club members</strong></td><td>11</td><td><strong>Critical</strong></td>
+      <td>Emulator test suite asserting denials, written before the rules; flag-gated; two-account test before launch</td></tr>
+  <tr><td>Spoiler gate enforced only in the UI</td><td>11</td><td>High</td>
+      <td>The checkpoint comparison lives in the security rules; verified from the console, not the interface</td></tr>
+  <tr><td>Club writes blow through the Firestore free tier</td><td>11</td><td>Medium</td>
+      <td>Progress is one integer, messages append-only with no counters, member list denormalised; watch after the first real club</td></tr>
+  <tr><td>Unpleasant behaviour with no moderation team</td><td>11</td><td>Medium</td>
+      <td>Owner removal and per-reader block ship in-phase; clubs stay small and invite-shaped; readers unsearchable</td></tr>
+  <tr><td>Club owner disappears and the club is stuck</td><td>11</td><td>Low</td>
+      <td>Decide the transfer rule before building — likely automatic transfer after long inactivity</td></tr>
 </table>
 
 <hr>
 <footer class="doc">
-  <p>Otherworld Reads — build plan v1.0.<br>
+  <p>Otherworld Reads — build plan v1.1.<br>
   Product spec, flows, and design decisions: <a href="spec.html">spec.html</a></p>
 </footer>
 

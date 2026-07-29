@@ -1,0 +1,41 @@
+/* Every colour in the app, in one place.
+   Components reference these and never a raw hex or rgba() — that's what makes
+   Phase 3's vibes a new token file rather than a rewrite of every rule. */
+:root{
+  /* Ground */
+  --bg-1: #0b0710;
+  --bg-2: #0f0d1a;
+  --bg-glow-1: #1a0f2b22;
+  --bg-glow-2: #07122633;
+  --card: #121016;
+
+  /* Ink */
+  --ink: #e8e7ec;
+  --muted: #9aa0a6;
+  --on-accent: #081013;
+
+  /* Accents */
+  --accent: #8bd3c7;   /* teal */
+  --accent-2: #d4b04b; /* gold */
+  --accent-soft: rgba(139,211,199,0.25);
+
+  /* Surfaces + hairlines, lightest to heaviest */
+  --glass: rgba(255,255,255,0.03);
+  --surface-1: rgba(255,255,255,0.01);
+  --surface-2: rgba(255,255,255,0.02);
+  --line-1: rgba(255,255,255,0.03);
+  --line-2: rgba(255,255,255,0.04);
+  --line-3: rgba(255,255,255,0.08);
+  --line-4: rgba(255,255,255,0.1);
+  --sunken: rgba(0,0,0,0.25);
+
+  /* Depth */
+  --shadow-1: rgba(0,0,0,0.45);
+  --shadow-2: rgba(0,0,0,0.6);
+  --scrim-1: rgba(0,0,0,0.6);
+  --scrim-2: rgba(0,0,0,0.7);
+
+  /* Type */
+  --font-body: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --font-display: 'Cinzel', serif;
+}
