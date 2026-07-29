@@ -9,8 +9,14 @@ const open = new Set()
 export function isAnyModalOpen(){ return open.size > 0 }
 
 // True when a visible text input anywhere has content the user would lose.
+//
+// Search and filter boxes are excluded deliberately. They're visible for as
+// long as you're on the Finished tab, so counting them would let a forgotten
+// search term defer a pending update forever — and a re-typed search is not a
+// loss worth blocking one for.
 export function hasDirtyInput(){
   return Array.from(document.querySelectorAll('input, textarea'))
+    .filter(i => i.type !== 'search')
     .some(i => i.offsetParent !== null && String(i.value || '').trim() !== '')
 }
 
@@ -32,7 +38,16 @@ export function createModal(el, { onClose } = {}){
     if(onClose) onClose()
   }
 
-  function onKeydown(e){ if(e.key === 'Escape'){ e.preventDefault(); close() } }
+  // Escape dismisses one layer at a time. Each open modal has its own
+  // document-level handler, so without this check a modal opened from the
+  // settings sheet would take the sheet down with it. `open` is insertion
+  // ordered, so the last entry is the topmost layer.
+  function onKeydown(e){
+    if(e.key !== 'Escape') return
+    if(Array.from(open).pop() !== el) return
+    e.preventDefault()
+    close()
+  }
 
   function openModal(focusTarget){
     if(!el.hidden) return

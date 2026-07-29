@@ -1,31 +1,60 @@
-// Boot: load state, mount components, register the service worker.
-import { init as initStore } from './state/store.js'
-import { mountHeader } from './components/header.js'
-import { mountCurrentReads } from './components/current-reads.js'
-import { mountTbrPile } from './components/tbr-pile.js'
-import { mountFinishedList } from './components/finished-list.js'
-import { mountLibraries } from './components/libraries.js'
+// Boot: load state, mount the shell, wire the routes, register the SW.
+import {
+  init as initStore, addLibrary, editLibrary, addBookstore, editBookstore
+} from './state/store.js'
 import { mountFinishModal } from './components/modals/finish-modal.js'
 import { mountBookModal } from './components/modals/book-modal.js'
-import { mountLibraryModal } from './components/modals/library-modal.js'
+import { mountPlaceModal } from './components/modals/place-modal.js'
+import { mountHiddenShelf } from './components/hidden-shelf.js'
+import { mountTabBar } from './components/tab-bar.js'
+import { createRouter } from './routes/router.js'
+import { mountReading } from './routes/reading.js'
+import { mountFinished } from './routes/finished.js'
 import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 
 // Shown in the footer. Tracks the plan's phases, not individual releases: it
 // reads 0.N once phase N is complete, so finishing phase 7 — the "ready to
 // share" milestone — is what makes this 1.0. Most releases leave it untouched.
 // This is NOT the cache buster; sw.js has its own BUILD counter for that.
-export const APP_VERSION = '0.1'
+export const APP_VERSION = '0.2'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
   const bookModal = mountBookModal(document.getElementById('wishlist-modal'))
-  const libraryModal = mountLibraryModal(document.getElementById('library-modal'))
+  const libraryModal = mountPlaceModal(document.getElementById('library-modal'), {
+    addTitle: 'Add to Library', editTitle: 'Edit Library',
+    onAdd: addLibrary, onEdit: editLibrary
+  })
+  const bookstoreModal = mountPlaceModal(document.getElementById('bookstore-modal'), {
+    addTitle: 'Add a Bookstore', editTitle: 'Edit Bookstore',
+    onAdd: addBookstore, onEdit: editBookstore
+  })
 
-  mountHeader(document.getElementById('auth-area'))
-  mountCurrentReads(document.querySelector('.current-panel'), { finishModal })
-  mountTbrPile(document.querySelector('.wishlist-panel'), { bookModal })
-  mountFinishedList(document.querySelector('.finished-panel'))
-  mountLibraries(document.querySelector('.library-panel'), { libraryModal })
+  const readingEl = document.getElementById('route-reading')
+  const finishedEl = document.getElementById('route-finished')
+
+  // Both routes mount once, at boot, and stay mounted. They re-render from the
+  // store whether or not they're the visible tab, which costs nothing at this
+  // size and means switching tabs never waits on a render.
+  mountReading(readingEl, { finishModal, bookModal })
+  mountFinished(finishedEl)
+
+  mountHiddenShelf(document.getElementById('hidden-shelf'), {
+    libraryModal,
+    bookstoreModal,
+    openButton: document.getElementById('shelf-btn')
+  })
+
+  const tabs = mountTabBar(document.getElementById('tab-bar'))
+
+  createRouter({
+    routes: [
+      { path: '/', el: readingEl },
+      { path: '/finished', el: finishedEl }
+    ],
+    fallback: '/',
+    onChange: (path) => tabs.setActive(path)
+  })
 
   // Close any open dropdown when clicking elsewhere.
   document.addEventListener('click', (e) => {

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+#
+# Refuse to push a change to a precached file without bumping BUILD in sw.js.
+#
+# Otherworld Reads is an installed PWA: the service worker serves the app shell
+# cache-first, and the ONLY thing that invalidates that cache is the BUILD
+# counter feeding the CACHE name. Ship a changed file without moving BUILD and
+# every phone that already has the app keeps running the old code — silently,
+# with nothing on screen to say so. APP_VERSION deliberately does not track
+# deploys (it tracks plan phases), so it cannot serve as this safety net.
+#
+# Bypass with: git push --no-verify
+#
+set -uo pipefail
+
+fail() { echo "" >&2; echo "$@" >&2; echo "" >&2; }
+
+# Read the precache list out of a given revision's sw.js, as repo-relative
+# paths. Entries look like "  './js/main.js',"; './' itself becomes empty and
+# is dropped.
+assets_at() {
+  git show "$1:sw.js" 2>/dev/null \
+    | sed -n '/^const ASSETS/,/^\];/p' \
+    | grep -oE "'\./[^']*'" \
+    | tr -d "'" \
+    | sed 's|^\./||' \
+    | grep -v '^$'
+}
+
+build_at() {
+  git show "$1:sw.js" 2>/dev/null \
+    | sed -n 's/^const BUILD *= *\([0-9][0-9]*\).*/\1/p' \
+    | head -1
+}
+
+status=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Branch deletion — nothing to check.
+  [[ "$local_sha" =~ ^0+$ ]] && continue
+
+  if [[ "$remote_sha" =~ ^0+$ ]]; then
+    # New branch on the remote: compare against wherever it diverged from main.
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null) || base=""
+  else
+    base="$remote_sha"
+  fi
+
+  # No usable base (first push of a fresh repo) — nothing to compare, allow it.
+  [[ -z "$base" ]] && continue
+
+  changed=$(git diff --name-only "$base" "$local_sha" -- 2>/dev/null)
+  [[ -z "$changed" ]] && continue
+
+  assets=$(assets_at "$local_sha")
+  if [[ -z "$assets" ]]; then
+    fail "pre-push: could not parse the ASSETS list in sw.js. Fix the hook in
+  .githooks/pre-push, or push with --no-verify if this is intentional."
+    exit 1
+  fi
+
+  # Which of the changed files are actually precached?
+  hits=""
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    if grep -Fxq -- "$f" <<<"$assets"; then
+      hits+="  $f"$'\n'
+    fi
+  done <<<"$changed"
+
+  [[ -z "$hits" ]] && continue
+
+  old_build=$(build_at "$base")
+  new_build=$(build_at "$local_sha")
+
+  if [[ -z "$new_build" ]]; then
+    fail "pre-push: no 'const BUILD = <number>' found in sw.js on ${local_ref#refs/heads/}."
+    status=1
+    continue
+  fi
+
+  # sw.js absent or differently shaped at the base — can't compare, allow.
+  [[ -z "$old_build" ]] && continue
+
+  if (( new_build <= old_build )); then
+    fail "pre-push: BUILD in sw.js is still $new_build, but these precached files changed:
+
+$hits
+Installed phones would keep serving the cached copies of those files
+indefinitely. Raise BUILD to $((old_build + 1)) in sw.js, amend or add a
+commit, and push again.
+
+  (APP_VERSION is a separate number and should NOT be bumped here — it
+   tracks plan phases, not deploys.)
+
+To push anyway: git push --no-verify"
+    status=1
+  fi
+done
+
+exit $status

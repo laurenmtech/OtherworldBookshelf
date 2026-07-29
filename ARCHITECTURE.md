@@ -31,7 +31,12 @@ styles/
   components.css      panels, cards, lists, buttons, chips, modals
 
 js/
-  main.js             boot: init store, mount components, register SW
+  main.js             boot: init store, mount the shell, wire routes, register SW
+
+  routes/
+    router.js         hash routing, per-tab scroll, focus on change
+    reading.js        #/          current reads + TBR
+    finished.js       #/finished  the archive, with search and filters
 
   state/
     store.js          the single source of truth + subscribe()
@@ -41,21 +46,53 @@ js/
     auth.js           Google sign-in, Firestore handle
 
   components/
-    header.js         account controls + sync status
+    tab-bar.js        the two tabs; bottom bar on a phone, header links wide
+    hidden-shelf.js   "The Hidden Shelf": card, places, record
+    header.js         account controls + sync status (rendered in the sheet)
     current-reads.js  the Current Read card
     tbr-pile.js       what's next
-    finished-list.js  the record
-    libraries.js      libraries and bookshops
+    finished-list.js  the record — renders an already-filtered list
+    places.js         saved places: libraries AND bookstores, one list impl
     modals/
-      finish-modal.js   how was it? feeling + moods
+      finish-modal.js   how was it? feeling + vibes
       book-modal.js     add/edit a TBR book
-      library-modal.js  add/edit a library
+      place-modal.js    add/edit a library or a bookstore
 
   ui/
     dom.js            el(), escapeHtml(), iconButton(), focus trap
     modal.js          shared open/close/backdrop/Escape/focus behaviour
+    sheet.js          bottom-sheet behaviour, built on modal.js
     chips.js          the selectable-chip control
 ```
+
+## Navigation
+
+Hash routes (`#/`, `#/finished`) — no server rewrite rules, so this stays
+deployable to GitHub Pages unchanged, and Phase 11's `#/club/<code>` already
+has a matcher waiting for it.
+
+Both routes mount once at boot and stay mounted, re-rendering from the store
+whether or not they're the visible tab. `router.js` owns the three things every
+route change must do — swap which section is visible, restore that route's
+scroll position, and move focus to its heading — so no route has to remember
+them. The tab is never persisted: a cold start always lands on Reading, but a
+pasted `#/finished` link still opens Finished.
+
+## Saved places
+
+Libraries and bookstores are the same thing — a name, a link, add/edit/remove —
+so they share `places.js` and `place-modal.js` rather than existing as two
+near-identical files. Each section supplies its own hooks by data attribute
+(`data-place-list`, `data-place-add`, `data-place-empty`) and its own store
+actions, which is all that differs between them.
+
+## Vibes
+
+The vibe vocabulary lives in `MOOD_GROUPS` in `finish-modal.js`. Vibes you type
+yourself are **not** stored in their own list — `customMoods()` reads them back
+off the books that carry them. That's why adding one needs no migration, and
+why the Finished filters can derive their chips from the data rather than from
+a fixed list.
 
 ## How state flows
 
@@ -118,6 +155,22 @@ document without wiping the newer field. Remove that mirror in Phase 4.
 5. Bump `BUILD` in `sw.js`. Do this on every deploy — it is what invalidates the
    old cache. `APP_VERSION` in `js/main.js` is separate: it tracks plan phases
    (`0.N` after phase N, `1.0` at phase 7), so most deploys leave it alone.
+
+## The pre-push hook
+
+`.githooks/pre-push` blocks any push that changes a file listed in `sw.js`'s
+`ASSETS` without raising `BUILD`. Forgetting that bump ships an app that never
+updates itself, and nothing on screen reveals it — hence a hook rather than a
+habit. Docs-only pushes (`plan.html`, `spec.html`, this file) are unaffected,
+since they aren't precached.
+
+Hooks are not installed by cloning. In a fresh clone, run once:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Override for a single push with `git push --no-verify`.
 
 ## Updates
 
