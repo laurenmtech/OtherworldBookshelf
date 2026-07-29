@@ -1,10 +1,13 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
 
-export const SHAPE_VERSION = 2
+export const SHAPE_VERSION = 3
 
 export function emptyState(){
-  return { currentReads: [], wishlist: [], finished: [], library: [] }
+  return {
+    currentReads: [], wishlist: [], finished: [],
+    library: [], bookstores: []
+  }
 }
 
 // v1 → v2: `current` (a single book or null) becomes `currentReads` (an array).
@@ -16,6 +19,9 @@ function toCurrentReads(data){
   return []
 }
 
+// v2 → v3: bookstores. Older data simply defaults to an empty list — nothing to
+// convert, which is why this is safe to run against every snapshot forever.
+
 // Normalise any stored or remote payload into the shape the store guarantees.
 // Unknown keys are dropped; missing keys get empty defaults.
 export function migrate(data){
@@ -24,7 +30,8 @@ export function migrate(data){
     currentReads: toCurrentReads(data),
     wishlist: Array.isArray(data.wishlist) ? data.wishlist : [],
     finished: Array.isArray(data.finished) ? data.finished : [],
-    library: Array.isArray(data.library) ? data.library : []
+    library: Array.isArray(data.library) ? data.library : [],
+    bookstores: Array.isArray(data.bookstores) ? data.bookstores : []
   }
 }
 
@@ -38,10 +45,15 @@ export function toStorage(state){
     current: state.currentReads[0] || null,
     wishlist: state.wishlist,
     finished: state.finished,
-    library: state.library
+    library: state.library,
+    bookstores: state.bookstores
   }
 }
 
+// Whether a payload holds anything at all. This decides whether a remote
+// snapshot is real enough to replace what's on this device, so it must only
+// ever count actual content — if a preference were ever added to the state,
+// it does not belong in here.
 export function isEmptyState(s){
   if(!s) return true
   const migrated = migrate(s)
@@ -49,4 +61,5 @@ export function isEmptyState(s){
     && !migrated.wishlist.length
     && !migrated.finished.length
     && !migrated.library.length
+    && !migrated.bookstores.length
 }

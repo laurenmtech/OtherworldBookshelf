@@ -102,7 +102,7 @@
 <table>
   <tr><td>Phase 0</td><td><a href="#phase-0">Ground rules</a></td><td class="muted">Conventions every phase follows</td></tr>
   <tr><td>Phase 1</td><td><a href="#phase-1">Refactor: modules &amp; a real state store</a></td><td class="muted">Split the monolith, no new features</td></tr>
-  <tr><td>Phase 2</td><td><a href="#phase-2">Navigation &amp; the shell</a></td><td class="muted">Tab bar, routes, settings sheet</td></tr>
+  <tr><td>Phase 2</td><td><a href="#phase-2">Navigation &amp; the shell</a></td><td class="muted">Tab bar, routes, the Hidden Shelf</td></tr>
   <tr><td>Phase 3</td><td><a href="#phase-3">Vibes</a></td><td class="muted">Choose and change your library's look</td></tr>
   <tr><td>Phase 4</td><td><a href="#phase-4">Book search &amp; autofill</a></td><td class="muted">Stop typing titles by hand</td></tr>
   <tr><td>Phase 5</td><td><a href="#phase-5">Libraries, Libby &amp; local shops</a></td><td class="muted">Real availability, real borrow links</td></tr>
@@ -367,7 +367,7 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
     <span class="pnum">Phase 2 · Foundation</span>
     <h2>Navigation &amp; the shell</h2>
     <p class="goal">Replace the single phone-length scroll with a tab bar and real routes, and move configuration
-    behind a settings sheet. The first change anyone will notice — and the frame every later phase mounts into.</p>
+    behind the Hidden Shelf. The first change anyone will notice — and the frame every later phase mounts into.</p>
     <div class="badges">
       <span class="tag">Needs Phase 1</span>
       <span class="tag gold">Shapes Phases 3–11</span>
@@ -395,7 +395,7 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
 
     <span class="c">/components</span>
       tab-bar.js
-      settings-sheet.js <span class="c">— vibe, libraries, account, export</span>
+      hidden-shelf.js   <span class="c">— "The Hidden Shelf": card, places, record</span>
       libraries.js      <span class="c">— moved: now rendered inside the sheet</span>
 
     <span class="c">/ui</span>
@@ -413,15 +413,27 @@ store.dispatch(action)        <span class="c">— the only way to change anythin
           <code>env(safe-area-inset-bottom)</code> honoured, moving into the header as plain text links above the
           wide breakpoint. Built to take a third tab without a redesign</li>
       <li>Reading route: Current Reads and the TBR pile — everything touched daily, nothing else</li>
-      <li><strong>Finished route</strong>, and the things it could never afford at the bottom of a scroll: grouped
-          by year with a per-year count, filterable by feeling and mood, searchable by title or author. Filters
-          are built over an open set of states so Phase&nbsp;4 can add "set down" without reworking them.
+      <li><strong>Finished route</strong>, and the things it could never afford at the bottom of a scroll:
+          filterable by feeling and vibe, searchable by title or author, newest first, with a plain count.
+          Filters are built over an open set of states — their chips are derived from the entries themselves —
+          so Phase&nbsp;4 can add "set down" without reworking them. Not grouped: vibes are multi-valued, so any
+          grouping would file a book in two places at once, and genre isn't in the data model until Phase&nbsp;4.
           <span class="muted">No charts, no pace, no stats — a count is a memory, a graph is a target</span></li>
+      <li><strong>Vibes that fit more than fantasy</strong> — three groups (Atmosphere, Story, Mind) plus a
+          free-text "new vibe" whose entries are read back off the books carrying them, so horror, science
+          fiction and non-fiction stop borrowing words meant for something else</li>
       <li>Per-tab scroll position preserved within a session; cold start always lands on Reading, never on the
           last tab used</li>
       <li>No badges, no counts, no dots on the tab bar — the rule written down before anything wants to break it</li>
-      <li><strong>Settings sheet</strong> behind the header ⚙: vibe, libraries, account, export and delete, with
-          <code>libraries.js</code> moved off the main screen into it</li>
+      <li><strong>The Hidden Shelf</strong> behind the header bookmark: vibe, your card, libraries, and your
+          record (export and delete), with
+          the libraries list moved off the main screen into it</li>
+      <li><strong>Favourite bookstores</strong> — the same saved-place list as libraries, sharing one
+          implementation (<code>places.js</code>) rather than a second copy of it. Phase&nbsp;5 grows real
+          availability and buy links onto these</li>
+      <li class="muted">A "how I read" format preference was built here and removed: it stored a setting nothing
+          read, and a control that does nothing is worse than the question going unasked. If Phase&nbsp;5 wants to
+          know which borrow and buy links to show, that's the phase that should ask</li>
       <li>Sheet reuses the Phase&nbsp;1 focus-trap helper rather than growing a second implementation</li>
       <li><code>sw.js</code> precache list updated for the new files</li>
     </ul>

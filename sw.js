@@ -5,7 +5,7 @@
 // human-facing milestone that sits still for whole phases at a time, while this
 // is the cache buster. A deploy that doesn't move BUILD serves stale files to
 // everyone who already has the app installed.
-const BUILD = 16;
+const BUILD = 17;
 const CACHE = 'otherworld-reads-build-' + BUILD;
 const ASSETS = [
   './',
@@ -23,16 +23,22 @@ const ASSETS = [
   './js/state/persist-local.js',
   './js/state/persist-cloud.js',
   './js/state/auth.js',
+  './js/routes/router.js',
+  './js/routes/reading.js',
+  './js/routes/finished.js',
   './js/components/header.js',
+  './js/components/tab-bar.js',
+  './js/components/hidden-shelf.js',
   './js/components/current-reads.js',
   './js/components/tbr-pile.js',
   './js/components/finished-list.js',
-  './js/components/libraries.js',
+  './js/components/places.js',
   './js/components/modals/finish-modal.js',
   './js/components/modals/book-modal.js',
-  './js/components/modals/library-modal.js',
+  './js/components/modals/place-modal.js',
   './js/ui/dom.js',
   './js/ui/modal.js',
+  './js/ui/sheet.js',
   './js/ui/chips.js',
 
   './icon-192.png',

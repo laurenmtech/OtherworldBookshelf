@@ -248,8 +248,9 @@ navigation pattern an installed PWA can wear without looking like a website in a
   <tr><td><strong>Finished</strong></td>
       <td>The full record, newest first</td>
       <td>It grows without limit and is browsed rather than managed — a fundamentally different activity from
-      deciding what to read next. Given its own page it can finally afford to be good: grouped by year, filterable
-      by feeling and mood, searchable.</td></tr>
+      deciding what to read next. Given its own page it can finally afford to be good: filterable by feeling and
+      vibe, searchable by title or author, newest first. Not grouped — vibes are multi-valued, so grouping would
+      file a book in two places at once, and genre isn't in the data model until Phase&nbsp;4.</td></tr>
   <tr><td><strong>Clubs</strong> <span class="muted">(Phase 11)</span></td>
       <td>The clubs you're in</td>
       <td>Shared, conversational, and paced by other people. It doesn't belong in the same scroll as a private
@@ -276,7 +277,7 @@ navigation pattern an installed PWA can wear without looking like a website in a
       layout.</li>
 </ul>
 
-<h4>The settings sheet</h4>
+<h4>The Hidden Shelf</h4>
 <p>The header's ⚙ opens everything that is configuration rather than reading — and <strong>Libraries moves in
 with it</strong>. You choose your library once and then leave it alone for a year; it doesn't earn permanent space
 on the screen you look at every day. This costs nothing at the point of use, because the part of the library that
@@ -316,7 +317,7 @@ matters — the borrow row, the availability, the Libby link — lives on the bo
     <td>Today this is a free-text name and link. It becomes a real entity: a picked library system with an
         OverDrive key (enabling availability), a local bookshop, or a plain bookmark. <code>label</code> is
         whatever the reader calls it and is what the UI shows; <code>officialName</code> is what the library calls
-        itself and is only used for disambiguation. Managed in the settings sheet; <em>used</em> on the books
+        itself and is only used for disambiguation. Managed in the Hidden Shelf; <em>used</em> on the books
         themselves.</td>
   </tr>
   <tr>
@@ -525,9 +526,13 @@ This replaces that with a single search field that suggests real books as you ty
   <li><strong>Save.</strong> The book moves to the top of Finished with today's date. Current Read empties and
       invites the next one.</li>
 </ol>
-<p class="muted">The moods captured here — Cozy, Epic, Dark, Comfort-read, Romantic, Twisty, Slow-burn, Funny,
-Mind-expanding, Practical — are the same vocabulary the AI recommender uses. That's not a coincidence; it's the
-point. The more you finish, the better it knows your taste.</p>
+<p class="muted">The vibes captured here are the same vocabulary the AI recommender uses. That's not a
+coincidence; it's the point. The more you finish, the better it knows your taste. They come in three groups —
+<em>Atmosphere</em> (Cozy, Dark, Creepy, Dread, Bleak, Whimsical, Hopeful), <em>Story</em> (Epic, Twisty,
+Slow-burn, Fast-paced, Tense, Funny, Devastating, Romantic, Comfort-read) and <em>Mind</em> (Mind-expanding,
+Mind-bending, Practical, Dense, Eye-opening) — and you can add your own, because a fixed list picked for fantasy
+had nothing to say about a horror novel or a textbook. Vibes you type are remembered by being read back off the
+books that carry them, so the vocabulary never needs its own storage.</p>
 
 <h3>More than one at once</h3>
 <p>Plenty of people read a novel at bedtime, a non-fiction book on the commute, and an audiobook while cooking.
@@ -664,7 +669,7 @@ and the answer is grounded in a real library's collection, not a guess.</p>
 
 <h3>Setting up your library</h3>
 <ol class="flow">
-  <li>Libraries — now in the settings sheet (§04) — gains an <strong>Add library</strong> flow that searches actual library systems by name
+  <li>Libraries — now in the Hidden Shelf (§04) — gains an <strong>Add library</strong> flow that searches actual library systems by name
       or place, rather than asking for a name and a URL.</li>
   <li>Picking one stores its OverDrive key. That key is what unlocks availability.</li>
   <li><strong>Name it yourself.</strong> The next field is <em>What do you call it?</em>, pre-filled with the
@@ -687,7 +692,7 @@ and the answer is grounded in a real library's collection, not a guess.</p>
   <tr><td>On hold</td><td><span class="tag warn">~15 day wait</span> · 168 holds on 164 copies</td><td>Opens the title in Libby, ready to place a hold.</td></tr>
   <tr><td>Not in collection</td><td><span class="muted">Not at County</span> — the row uses your name for the
       library, not its official one</td><td>Offers a Libby search, plus a link to buy it from an independent bookshop.</td></tr>
-  <tr><td>No library set</td><td><span class="muted">Add a library to see availability</span></td><td>Opens the settings sheet at Libraries, and returns you here afterwards.</td></tr>
+  <tr><td>No library set</td><td><span class="muted">Add a library to see availability</span></td><td>Opens the Hidden Shelf at Libraries, and returns you here afterwards.</td></tr>
   <tr><td>Lookup failed / offline</td><td>Row is hidden entirely</td><td>—</td></tr>
 </table>
 
@@ -1042,7 +1047,7 @@ vector. So claiming is gated, and an unverified claim stores nothing and display
     <ul style="margin:0;padding-left:18px">
       <li>WCAG AA contrast in every vibe, verified per release</li>
       <li>Every action reachable by keyboard; visible focus rings</li>
-      <li>Modals and the settings sheet trap focus and restore it on close</li>
+      <li>Modals and the Hidden Shelf trap focus and restore it on close</li>
       <li>16px minimum on inputs (no iOS zoom-on-focus)</li>
       <li>44px minimum tap targets, tab bar included</li>
       <li>The tab bar is a <code>nav</code> landmark; the active tab is marked <code>aria-current</code></li>

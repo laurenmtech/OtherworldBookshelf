@@ -32,11 +32,11 @@ export function singleSelect(container, options, { onChange } = {}){
   }
 }
 
-// Returns { getValue, clear } — multi-select value is an array of keys.
+// Returns { getValue, setValue, clear } — multi-select value is an array of keys.
 export function multiSelect(container, options, { onChange } = {}){
   const opts = options.map(o => (typeof o === 'string' ? { key: o, label: o } : o))
   const chosen = new Set()
-  if(!container) return { getValue: () => [], clear(){} }
+  if(!container) return { getValue: () => [], setValue(){}, clear(){} }
 
   container.innerHTML = ''
   const buttons = opts.map(o => {
@@ -53,8 +53,17 @@ export function multiSelect(container, options, { onChange } = {}){
     return b
   })
 
+  function paint(){ buttons.forEach((b, i) => b.classList.toggle('selected', chosen.has(opts[i].key))) }
+
   return {
     getValue: () => Array.from(chosen),
-    clear(){ chosen.clear(); buttons.forEach(b => b.classList.remove('selected')) }
+    // Used when the option set is rebuilt from data and a selection has to
+    // survive the rebuild. Keys no longer on offer are simply dropped.
+    setValue(keys){
+      chosen.clear()
+      for(const k of keys || []) if(opts.some(o => o.key === k)) chosen.add(k)
+      paint()
+    },
+    clear(){ chosen.clear(); paint() }
   }
 }

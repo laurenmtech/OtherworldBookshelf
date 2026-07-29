@@ -39,8 +39,8 @@
 /* wishlist title highlight */
 .wishlist-title{ color: var(--accent-2); font-weight:600 }
 
-/* library link styling */
-.library-panel .list a{ color:var(--accent-2); text-decoration:underline }
+/* saved-place link styling (libraries, bookstores) */
+.place-panel .list a{ color:var(--accent-2); text-decoration:underline; word-break:break-all }
 
 .list-actions{ display:flex; gap:8px; margin-top:6px }
 .list-actions .btn{ padding:6px 10px; font-size:13px }
@@ -68,15 +68,17 @@
 .dropdown.open .dropdown-menu{ display:flex }
 .dropdown-menu .btn{ width:100%; justify-content:flex-start }
 
-/* Collapsible Finished Books */
-.finished-details > summary{
-  cursor:pointer; list-style:none; user-select:none;
-  display:flex; align-items:center; justify-content:space-between;
-  font-size:16px; color:var(--accent); margin:0 0 12px;
+/* Finished route: filter bar and the year groups */
+.filters{ margin-bottom:16px }
+.filters .field{ margin-bottom:12px }
+.filters input[type=search]{
+  width:100%; padding:9px 12px; border-radius:9px;
+  border:1px solid var(--line-2); background:var(--sunken); color:inherit;
 }
-.finished-details > summary::-webkit-details-marker{ display:none }
-.finished-details > summary::after{ content:"\25B8"; color:var(--muted); transition:transform .18s ease }
-.finished-details[open] > summary::after{ transform:rotate(90deg) }
+.filters label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
+.filters .field[hidden]{ display:none }
+
+.finished-count{ margin:0 0 10px; font-size:12px }
 
 /* Ordering here is load-bearing, and was inherited from the original single
    stylesheet. `.hidden` must come AFTER `.card-display` — otherwise a hidden
@@ -86,12 +88,83 @@
    over `.hidden{display:none}` for a modal to ever open. Don't move this. */
 .hidden{ display:none }
 
-.modal{ position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, var(--scrim-1), var(--scrim-2)); }
+/* Above the settings sheet (80): the library and TBR modals are opened *from*
+   the sheet, so they have to land on top of it rather than behind. Tab bar 60,
+   sheet 80, modals 100 — the whole stacking order, in one place. */
+.modal{ position:fixed; left:0; right:0; top:0; bottom:0; z-index:100; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, var(--scrim-1), var(--scrim-2)); }
 .modal[hidden]{ display:none !important; }
-.finish-inner{ background:var(--card); padding:18px; border-radius:12px; width:320px }
+/* Wide enough for three groups of vibe chips, and able to scroll when the
+   list of them outgrows a short phone. */
+.finish-inner{
+  background:var(--card); padding:18px; border-radius:12px;
+  width:min(380px, calc(100vw - 28px)); max-height:88vh; overflow-y:auto;
+}
+
+/* Grouped vibe chips in the finish modal */
+.mood-group + .mood-group{ margin-top:12px }
+.mood-group-label{
+  font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); margin-bottom:6px;
+}
+.new-vibe{ display:flex; gap:8px; margin-top:12px }
+.new-vibe input{ flex:1; min-width:0 }
+
+/* The ⚙ in the header. Absolute so the title stays optically centred. */
+.icon-btn{
+  position:absolute; right:16px; top:22px;
+  width:38px; height:38px; border-radius:10px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:transparent; color:var(--accent); border:1px solid var(--line-1);
+  transition:all .14s ease;
+}
+.icon-btn:hover{ box-shadow:0 8px 18px var(--shadow-1) }
+.icon-btn:active{ transform:translateY(1px); box-shadow:none }
+.icon-btn svg{ width:19px; height:19px; fill:currentColor }
+
+/* ── Settings sheet ─────────────────────────────────────────────────────────
+   Slides up from the bottom edge on a phone, a centred dialog on a wide
+   screen. Same scrim as the modals; the behaviour comes from ui/sheet.js. */
+.sheet{
+  position:fixed; inset:0; z-index:80;
+  display:flex; align-items:flex-end; justify-content:center;
+  background:linear-gradient(180deg, var(--scrim-1), var(--scrim-2));
+}
+.sheet[hidden]{ display:none !important }
+/* Set by ui/sheet.js while the sheet is up, so the page doesn't scroll
+   underneath it. */
+body.sheet-open{ overflow:hidden }
+.sheet-inner{
+  background:var(--card); width:100%; max-width:560px;
+  max-height:88vh; overflow-y:auto;
+  border-radius:16px 16px 0 0; padding:18px;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  box-shadow:0 -10px 40px var(--shadow-2);
+}
+.sheet-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px }
+.sheet-head h2{ margin:0; font-family:var(--font-display); font-size:20px; color:var(--accent-2) }
+.sheet-section{ padding:16px 0; border-top:1px solid var(--line-2) }
+.sheet-section h3{ margin:0 0 10px; font-size:14px; color:var(--accent) }
+.sheet-section > .muted{ margin:0 0 10px }
+
+@media (min-width:761px){
+  .sheet{ align-items:center }
+  .sheet-inner{ border-radius:16px; max-height:82vh; padding-bottom:18px }
+}
+
+/* Account block, now living inside the sheet rather than the header. */
+.auth{ display:flex; flex-direction:column; align-items:flex-start; gap:8px }
+.user-info{ display:flex; align-items:center; gap:8px }
+.user-info.hidden{ display:none }
+.user-avatar{ width:26px; height:26px; border-radius:50%; object-fit:cover; border:1px solid var(--line-4) }
+.sync-status{ font-size:11px; opacity:0.7 }
+
+/* Destructive action — reads as a warning without shouting. */
+.btn.danger{ color:var(--danger); border-color:var(--danger-line) }
+.btn.danger:hover{ border-color:var(--danger) }
 
 @media (max-width:760px){
   /* comfortable tap targets and no zoom-on-focus (16px inputs) */
-  .field input, .field textarea, .small-form input{ font-size:16px; padding:10px 12px }
+  .field input, .field textarea, .small-form input,
+  .filters input[type=search]{ font-size:16px; padding:10px 12px }
   .btn{ padding:10px 14px }
 }

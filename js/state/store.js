@@ -73,11 +73,30 @@ export function applyRemote(data){
 // Called by persist-cloud on sign-in/out. null = local only.
 export function setCloudSave(fn){ cloudSave = fn || null }
 
+// Wipe the shelf. Persisted like any other change, which is the point: signed
+// in, this propagates the deletion to the cloud and every other device. The
+// settings sheet is responsible for confirming before calling it.
+export function resetAll(){
+  commit(emptyState())
+}
+
 // ---------- current reads ----------
 
+// Whatever no longer fits in currentReads goes back on the TBR pile instead of
+// vanishing. With CURRENT_CAP at 1 that means starting a new book sets the
+// previous one down rather than deleting it — the single most destructive thing
+// this app could do quietly. Phase 3 raises the cap and this displaces nothing.
+function withCurrent(list, extraWishlist = []){
+  const displaced = list.slice(CURRENT_CAP)
+  return {
+    currentReads: list.slice(0, CURRENT_CAP),
+    wishlist: sortedWishlist([...extraWishlist, ...displaced])
+  }
+}
+
 export function addCurrent(book){
-  const next = [book, ...state.currentReads].slice(0, CURRENT_CAP)
-  commit({ ...state, currentReads: next })
+  const rest = state.wishlist
+  commit({ ...state, ...withCurrent([book, ...state.currentReads], rest) })
 }
 
 export function editCurrent(index, book){
@@ -111,15 +130,13 @@ export function removeTbr(index){
   commit({ ...state, wishlist: state.wishlist.filter((_, i) => i !== index) })
 }
 
-// Promote a TBR entry to the current read, taking it off the pile.
+// Promote a TBR entry to the current read, taking it off the pile. Any book it
+// displaces takes its place on the pile — a swap, not an overwrite.
 export function makeTbrCurrent(index){
   const book = state.wishlist[index]
   if(!book) return
-  commit({
-    ...state,
-    wishlist: state.wishlist.filter((_, i) => i !== index),
-    currentReads: [book, ...state.currentReads].slice(0, CURRENT_CAP)
-  })
+  const rest = state.wishlist.filter((_, i) => i !== index)
+  commit({ ...state, ...withCurrent([book, ...state.currentReads], rest) })
 }
 
 // ---------- finished ----------
@@ -149,3 +166,20 @@ export function makeLibraryCurrent(index){
   if(!it) return
   addCurrent({ title: it.name, author: it.url })
 }
+
+// ---------- bookstores ----------
+// Same shape as a library entry. Phase 5 is where these grow real availability
+// and buy links; for now they're a list of places you like.
+
+export function addBookstore(entry){
+  commit({ ...state, bookstores: [...state.bookstores, entry] })
+}
+
+export function editBookstore(index, entry){
+  commit({ ...state, bookstores: state.bookstores.map((e, i) => (i === index ? entry : e)) })
+}
+
+export function removeBookstore(index){
+  commit({ ...state, bookstores: state.bookstores.filter((_, i) => i !== index) })
+}
+

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Current Read — Dark Fantasy Shelf</title>
+  <title>Otherworld Reads</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
@@ -35,103 +35,186 @@
     <symbol id="icon-trash" viewBox="0 0 24 24">
       <path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
     </symbol>
+    <symbol id="icon-bookmark" viewBox="0 0 24 24">
+      <path d="M6 2h12a2 2 0 0 1 2 2v18l-8-4.2L4 22V4a2 2 0 0 1 2-2z" />
+    </symbol>
   </svg>
+
   <header class="site-header">
-    <div class="site-title">Otherworld Reads</div>
-    <div class="site-sub">fantasy · learning · private shelf</div>
-    <div class="auth" id="auth-area">
-      <button id="signin-btn" class="btn hidden" type="button">Sign in with Google</button>
-      <div id="user-info" class="user-info hidden">
-        <img id="user-avatar" class="user-avatar" alt="" referrerpolicy="no-referrer">
-        <span id="user-name" class="muted"></span>
-        <button id="signout-btn" class="btn" type="button">Sign out</button>
-      </div>
-      <div id="sync-status" class="sync-status muted"></div>
+    <div class="site-brand">
+      <div class="site-title">Otherworld Reads</div>
+      <div class="site-sub">fantasy · learning · private shelf</div>
     </div>
+    <button id="shelf-btn" class="icon-btn" type="button" aria-label="The Hidden Shelf" aria-haspopup="dialog">
+      <svg aria-hidden="true"><use href="#icon-bookmark"></use></svg>
+    </button>
+    <!-- Bottom bar on a phone, header links on a wide screen. Filled by
+         tab-bar.js; the move between the two is done entirely in CSS. -->
+    <nav id="tab-bar" class="tab-bar" aria-label="Sections"></nav>
   </header>
 
-  <main class="container">
-    <section class="panel current-panel">
-      <h2>Current Read</h2>
-      <div class="box">
+  <main id="routes">
 
-      <div id="current-card" class="card empty">
-        <form id="current-form">
-          <div class="field">
-            <label for="current-title">Title</label>
-            <input id="current-title" name="title" placeholder="What's on your nightstand?">
-          </div>
-          <div class="field">
-            <label for="current-author">Author</label>
-            <input id="current-author" name="author" placeholder="Author">
-          </div>
+    <!-- ───────────── #/ ───────────── -->
+    <section class="route" id="route-reading">
+      <!-- Focused on tab change so the new view is announced. Visually hidden:
+           the tab bar already says where you are, and a big "Reading" title
+           above the first panel would only repeat it. -->
+      <h1 class="route-heading visually-hidden" data-route-heading tabindex="-1">Reading</h1>
 
-          <div class="actions">
-            <button id="save-current" type="submit" class="btn primary">Set as current</button>
-            <button id="finish-current" type="button" class="btn">Finish & rate</button>
-          </div>
-        </form>
+      <div class="container reading-grid">
+        <section class="panel current-panel">
+          <h2>Current Read</h2>
+          <div class="box">
+            <div id="current-card" class="card empty">
+              <form id="current-form">
+                <div class="field">
+                  <label for="current-title">Title</label>
+                  <input id="current-title" name="title" placeholder="What's on your nightstand?">
+                </div>
+                <div class="field">
+                  <label for="current-author">Author</label>
+                  <input id="current-author" name="author" placeholder="Author">
+                </div>
+                <div class="actions">
+                  <button id="save-current" type="submit" class="btn primary">Set as current</button>
+                  <button id="finish-current" type="button" class="btn">Finish &amp; rate</button>
+                </div>
+              </form>
 
-        <div id="current-display" class="card-display hidden">
-          <div class="meta">
-            <h3 id="display-title"></h3>
-            <div id="display-author" class="muted"></div>
-            <div class="card-actions">
-              <button id="edit-current" class="btn"><svg><use href="#icon-edit"></use></svg>Edit</button>
-              <button id="finish-current-display" class="btn"><svg><use href="#icon-finish"></use></svg>Finish & rate</button>
+              <div id="current-display" class="card-display hidden">
+                <div class="meta">
+                  <h3 id="display-title"></h3>
+                  <div id="display-author" class="muted"></div>
+                  <div class="card-actions">
+                    <button id="edit-current" class="btn"><svg><use href="#icon-edit"></use></svg>Edit</button>
+                    <button id="finish-current-display" class="btn"><svg><use href="#icon-finish"></use></svg>Finish &amp; rate</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
+
+        <section class="panel wishlist-panel">
+          <div class="panel-head">
+            <h2>The TBR Pile</h2>
+            <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
+          </div>
+          <ul id="wishlist" class="list"></ul>
+          <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ───────────── #/finished ───────────── -->
+    <section class="route" id="route-finished" hidden>
+      <h1 class="route-heading visually-hidden" data-route-heading tabindex="-1">Finished</h1>
+
+      <div class="container finished-grid">
+        <section class="panel finished-panel">
+          <div class="filters">
+            <div class="field">
+              <label class="visually-hidden" for="finished-search">Search finished books</label>
+              <input id="finished-search" type="search" autocomplete="off"
+                     placeholder="Search by title or author">
+            </div>
+            <div class="field" id="feeling-filter-field" hidden>
+              <label>How it felt</label>
+              <div id="feeling-filter" class="chips"></div>
+            </div>
+            <div class="field" id="mood-filter-field" hidden>
+              <label>Vibe</label>
+              <div id="mood-filter" class="chips"></div>
+            </div>
+            <button id="clear-filters" type="button" class="btn btn-add" hidden>Clear filters</button>
+          </div>
+
+          <div id="finished-count" class="finished-count muted" hidden></div>
+          <div id="finished-list"></div>
+          <div id="finished-empty" class="muted" hidden></div>
+        </section>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ───────────── The Hidden Shelf ─────────────
+       The one shelf that isn't for books: your card, your places, your record.
+       Presented as a bottom sheet (see ui/sheet.js) — "sheet" throughout the
+       CSS and the ui/ layer is the interaction pattern, not the product name. -->
+  <div id="hidden-shelf" class="sheet" hidden aria-labelledby="hidden-shelf-title">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <h2 id="hidden-shelf-title">The Hidden Shelf</h2>
+        <button class="btn" type="button" data-sheet-close>Done</button>
+      </div>
+
+      <section class="sheet-section">
+        <h3>Your card</h3>
+        <div class="auth" id="auth-area">
+          <button id="signin-btn" class="btn hidden" type="button">Sign in with Google</button>
+          <div id="user-info" class="user-info hidden">
+            <img id="user-avatar" class="user-avatar" alt="" referrerpolicy="no-referrer">
+            <span id="user-name" class="muted"></span>
+            <button id="signout-btn" class="btn" type="button">Sign out</button>
+          </div>
+          <div id="sync-status" class="sync-status muted"></div>
+        </div>
+      </section>
+
+      <section class="sheet-section place-panel" id="library-list">
+        <div class="panel-head">
+          <h3>My Local Library</h3>
+          <button data-place-add type="button" class="btn btn-add">+ Add</button>
+        </div>
+        <ul data-place-list class="list"></ul>
+        <div data-place-empty class="muted hidden">No libraries yet — tap “+ Add”.</div>
+      </section>
+
+      <section class="sheet-section place-panel" id="bookstore-list">
+        <div class="panel-head">
+          <h3>My Favorite Bookstores</h3>
+          <button data-place-add type="button" class="btn btn-add">+ Add</button>
+        </div>
+        <ul data-place-list class="list"></ul>
+        <div data-place-empty class="muted hidden">No bookstores yet — tap “+ Add”.</div>
+      </section>
+
+      <section class="sheet-section">
+        <h3>Your record</h3>
+        <p class="muted">Your shelf as a JSON file — everything the app stores, in the shape it stores it.</p>
+        <div class="actions">
+          <button id="export-data" type="button" class="btn">Export</button>
+          <button id="delete-data" type="button" class="btn danger">Delete everything</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ───────────── Modals ───────────── -->
+  <div id="finish-form" class="modal hidden" hidden>
+    <form id="finish-form-inner" class="finish-inner">
+      <h3>Finish</h3>
+      <div class="field">
+        <label>How was it?</label>
+        <div id="feeling-chips" class="chips"></div>
+      </div>
+      <div class="field">
+        <label>Vibe <span class="muted">(optional)</span></label>
+        <div id="mood-groups"></div>
+        <div class="new-vibe">
+          <label class="visually-hidden" for="new-vibe">Add a vibe of your own</label>
+          <input id="new-vibe" placeholder="+ New vibe…" autocomplete="off">
+          <button id="add-vibe" type="button" class="btn btn-add">Add</button>
         </div>
       </div>
-
-  <div id="finish-form" class="modal hidden" hidden>
-        <form id="finish-form-inner" class="finish-inner">
-          <h3>Finish</h3>
-          <div class="field">
-            <label>How was it?</label>
-            <div id="feeling-chips" class="chips"></div>
-          </div>
-          <div class="field">
-            <label>Vibe <span class="muted">(optional)</span></label>
-            <div id="mood-chips" class="chips"></div>
-          </div>
-          <div class="actions">
-            <button type="submit" class="btn primary">Save</button>
-            <button id="cancel-finish" type="button" class="btn">Cancel</button>
-          </div>
-        </form>
+      <div class="actions">
+        <button type="submit" class="btn primary">Save</button>
+        <button id="cancel-finish" type="button" class="btn">Cancel</button>
       </div>
-
-      </div>
-    </section>
-
-    <section class="panel wishlist-panel">
-      <div class="panel-head">
-        <h2>The TBR Pile</h2>
-        <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
-      </div>
-      <ul id="wishlist" class="list"></ul>
-      <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
-    </section>
-
-    <section class="panel finished-panel">
-      <details class="finished-details">
-        <summary>Finished Books</summary>
-        <ul id="finished-list" class="list"></ul>
-      </details>
-    </section>
-    
-    <section class="panel library-panel">
-      <div class="panel-head">
-        <h2>My Local Library</h2>
-        <button id="add-library-btn" type="button" class="btn btn-add">+ Add</button>
-      </div>
-      <div class="box">
-      <ul id="library" class="list"></ul>
-      <div id="library-empty" class="muted hidden">No libraries yet — tap “+ Add”.</div>
-      </div>
-    </section>
-  </main>
+    </form>
+  </div>
 
   <div id="wishlist-modal" class="modal hidden" hidden>
     <form id="wishlist-form" class="finish-inner">
@@ -151,20 +234,40 @@
     </form>
   </div>
 
+  <!-- Both place dialogs are driven by one module (modals/place-modal.js);
+       the fields are found by data attribute so the ids can stay unique. -->
   <div id="library-modal" class="modal hidden" hidden>
-    <form id="library-form" class="finish-inner">
-      <h3 id="library-modal-title">Add to Library</h3>
+    <form class="finish-inner">
+      <h3 data-place-title>Add to Library</h3>
       <div class="field">
         <label for="lib-name">Library name</label>
-        <input id="lib-name" placeholder="Library name" required>
+        <input id="lib-name" data-place-name placeholder="Library name" required>
       </div>
       <div class="field">
         <label for="lib-url">URL</label>
-        <input id="lib-url" placeholder="https://...">
+        <input id="lib-url" data-place-url placeholder="https://...">
       </div>
       <div class="actions">
         <button type="submit" class="btn primary">Save</button>
-        <button id="cancel-library" type="button" class="btn">Cancel</button>
+        <button data-place-cancel type="button" class="btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="bookstore-modal" class="modal hidden" hidden>
+    <form class="finish-inner">
+      <h3 data-place-title>Add a Bookstore</h3>
+      <div class="field">
+        <label for="store-name">Bookstore name</label>
+        <input id="store-name" data-place-name placeholder="Bookstore name" required>
+      </div>
+      <div class="field">
+        <label for="store-url">URL</label>
+        <input id="store-url" data-place-url placeholder="https://...">
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn primary">Save</button>
+        <button data-place-cancel type="button" class="btn">Cancel</button>
       </div>
     </form>
   </div>

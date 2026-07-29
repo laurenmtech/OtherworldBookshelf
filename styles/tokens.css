@@ -19,6 +19,10 @@
   --accent-2: #d4b04b; /* gold */
   --accent-soft: rgba(139,211,199,0.25);
 
+  /* Destructive actions */
+  --danger: #e0736b;
+  --danger-line: rgba(224,115,107,0.35);
+
   /* Surfaces + hairlines, lightest to heaviest */
   --glass: rgba(255,255,255,0.03);
   --surface-1: rgba(255,255,255,0.01);
