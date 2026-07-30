@@ -21,7 +21,12 @@
        padding stays in the CSS: it costs nothing here (the inset is then 0) and
        is still correct anywhere the inset is real. -->
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Otherworld">
+  <!-- The label under the home-screen icon, and what iOS prefills in the "Add
+       to Home Screen" sheet. Short on purpose: iOS truncates around twelve
+       characters, and this is the name you tap, not the name of the app — the
+       <title>, the header and the manifest's `name` all still say Otherworld
+       Reads. Android reads `short_name` from the manifest for the same job. -->
+  <meta name="apple-mobile-web-app-title" content="TBR">
 
   <link rel="stylesheet" href="styles/tokens.css">
   <!-- Vibe files are only custom-property declarations — a few hundred bytes
@@ -133,6 +138,11 @@
           </div>
           <ul id="wishlist" class="list"></ul>
           <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
+          <!-- One quiet prompt for the whole pile, never a warning per book. -->
+          <p id="tbr-library-prompt" class="muted tbr-prompt hidden">
+            Add your library in <button type="button" class="linkish" id="tbr-open-shelf">The Hidden Shelf</button>
+            to see what you can borrow.
+          </p>
         </section>
       </div>
     </section>
@@ -349,15 +359,26 @@
 
   <!-- Both place dialogs are driven by one module (modals/place-modal.js);
        the fields are found by data attribute so the ids can stay unique. -->
+  <!-- The library dialog asks one extra thing: which library on Libby. There is
+       no way to search for one — the API ignores the query and returns all
+       13,050 — so you give the key and it gives the name back to confirm. -->
   <div id="library-modal" class="modal hidden" hidden>
     <form class="finish-inner">
       <h3 data-place-title>Add to Library</h3>
       <div class="field">
-        <label for="lib-name">Library name</label>
-        <input id="lib-name" data-place-name placeholder="Library name" required>
+        <label for="lib-key">Your library on Libby <span class="muted">(optional)</span></label>
+        <div class="key-row">
+          <input id="lib-key" data-place-key placeholder="Paste your Libby link, or its key" autocomplete="off">
+          <button type="button" class="btn btn-add" data-place-check>Check</button>
+        </div>
+        <p class="muted place-key-status" data-place-key-status></p>
       </div>
       <div class="field">
-        <label for="lib-url">URL</label>
+        <label for="lib-name">What do you call it?</label>
+        <input id="lib-name" data-place-name placeholder="Your name for it">
+      </div>
+      <div class="field">
+        <label for="lib-url">URL <span class="muted">(optional)</span></label>
         <input id="lib-url" data-place-url placeholder="https://...">
       </div>
       <div class="actions">
@@ -372,7 +393,7 @@
       <h3 data-place-title>Add a Bookstore</h3>
       <div class="field">
         <label for="store-name">Bookstore name</label>
-        <input id="store-name" data-place-name placeholder="Bookstore name" required>
+        <input id="store-name" data-place-name placeholder="Bookstore name">
       </div>
       <div class="field">
         <label for="store-url">URL</label>

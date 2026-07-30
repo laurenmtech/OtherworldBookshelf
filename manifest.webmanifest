@@ -1,6 +1,6 @@
 {
   "name": "Otherworld Reads",
-  "short_name": "Otherworld",
+  "short_name": "TBR",
   "description": "A tiny dark-fantasy personal reading tracker.",
   "start_url": "./index.html",
   "scope": "./",
