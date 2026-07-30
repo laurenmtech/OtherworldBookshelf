@@ -12,10 +12,12 @@ import { el } from '../ui/dom.js'
 import { createSheet } from '../ui/sheet.js'
 import { mountPlaceList } from './places.js'
 import { mountHeader } from './header.js'
+import { multiSelect } from '../ui/chips.js'
 import {
   getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent,
-  reorderLibrary
+  reorderLibrary, setBorrowFormats
 } from '../state/store.js'
+import { BORROW_FORMATS } from '../state/migrate.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
 import { iconButton } from '../ui/dom.js'
@@ -73,6 +75,21 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     // Long-standing behaviour, kept: a library entry can become the current
     // book, with its name as the title.
     extraAction: (_entry, idx) => iconButton('finish', 'Set current', () => makeLibraryCurrent(idx))
+  })
+
+  // Which formats the borrow rows are allowed to be about. Built once — the
+  // options are fixed — and only the selection is kept in step with the store,
+  // so a chip never rebuilds itself out from under the tap that changed it.
+  const FORMAT_LABELS = { ebook: 'Ebook', audiobook: 'Audiobook' }
+  const formatChips = multiSelect(
+    root.querySelector('#borrow-format-chips'),
+    BORROW_FORMATS.map(k => ({ key: k, label: FORMAT_LABELS[k] || k })),
+    { onChange: (v) => setBorrowFormats(v) }
+  )
+  formatChips.setValue(getState().borrowFormats || [])
+  subscribe((s) => {
+    const want = (s.borrowFormats || []).join()
+    if(want !== formatChips.getValue().join()) formatChips.setValue(s.borrowFormats || [])
   })
 
   mountPlaceList(root.querySelector('#bookstore-list'), {

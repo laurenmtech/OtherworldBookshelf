@@ -156,6 +156,14 @@ a matched title that differs from yours is shown, so a wrong edition is visible;
 and "no match" is reported as *didn't find it*, never as *your library doesn't
 have it*, because a text search missing something is not evidence of absence.
 
+**Only the formats you'd borrow.** `borrowFormats` defaults to `['ebook']`,
+because an "available now" you'd never take is worse than no answer — it buries
+the copy you would take behind one you wouldn't. Piranesi at King County is the
+case that proved it: the audiobook is on the shelf while the ebook is a six-week
+wait, and sorting by availability alone answered a question nobody asked. The
+chosen formats are part of the availability cache key, not just the query, so
+switching back finds the previous answers still there.
+
 Availability is **not state** and never enters the store — it is true for
 minutes, not days. It lives in a session cache in `libby.js`, capped at three
 lookups in flight, and a late answer triggers a re-render of the TBR list and
@@ -335,8 +343,8 @@ Actions: `addCurrent`, `editCurrent`, `reorderCurrent`, `finishCurrent`,
 `setDownCurrent`, `addToTbr`, `editTbr`, `removeTbr`, `makeTbrCurrent`,
 `removeFinished`, `addLibrary`, `editLibrary`, `removeLibrary`,
 `reorderLibrary`, `makeLibraryCurrent`, `addBookstore`, `editBookstore`,
-`removeBookstore`, `setVibe` and `resetAll`, plus the lifecycle calls `init`,
-`reloadLocal`, `applyRemote` and `setCloudSave`.
+`removeBookstore`, `setVibe`, `setBorrowFormats` and `resetAll`, plus the
+lifecycle calls `init`, `reloadLocal`, `applyRemote` and `setCloudSave`.
 
 `applyRemote` and `reloadLocal` commit **without** persisting — state that came
 *from* storage must not be written straight back.
@@ -352,7 +360,8 @@ Actions: `addCurrent`, `editCurrent`, `reorderCurrent`, `finishCurrent`,
   library:      [ { name, url, libraryKey?, officialName? } ],  // ORDER MATTERS:
                             // the first entry WITH a key is the primary library
   bookstores:   [ { name, url } ],
-  vibe:         'cottage' | null         // preference, not content
+  vibe:         'cottage' | null,        // preference, not content
+  borrowFormats: ['ebook']               // preference, not content
 }
 
 // Book — everything past `title` is optional and ABSENT when unknown, never

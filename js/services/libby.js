@@ -124,16 +124,20 @@ export async function lookupLibrary(key, opts){
 //                                indistinguishable here, and neither justifies
 //                                telling someone their library lacks a book.
 //   { status, copies[] }       — 'available' or 'wait', best copy first.
-export async function availability(libraryKey, book, opts){
+export async function availability(libraryKey, book, opts = {}){
   if(!AVAILABILITY) return null
   if(!libraryKey || !book || !book.title) return null
+  // Formats you'd actually borrow. An "available now" you'd never take is
+  // worse than no answer at all — it's the app telling you about a copy that
+  // isn't for you, and burying the one that is behind it.
+  const formats = opts.formats || ['ebook']
+  if(!formats.length) return null
   const q = encodeURIComponent(book.title)
   const d = await get(`${THUNDER}/${encodeURIComponent(libraryKey)}/media?query=${q}`, opts)
   if(!d || !Array.isArray(d.items)) return null      // failure, not an answer
 
-  // Only formats you can actually borrow through Libby.
   const pool = d.items
-    .filter(i => { const t = i && i.type && i.type.id; return t === 'ebook' || t === 'audiobook' })
+    .filter(i => formats.includes(i && i.type && i.type.id))
     .filter(i => sameBook(i, book))
   if(!pool.length) return { status: 'none' }
 
@@ -180,26 +184,30 @@ function pump(){
   }
 }
 
-const cacheKey = (libraryKey, book) =>
-  `${libraryKey}|${(book.workKey || book.title || '').toLowerCase()}`
+// The formats are part of the key, not just the query: change what you borrow
+// and the old answers are answers to a different question. Keying them in
+// means switching back finds the previous results still there.
+const cacheKey = (libraryKey, book, formats) =>
+  `${libraryKey}|${[...formats].sort().join('+')}|${(book.workKey || book.title || '').toLowerCase()}`
 
 // What we already know, without asking: undefined = never asked.
-export function cachedAvailability(libraryKey, book){
-  if(!libraryKey || !book) return undefined
-  return cache.get(cacheKey(libraryKey, book))
+export function cachedAvailability(libraryKey, book, formats = ['ebook']){
+  if(!libraryKey || !book || !formats.length) return undefined
+  return cache.get(cacheKey(libraryKey, book, formats))
 }
 
 // Ask, once. Repeat calls for the same book return the same promise, and the
 // answer is remembered — including a null, so a failing endpoint is asked once
 // per book and then left alone.
-export function requestAvailability(libraryKey, book){
+export function requestAvailability(libraryKey, book, formats = ['ebook']){
   if(!AVAILABILITY || !libraryKey || !book || !book.title) return Promise.resolve(null)
-  const key = cacheKey(libraryKey, book)
+  if(!formats.length) return Promise.resolve(null)
+  const key = cacheKey(libraryKey, book, formats)
   if(cache.has(key)) return Promise.resolve(cache.get(key))
   if(inFlight.has(key)) return inFlight.get(key)
 
   const p = new Promise((resolve) => {
-    queue.push(() => availability(libraryKey, book)
+    queue.push(() => availability(libraryKey, book, { formats })
       .catch(() => null)
       .then((result) => { cache.set(key, result); resolve(result) }))
     pump()

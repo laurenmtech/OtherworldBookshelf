@@ -255,3 +255,12 @@ export function setVibe(id){
   if(state.vibe === id) return
   commit({ ...state, vibe: id })
 }
+
+// Which formats you'd actually borrow. A preference, so it follows you to a
+// second device — and like `vibe`, it must never count as content in
+// isEmptyState(), or "I read ebooks" could overwrite an unsynced shelf.
+export function setBorrowFormats(formats){
+  const next = Array.isArray(formats) ? formats : []
+  if(next.join() === (state.borrowFormats || []).join()) return
+  commit({ ...state, borrowFormats: next })
+}
