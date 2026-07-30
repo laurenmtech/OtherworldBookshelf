@@ -60,6 +60,7 @@ js/
     book-shape.js     what a Book is, and how one is recognised twice
     open-library.js   primary source — no key, stable work ids
     google-books.js   secondary source — needs a key, knows new releases
+    libby.js          library links (unbreakable) + availability (optional)
 
   components/
     tab-bar.js        the two tabs; bottom bar on a phone, header links wide
@@ -108,6 +109,58 @@ so they share `places.js` and `place-modal.js` rather than existing as two
 near-identical files. Each section supplies its own hooks by data attribute
 (`data-place-list`, `data-place-add`, `data-place-empty`) and its own store
 actions, which is all that differs between them.
+
+A library entry may also carry `libraryKey` and `officialName`. **That key is
+the whole type system**: an entry with one is a real library on Libby and gets
+borrow links and availability; an entry without one is a bookmark. There is no
+`kind` field, because a redundant enum could disagree with the key and then
+something would have to decide which was right.
+
+`name` is *your* name for it — "Mom's card", "the good one" — and it's what the
+app shows everywhere. `officialName` is kept underneath and surfaces only when
+it differs, which is how two similarly-named entries stay tellable apart.
+Renaming never touches the key.
+
+Order matters: the **first** library with a key is the primary one, and the one
+availability is checked against. So `reorderLibrary` is a store action, not a
+view preference.
+
+## Libraries and Libby
+
+`services/libby.js` holds two things that must not be confused:
+
+- **Deep links** — `libbyapp.com/search/<key>/…`, `share.libbyapp.com/title/<id>`,
+  and Bookshop.org. Ordinary URLs built by string concatenation. Nothing can
+  break these, and they are the actual product.
+- **The catalogue API** — `thunder.api.overdrive.com`, the service Libby's own
+  web app calls. Undocumented, unsupported, no compatibility promise. It is an
+  enhancement, it fails silently, and its absence leaves no gap on screen.
+
+Everything in the second category sits behind the `AVAILABILITY` flag. Turn it
+off and every borrow row disappears; the links, names and prompts carry on
+unchanged. Both failure paths are tested.
+
+**You cannot search for a library.** `?query=seattle` is ignored — it returns
+all 13,050 libraries, unfiltered. Verified against `query`, `search`, `q`,
+`name`, `libraryName`, `keyword`, `nameQuery`, lat/long and `postalCode`; every
+one returns the same list, `perPage` caps at 100, and there is no
+`/libraries/search` endpoint. So adding a library works the other way round:
+you give the key (or paste a Libby URL) and `/v2/libraries/<key>` gives the name
+back to confirm. That confirmation is load-bearing — `austin` resolves to Austin
+ISD, not Austin Public Library, and seeing the name is what makes that visible
+instead of silent.
+
+**Matching a book is by title text.** `media?query=<isbn>` returns nothing, so
+the plan's ISBN mitigation doesn't exist. Consequences, all deliberate:
+a matched title that differs from yours is shown, so a wrong edition is visible;
+and "no match" is reported as *didn't find it*, never as *your library doesn't
+have it*, because a text search missing something is not evidence of absence.
+
+Availability is **not state** and never enters the store — it is true for
+minutes, not days. It lives in a session cache in `libby.js`, capped at three
+lookups in flight, and a late answer triggers a re-render of the TBR list and
+nothing else. A cached `null` counts as an answer, so a failing endpoint is
+asked once per book and then left alone.
 
 ## Vibes (the app's look)
 
@@ -281,9 +334,9 @@ addCurrent(book)    // …and the other actions, the only way to change anything
 Actions: `addCurrent`, `editCurrent`, `reorderCurrent`, `finishCurrent`,
 `setDownCurrent`, `addToTbr`, `editTbr`, `removeTbr`, `makeTbrCurrent`,
 `removeFinished`, `addLibrary`, `editLibrary`, `removeLibrary`,
-`makeLibraryCurrent`, `addBookstore`, `editBookstore`, `removeBookstore`,
-`setVibe` and `resetAll`, plus the lifecycle calls `init`, `reloadLocal`,
-`applyRemote` and `setCloudSave`.
+`reorderLibrary`, `makeLibraryCurrent`, `addBookstore`, `editBookstore`,
+`removeBookstore`, `setVibe` and `resetAll`, plus the lifecycle calls `init`,
+`reloadLocal`, `applyRemote` and `setCloudSave`.
 
 `applyRemote` and `reloadLocal` commit **without** persisting — state that came
 *from* storage must not be written straight back.
@@ -296,7 +349,8 @@ Actions: `addCurrent`, `editCurrent`, `reorderCurrent`, `finishCurrent`,
                             // the first entry is the one rendered large
   wishlist:     [ Book ],   // kept sorted by title
   finished:     [ Book & { finishedAt, feeling, moods[], setDown? } ],
-  library:      [ { name, url } ],
+  library:      [ { name, url, libraryKey?, officialName? } ],  // ORDER MATTERS:
+                            // the first entry WITH a key is the primary library
   bookstores:   [ { name, url } ],
   vibe:         'cottage' | null         // preference, not content
 }

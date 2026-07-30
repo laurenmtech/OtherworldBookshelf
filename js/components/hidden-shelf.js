@@ -13,7 +13,8 @@ import { createSheet } from '../ui/sheet.js'
 import { mountPlaceList } from './places.js'
 import { mountHeader } from './header.js'
 import {
-  getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent
+  getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent,
+  reorderLibrary
 } from '../state/store.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
@@ -66,6 +67,9 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     modal: libraryModal,
     select: s => s.library,
     remove: removeLibrary,
+    // The first library is the one availability is checked against, so the
+    // order is worth being able to change.
+    reorder: reorderLibrary,
     // Long-standing behaviour, kept: a library entry can become the current
     // book, with its name as the title.
     extraAction: (_entry, idx) => iconButton('finish', 'Set current', () => makeLibraryCurrent(idx))

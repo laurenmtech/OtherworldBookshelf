@@ -209,6 +209,20 @@ export function removeLibrary(index){
   commit({ ...state, library: state.library.filter((_, i) => i !== index) })
 }
 
+// Order matters here the same way it does for current reads: the FIRST library
+// is the primary one, and it's the one availability is checked against. So
+// reordering is content, persisted and synced, not a local view preference.
+export function reorderLibrary(from, to){
+  const list = state.library
+  if(from === to) return
+  if(from < 0 || from >= list.length) return
+  const target = Math.max(0, Math.min(to, list.length - 1))
+  const next = [...list]
+  const [moved] = next.splice(from, 1)
+  next.splice(target, 0, moved)
+  commit({ ...state, library: next })
+}
+
 // Existing behaviour, preserved: a library entry becomes a current book with
 // its name as the title and its URL as the author.
 export function makeLibraryCurrent(index){
