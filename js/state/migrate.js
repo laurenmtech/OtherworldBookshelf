@@ -1,7 +1,7 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
 
-export const SHAPE_VERSION = 7
+export const SHAPE_VERSION = 8
 
 // The formats you'd actually borrow. Defaults to ebook alone, because an
 // "available now" you'd never take is worse than no answer — it's the app
@@ -9,12 +9,19 @@ export const SHAPE_VERSION = 7
 export const BORROW_FORMATS = ['ebook', 'audiobook']
 const DEFAULT_BORROW_FORMATS = ['ebook']
 
+// Where to look for a book you haven't got yet. Both by default — a new reader
+// shouldn't have to discover a setting to see their options — and each is one
+// tap to turn off for someone who always borrows, or always buys.
+export const FIND_LINKS = ['library', 'shop']
+const DEFAULT_FIND_LINKS = ['library', 'shop']
+
 export function emptyState(){
   return {
     currentReads: [], wishlist: [], finished: [],
     library: [], bookstores: [], passed: [],
     vibe: null,
-    borrowFormats: [...DEFAULT_BORROW_FORMATS]
+    borrowFormats: [...DEFAULT_BORROW_FORMATS],
+    findLinks: [...DEFAULT_FIND_LINKS]
   }
 }
 
@@ -25,6 +32,14 @@ export function emptyState(){
 function toBorrowFormats(data){
   if(!Array.isArray(data.borrowFormats)) return [...DEFAULT_BORROW_FORMATS]
   return data.borrowFormats.filter(f => BORROW_FORMATS.includes(f))
+}
+
+// v7 → v8: findLinks. Absent means never chosen and gets both; present but
+// empty means deliberately neither, and is respected — an empty list is a real
+// answer and simply means no find links.
+function toFindLinks(data){
+  if(!Array.isArray(data.findLinks)) return [...DEFAULT_FIND_LINKS]
+  return data.findLinks.filter(f => FIND_LINKS.includes(f))
 }
 
 // v1 → v2: `current` (a single book or null) becomes `currentReads` (an array).
@@ -64,7 +79,8 @@ export function migrate(data){
     // Validated where it's used, not here: an unknown id falls back to the
     // default vibe rather than being silently dropped from storage.
     vibe: typeof data.vibe === 'string' && data.vibe ? data.vibe : null,
-    borrowFormats: toBorrowFormats(data)
+    borrowFormats: toBorrowFormats(data),
+    findLinks: toFindLinks(data)
   }
 }
 
@@ -86,13 +102,15 @@ export function toStorage(state){
     bookstores: state.bookstores,
     passed: state.passed,
     vibe: state.vibe,
-    borrowFormats: state.borrowFormats
+    borrowFormats: state.borrowFormats,
+    findLinks: state.findLinks
   }
 }
 
 // Whether a payload holds anything at all. This decides whether a remote
 // snapshot is real enough to replace what's on this device, so it must only
-// ever count actual content. `vibe` and `borrowFormats` are preferences and
+// ever count actual content. `vibe`, `borrowFormats` and `findLinks` are
+// preferences and
 // are deliberately NOT counted here — a document holding nothing but "I read
 // ebooks" must never look real enough to overwrite a shelf that hasn't synced.
 //

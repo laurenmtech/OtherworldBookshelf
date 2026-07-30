@@ -15,9 +15,9 @@ import { mountHeader } from './header.js'
 import { multiSelect } from '../ui/chips.js'
 import {
   getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent,
-  reorderLibrary, setBorrowFormats
+  reorderLibrary, setBorrowFormats, setFindLinks
 } from '../state/store.js'
-import { BORROW_FORMATS } from '../state/migrate.js'
+import { BORROW_FORMATS, FIND_LINKS } from '../state/migrate.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
 import { iconButton } from '../ui/dom.js'
@@ -90,6 +90,20 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
   subscribe((s) => {
     const want = (s.borrowFormats || []).join()
     if(want !== formatChips.getValue().join()) formatChips.setValue(s.borrowFormats || [])
+  })
+
+  // Some readers always borrow, some always buy. Built once — the options are
+  // fixed — with only the selection kept in step with the store.
+  const FIND_LABELS = { library: 'My library', shop: 'A bookshop' }
+  const findChips = multiSelect(
+    root.querySelector('#find-link-chips'),
+    FIND_LINKS.map(k => ({ key: k, label: FIND_LABELS[k] || k })),
+    { onChange: (v) => setFindLinks(v) }
+  )
+  findChips.setValue(getState().findLinks || [])
+  subscribe((s) => {
+    const want = (s.findLinks || []).join()
+    if(want !== findChips.getValue().join()) findChips.setValue(s.findLinks || [])
   })
 
   mountPlaceList(root.querySelector('#bookstore-list'), {

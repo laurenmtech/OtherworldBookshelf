@@ -5,10 +5,10 @@
 // Fields are found by data attribute rather than id so the same code can drive
 // two dialogs that must still have unique ids in the document.
 import { createModal } from '../../ui/modal.js'
-import { lookupLibrary, parseLibraryKey } from '../../services/libby.js'
+import { lookupLibrary, parseLibraryKey, learnSearchUrl } from '../../services/libby.js'
 
 // library:true adds the Libby lookup — the key field and the confirmation.
-export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, library = false } = {}){
+export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, library = false, shop = false } = {}){
   if(!root) return { open(){} }
   const form = root.querySelector('form')
   const heading = root.querySelector('[data-place-title]')
@@ -18,6 +18,8 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
   const keyInput = root.querySelector('[data-place-key]')
   const checkBtn = root.querySelector('[data-place-check]')
   const keyStatus = root.querySelector('[data-place-key-status]')
+  const searchInput = root.querySelector('[data-place-search]')
+  const searchStatus = root.querySelector('[data-place-search-status]')
 
   let editIndex = null
   // The entry being edited, so an unchanged key survives a rename untouched.
@@ -90,6 +92,14 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
     if(!name){ nameInput.focus(); return }
     const entry = { name, url: urlInput.value.trim() }
 
+    // A shop that taught us its search URL gets deep links to every book on
+    // the pile; one that didn't still gets its own front page, which beats a
+    // default shop. Nothing here is required.
+    if(shop && searchInput){
+      const learned = learnSearchUrl(searchInput.value)
+      if(learned) entry.searchUrl = learned
+    }
+
     // A library keeps its key and its official name; a plain bookmark keeps
     // neither, and that absence is what "this one gets no availability" means.
     //
@@ -124,6 +134,14 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
       nameInput.value = (editIndex !== null && entry && entry.name) || ''
       urlInput.value = (editIndex !== null && entry && entry.url) || ''
       if(keyInput) keyInput.value = (editIndex !== null && entry && entry.libraryKey) || ''
+      if(searchInput){
+        searchInput.value = (editIndex !== null && entry && entry.searchUrl) || ''
+        if(searchStatus){
+          searchStatus.textContent = (entry && entry.searchUrl)
+            ? 'Books on your pile link straight to this shop.'
+            : 'Search their site for any book and paste the results address here — then every book on your pile links straight to it at their shop.'
+        }
+      }
       if(keyInput && editIndex !== null && entry && entry.officialName){
         setStatus(`Saved as ${entry.officialName}`)
       }

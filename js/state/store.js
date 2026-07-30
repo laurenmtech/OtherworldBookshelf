@@ -278,6 +278,15 @@ export function setVibe(id){
 // Which formats you'd actually borrow. A preference, so it follows you to a
 // second device — and like `vibe`, it must never count as content in
 // isEmptyState(), or "I read ebooks" could overwrite an unsynced shelf.
+// Which links appear under a book you haven't got yet. A preference, so it
+// follows you to a second device — and like the others, it must never count as
+// content in isEmptyState().
+export function setFindLinks(links){
+  const next = Array.isArray(links) ? links : []
+  if(next.join() === (state.findLinks || []).join()) return
+  commit({ ...state, findLinks: next })
+}
+
 export function setBorrowFormats(formats){
   const next = Array.isArray(formats) ? formats : []
   if(next.join() === (state.borrowFormats || []).join()) return
