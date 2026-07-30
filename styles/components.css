@@ -71,6 +71,40 @@
   color:var(--muted); border:1px solid var(--line-3);
 }
 
+/* Where else a book might come from. Links, not buttons — they leave the app,
+   and they must not look like the actions that change your shelf. */
+.find-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px }
+.find-row a{ font-size:12px; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--line-4) }
+.find-row a:hover{ border-bottom-color:var(--accent) }
+
+/* What your library has. Available reads as good news; a wait reads as a fact,
+   not a warning — the point is to tell you, not to hurry you. */
+.borrow-row{ margin-top:6px; font-size:12px }
+.borrow-row a{ text-decoration:none; border-bottom:1px solid var(--line-4) }
+.borrow-row.available a{ color:var(--accent) }
+.borrow-row.waiting a{ color:var(--muted) }
+.borrow-row a:hover{ border-bottom-color:currentColor }
+.borrow-matched{ margin-left:8px; font-size:11px }
+
+/* One prompt for the whole pile, never a warning per book. */
+.tbr-prompt{ margin:12px 0 0; font-size:12px }
+.linkish{
+  background:none; border:none; padding:0; font:inherit; font-size:inherit;
+  color:var(--accent); cursor:pointer; text-decoration:underline;
+}
+
+/* Saved places: which one is primary, and what it's really called. */
+.place-badge{
+  margin-left:8px; font-size:10px; padding:1px 7px; border-radius:999px;
+  color:var(--muted); border:1px solid var(--line-3); vertical-align:middle;
+}
+.place-official{ font-size:12px; opacity:.85 }
+.place-key-status{ margin:6px 0 0; font-size:12px; min-height:1.1em }
+.place-key-status.good{ color:var(--accent) }
+.place-key-status.bad{ color:var(--danger) }
+.key-row{ display:flex; gap:8px }
+.key-row input{ flex:1; min-width:0 }
+
 /* Reorder: a keyboard and touch path that exists whether or not you can drag. */
 .reorder{ display:flex; gap:4px }
 .btn.icon-only{ padding:6px 8px }
