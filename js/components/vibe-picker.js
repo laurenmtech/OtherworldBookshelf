@@ -7,6 +7,12 @@
 // Tapping one applies it to the whole app immediately. Nothing re-renders, so
 // you can open this mid-scroll with a half-typed form behind it and lose
 // neither. There's no Cancel because there's nothing to undo — pick another.
+//
+// Whether picking also LEAVES is the caller's call, because the two ways in
+// want opposite things. On first run you're comparing, so tapping through all
+// five has to be free. Coming from the shelf you've already decided — the cards
+// wear their own vibes, so the choosing happened before the tap — and being
+// held in a settings sheet afterwards just means two more taps to see it.
 import { el } from '../ui/dom.js'
 import { createModal } from '../ui/modal.js'
 import { VIBES, DEFAULT_VIBE } from '../vibes/registry.js'
@@ -42,6 +48,10 @@ export function mountVibePicker(root){
   const modal = createModal(root)
   doneBtn && doneBtn.addEventListener('click', () => modal.close())
 
+  // Set per-open, because it differs between the two ways in. Cleared on close
+  // so a first-run open can never inherit the shelf's behaviour.
+  let onPick = null
+
   const cards = VIBES.map(vibe => {
     const card = el('button', {
       type: 'button',
@@ -50,6 +60,12 @@ export function mountVibePicker(root){
       onClick: () => {
         applyVibe(vibe.id)   // instant, before the store round-trip
         setVibe(vibe.id)     // persisted locally and to the cloud
+        if(onPick){
+          const leave = onPick
+          onPick = null      // one exit per open, even on a double tap
+          modal.close()
+          leave()
+        }
       }
     },
       miniature(),
@@ -69,14 +85,15 @@ export function mountVibePicker(root){
   subscribe(paint)
 
   return {
-    open({ firstRun = false } = {}){
+    open({ firstRun = false, onPicked = null } = {}){
+      onPick = onPicked
       // You're comparing all five now, so all five need their real faces. The
       // rest of the time only the worn vibe's font is ever fetched.
       preloadAllFonts()
       if(note){
         note.textContent = firstRun
           ? 'Pick the look of your library. You can change it whenever you like.'
-          : 'Your library’s look. Changes apply straight away.'
+          : 'Your library’s look. Pick one and you’re back with your books.'
       }
       if(doneBtn) doneBtn.textContent = firstRun ? 'Start reading' : 'Done'
       paint(getState())

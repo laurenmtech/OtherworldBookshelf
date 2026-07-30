@@ -61,6 +61,7 @@ Rules:
 - Never recommend anything in the reader's exclusion list. It contains what they own, have read, have set down, and have already passed on.
 - "why" is one or two sentences addressed to this reader, referring to their actual taste — the books and moods they gave you. Not a blurb, not a plot summary, and not a description of the book's reputation.
 - Vary the list. Do not recommend five books by one author or five volumes of one series.
+- Moods the reader gives you are alternatives, never requirements to satisfy all at once.
 - No preamble and no commentary outside the structured fields.`
 
 // Everything the model is told about the reader. The full shelf never leaves
@@ -68,7 +69,22 @@ Rules:
 // this is the only place either is used.
 export function buildUserPrompt({ moods = [], freeText = '', tasteSummary = '', exclude = [] } = {}){
   const parts = []
-  if(moods.length) parts.push(`They are in the mood for: ${moods.join(', ')}.`)
+  // Moods are alternatives, not requirements — the same rule the Finished
+  // filters use, where picking two widens the results rather than narrowing to
+  // books carrying both. Said explicitly because a bare list reads as a
+  // conjunction: asked for cozy AND creepy AND epic, a model will go hunting
+  // for the one book that is somehow all three, when what the reader wants is
+  // a spread. Someone can genuinely be up for comfort fantasy or creepy horror
+  // on the same evening, and both should turn up.
+  if(moods.length){
+    parts.push(
+      `They are in the mood for ANY of these, not all at once: ${moods.join(', ')}.\n` +
+      'Treat them as alternatives. A book that strongly fits one is far better ' +
+      'than a book that vaguely fits several, and if they picked moods that pull ' +
+      'in different directions, spread your recommendations across them rather ' +
+      'than looking for something in the middle.'
+    )
+  }
   if(freeText) parts.push(`In their words: "${freeText}"`)
   if(tasteSummary) parts.push(`What they have loved before:\n${tasteSummary}`)
   if(exclude.length){

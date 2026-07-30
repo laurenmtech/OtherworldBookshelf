@@ -40,7 +40,7 @@ function exportShelf(){
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicker, openButton }){
+export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicker, openButton, onVibePicked }){
   if(!root) return { open(){}, close(){} }
 
   const sheet = createSheet(root)
@@ -50,10 +50,19 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
   // still owns them, it just renders somewhere quieter now.
   mountHeader(root.querySelector('#auth-area'))
 
-  // The picker layers above the sheet rather than replacing it, so closing it
-  // puts you back where you were instead of at the top of the app.
+  // The picker layers above the sheet, so backing out of it without choosing
+  // puts you back here rather than at the top of the app. Choosing is the other
+  // case: the whole point of a new vibe is seeing your shelf wearing it, so a
+  // pick drops both layers and hands you to the reader.
   const changeVibeBtn = root.querySelector('#change-vibe')
-  changeVibeBtn && vibePicker && changeVibeBtn.addEventListener('click', () => vibePicker.open())
+  changeVibeBtn && vibePicker && changeVibeBtn.addEventListener('click', () => {
+    vibePicker.open({
+      onPicked: () => {
+        sheet.close()
+        onVibePicked && onVibePicked()
+      }
+    })
+  })
 
   const vibeLabel = root.querySelector('#current-vibe')
   if(vibeLabel){
