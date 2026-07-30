@@ -26,6 +26,9 @@ firebase-config.js    plain script; sets window.FIREBASE_CONFIG
 search-config.js      plain script; sets window.GOOGLE_BOOKS_KEY
 manifest.webmanifest
 
+api/                  the ONLY backend — a Cloudflare Worker. Not precached,
+                      not served by Pages, deployed separately. See api/README.md
+
 styles/
   tokens.css          THE VIBE CONTRACT — every token, defaulting to Otherworld
   base.css            reset, page chrome, layout grid
@@ -443,6 +446,29 @@ git config core.hooksPath .githooks
 ```
 
 Override for a single push with `git push --no-verify`.
+
+## The backend (`api/`)
+
+One Cloudflare Worker, one route, deployed independently of the site. It exists
+because the Anthropic API key must never reach a browser and a static site has
+nowhere else to put it. Everything else in this app still has no backend.
+
+`api/README.md` is the operational doc — deploy, key rotation, cost levers.
+Three decisions there are load-bearing and are each guarded by a test:
+
+- **The user id comes from the verified Firebase token, never the request body.**
+  A caller can put any uid in the JSON they post; it changes nothing.
+- **The quota credit is claimed *before* the model call.** KV has no
+  transactions, so check-then-call-then-increment lets two concurrent requests
+  both pass a check only one should — and what's protected is a real bill.
+- **`effort` is pinned to `low`.** Opus 5 thinks by default and thinking bills
+  as output; unpinned costs several times pinned. Even pinned, a measured call
+  cost 10¢ — mostly thinking. `api/README.md` carries the real number; if you
+  change the model or the effort, **measure again rather than estimating**. The
+  first estimate there was wrong by 3–4× and estimates of this are not reliable.
+
+The Worker writes no logs. One integer per reader per UTC day in KV, expiring
+after 48 hours, is the entire record it keeps of anyone.
 
 ## Updates
 
