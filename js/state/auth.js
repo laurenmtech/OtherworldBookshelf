@@ -66,6 +66,18 @@ export function onAuthChange(cb){
   authApi.onAuthStateChanged(auth, cb)
 }
 
+// The signed-in reader's ID token — the one thing the recommender backend needs
+// to know who is asking. Null when signed out, which is also how the feature
+// decides to hide itself rather than offering something that would fail.
+//
+// Firebase refreshes this internally; getIdToken() hands back a valid one or
+// mints a fresh one, so there is nothing to cache here.
+export async function idToken(){
+  if(!auth || !auth.currentUser) return null
+  try{ return await auth.currentUser.getIdToken() }
+  catch(e){ return null }
+}
+
 // Complete any pending redirect-based sign-in (returns here after the Google page).
 export function completePendingRedirect(onStatus){
   if(!auth) return

@@ -134,7 +134,13 @@
         <section class="panel wishlist-panel">
           <div class="panel-head">
             <h2>The TBR Pile</h2>
-            <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
+            <div class="panel-head-actions">
+              <!-- Hidden until signed in — the recommender needs a verified
+                   identity, and offering something that would be rejected is
+                   worse than not offering it. main.js unhides it. -->
+              <button id="find-something-btn" type="button" class="btn btn-add hidden">Find me something…</button>
+              <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
+            </div>
           </div>
           <ul id="wishlist" class="list"></ul>
           <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
@@ -284,6 +290,37 @@
         <button id="cancel-finish" type="button" class="btn">Cancel</button>
       </div>
     </form>
+  </div>
+
+  <!-- Find me something: mood chips, your own words, then five books to triage.
+       The only part of the app with a backend behind it (see api/README.md). -->
+  <div id="recommend-modal" class="modal hidden" hidden aria-labelledby="recommend-title">
+    <div class="finish-inner">
+      <h3 id="recommend-title">Find me something</h3>
+
+      <div id="recommend-ask-view">
+        <form id="recommend-form">
+          <div class="field">
+            <label>What are you in the mood for? <span class="muted">(optional)</span></label>
+            <div id="recommend-moods" class="chips"></div>
+          </div>
+          <div class="field">
+            <label for="recommend-text">In your own words <span class="muted">(optional)</span></label>
+            <input id="recommend-text" placeholder="something strange and quiet…" autocomplete="off">
+          </div>
+          <div class="actions">
+            <button id="recommend-ask" type="submit" class="btn primary">Ask</button>
+            <button id="recommend-cancel" type="button" class="btn">Cancel</button>
+          </div>
+        </form>
+        <div id="recommend-error" class="dup-note" hidden></div>
+      </div>
+
+      <p id="recommend-busy" class="muted" role="status" hidden>Looking for something you’d like…</p>
+
+      <div id="recommend-results" hidden></div>
+      <p id="recommend-remaining" class="muted recommend-remaining"></p>
+    </div>
   </div>
 
   <!-- Set it down: a pause or a parting, and optionally how it felt. -->

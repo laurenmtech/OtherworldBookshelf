@@ -1,7 +1,7 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
 
-export const SHAPE_VERSION = 6
+export const SHAPE_VERSION = 7
 
 // The formats you'd actually borrow. Defaults to ebook alone, because an
 // "available now" you'd never take is worse than no answer — it's the app
@@ -12,7 +12,7 @@ const DEFAULT_BORROW_FORMATS = ['ebook']
 export function emptyState(){
   return {
     currentReads: [], wishlist: [], finished: [],
-    library: [], bookstores: [],
+    library: [], bookstores: [], passed: [],
     vibe: null,
     borrowFormats: [...DEFAULT_BORROW_FORMATS]
   }
@@ -58,6 +58,9 @@ export function migrate(data){
     finished: Array.isArray(data.finished) ? data.finished : [],
     library: Array.isArray(data.library) ? data.library : [],
     bookstores: Array.isArray(data.bookstores) ? data.bookstores : [],
+    // v6 → v7: books you passed on when the recommender offered them, so a
+    // second ask returns genuinely different books. Nothing to convert.
+    passed: Array.isArray(data.passed) ? data.passed : [],
     // Validated where it's used, not here: an unknown id falls back to the
     // default vibe rather than being silently dropped from storage.
     vibe: typeof data.vibe === 'string' && data.vibe ? data.vibe : null,
@@ -81,6 +84,7 @@ export function toStorage(state){
     finished: state.finished,
     library: state.library,
     bookstores: state.bookstores,
+    passed: state.passed,
     vibe: state.vibe,
     borrowFormats: state.borrowFormats
   }
@@ -91,6 +95,11 @@ export function toStorage(state){
 // ever count actual content. `vibe` and `borrowFormats` are preferences and
 // are deliberately NOT counted here — a document holding nothing but "I read
 // ebooks" must never look real enough to overwrite a shelf that hasn't synced.
+//
+// `passed` is not counted either, and that is a deliberate trade: a remote doc
+// holding only pass history can be overwritten by an empty local shelf. Losing
+// "don't suggest these again" is a small loss; letting it stand in for a real
+// shelf and block a sync is a large one.
 export function isEmptyState(s){
   if(!s) return true
   const migrated = migrate(s)
