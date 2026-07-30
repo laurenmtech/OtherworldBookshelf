@@ -54,6 +54,9 @@ export async function initAuth(){
     }
 
     provider = new authMod.GoogleAuthProvider()
+    // Anything that subscribed while the SDK was still loading gets attached
+    // now, before the first auth state is reported.
+    flushSubscribers()
     return true
   }catch(e){
     console.warn('Firebase SDK unavailable — running local-only', e)
@@ -61,9 +64,23 @@ export async function initAuth(){
   }
 }
 
+// Subscribers registered before initAuth() has resolved are held and attached
+// when it does.
+//
+// This used to be `if(!auth) return`, which silently dropped them: header.js
+// happened to work because it subscribes after awaiting initAuth(), but anything
+// mounting synchronously — like the recommender button — registered into the
+// void and never heard about a sign-in. A subscription that quietly does nothing
+// is a worse failure than one that throws.
+const pending = []
+
 export function onAuthChange(cb){
-  if(!auth) return
+  if(!auth){ pending.push(cb); return }
   authApi.onAuthStateChanged(auth, cb)
+}
+
+function flushSubscribers(){
+  while(pending.length) authApi.onAuthStateChanged(auth, pending.shift())
 }
 
 // The signed-in reader's ID token — the one thing the recommender backend needs
