@@ -25,7 +25,7 @@ import { onAuthChange } from './state/auth.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.62'
+export const APP_VERSION = '0.63'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
