@@ -1,7 +1,7 @@
 {
   "name": "Otherworld Reads",
   "short_name": "TBR",
-  "description": "A tiny dark-fantasy personal reading tracker.",
+  "description": "So you remember what you read.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
