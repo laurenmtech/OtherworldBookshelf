@@ -77,6 +77,9 @@
 .find-row a{ font-size:12px; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--line-4) }
 .find-row a:hover{ border-bottom-color:var(--accent) }
 
+.borrow-formats{ margin:12px 0 0 }
+.borrow-formats label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
+
 /* What your library has. Available reads as good news; a wait reads as a fact,
    not a warning — the point is to tell you, not to hurry you. */
 .borrow-row{ margin-top:6px; font-size:12px }

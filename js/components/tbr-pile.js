@@ -15,12 +15,6 @@ export function primaryLibrary(state){
   return (state.library || []).find(l => l && l.libraryKey) || null
 }
 
-// Where else this book might come from. Ordinary links, built by string
-// concatenation, independent of any availability lookup — they work whether or
-// not the catalogue API is reachable, or enabled, or still exists.
-//
-// Bookshop.org rather than Amazon: buying a book should be able to send money
-// to a shop instead of to the company trying to replace them all.
 // "about 3 weeks" beats "estimated wait: 19 days". Nobody plans a reading life
 // in days, and the number is an estimate anyway — precision would be a lie.
 function waitText(days){
@@ -36,9 +30,9 @@ const FORMAT_WORD = { ebook: 'ebook', audiobook: 'audiobook' }
 
 // What your library has, said plainly. Absent entirely when we don't know —
 // no spinner, no error, no empty row holding space for a fact we never got.
-function borrowRow(book, library){
-  if(!AVAILABILITY || !library) return ''
-  const result = cachedAvailability(library.libraryKey, book)
+function borrowRow(book, library, formats){
+  if(!AVAILABILITY || !library || !formats.length) return ''
+  const result = cachedAvailability(library.libraryKey, book, formats)
   if(result === undefined || result === null) return ''   // unasked, or no answer
 
   if(result.status === 'none'){
@@ -65,6 +59,12 @@ function borrowRow(book, library){
   return `<div class="${cls}">${inner}${matched}</div>`
 }
 
+// Where else this book might come from. Ordinary links, built by string
+// concatenation, independent of any availability lookup — they work whether or
+// not the catalogue API is reachable, or enabled, or still exists.
+//
+// Bookshop.org rather than Amazon: buying a book should be able to send money
+// to a shop instead of to the company trying to replace them all.
 function findRow(book, library){
   const links = []
   if(library){
@@ -93,7 +93,7 @@ export function mountTbrPile(root, { bookModal }){
     if(btn) btn.click()
   })
 
-  function row(book, idx, library){
+  function row(book, idx, library, formats){
     // data-book-key is what "you already have this — go to it" finds.
     const li = el('li', { 'data-book-key': bookKey(book) })
 
@@ -110,7 +110,7 @@ export function mountTbrPile(root, { bookModal }){
       className: 'small-meta',
       html: `<span class="wishlist-title">${escapeHtml(book.title)}</span>` +
             `<div class=muted>${bits}</div>${tagRow(book)}${moodTags}` +
-            `${borrowRow(book, library)}${findRow(book, library)}`
+            `${borrowRow(book, library, formats)}${findRow(book, library)}`
     }))
 
     const actions = el('div', { className: 'list-actions' },
@@ -129,11 +129,11 @@ export function mountTbrPile(root, { bookModal }){
   let latest = null
   let pending = false
 
-  function fetchAvailability(state, library){
-    if(!AVAILABILITY || !library) return
+  function fetchAvailability(state, library, formats){
+    if(!AVAILABILITY || !library || !formats.length) return
     for(const book of state.wishlist){
-      if(cachedAvailability(library.libraryKey, book) !== undefined) continue
-      requestAvailability(library.libraryKey, book).then(() => {
+      if(cachedAvailability(library.libraryKey, book, formats) !== undefined) continue
+      requestAvailability(library.libraryKey, book, formats).then(() => {
         // Coalesce: thirty answers landing individually would be thirty
         // re-renders of the same list.
         if(pending) return
@@ -146,12 +146,13 @@ export function mountTbrPile(root, { bookModal }){
   function render(state){
     latest = state
     const library = primaryLibrary(state)
+    const formats = state.borrowFormats || []
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', state.wishlist.length > 0)
-    state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library)))
+    state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats)))
     // One prompt for the pile, and only when there is a pile to prompt about.
     if(prompt) prompt.classList.toggle('hidden', !!library || state.wishlist.length === 0)
-    fetchAvailability(state, library)
+    fetchAvailability(state, library, formats)
   }
 
   render(getState())

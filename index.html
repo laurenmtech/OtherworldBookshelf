@@ -218,6 +218,12 @@
         </div>
         <ul data-place-list class="list"></ul>
         <div data-place-empty class="muted hidden">No libraries yet — tap “+ Add”.</div>
+        <!-- Only what you'd actually borrow. An "available now" you'd never
+             take is worse than no answer — it buries the copy you would. -->
+        <div class="field borrow-formats">
+          <label>Which formats do you borrow?</label>
+          <div id="borrow-format-chips" class="chips"></div>
+        </div>
       </section>
 
       <section class="sheet-section place-panel" id="bookstore-list">

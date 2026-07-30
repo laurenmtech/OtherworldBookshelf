@@ -1,14 +1,30 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
 
-export const SHAPE_VERSION = 5
+export const SHAPE_VERSION = 6
+
+// The formats you'd actually borrow. Defaults to ebook alone, because an
+// "available now" you'd never take is worse than no answer — it's the app
+// telling you about a copy that isn't for you.
+export const BORROW_FORMATS = ['ebook', 'audiobook']
+const DEFAULT_BORROW_FORMATS = ['ebook']
 
 export function emptyState(){
   return {
     currentReads: [], wishlist: [], finished: [],
     library: [], bookstores: [],
-    vibe: null
+    vibe: null,
+    borrowFormats: [...DEFAULT_BORROW_FORMATS]
   }
+}
+
+// v5 → v6: borrowFormats. Absent means never chosen, so it gets the default;
+// present but empty means deliberately none, and that is respected rather than
+// "helpfully" reset — an empty list is a real answer and simply means no
+// borrow rows.
+function toBorrowFormats(data){
+  if(!Array.isArray(data.borrowFormats)) return [...DEFAULT_BORROW_FORMATS]
+  return data.borrowFormats.filter(f => BORROW_FORMATS.includes(f))
 }
 
 // v1 → v2: `current` (a single book or null) becomes `currentReads` (an array).
@@ -44,7 +60,8 @@ export function migrate(data){
     bookstores: Array.isArray(data.bookstores) ? data.bookstores : [],
     // Validated where it's used, not here: an unknown id falls back to the
     // default vibe rather than being silently dropped from storage.
-    vibe: typeof data.vibe === 'string' && data.vibe ? data.vibe : null
+    vibe: typeof data.vibe === 'string' && data.vibe ? data.vibe : null,
+    borrowFormats: toBorrowFormats(data)
   }
 }
 
@@ -64,14 +81,16 @@ export function toStorage(state){
     finished: state.finished,
     library: state.library,
     bookstores: state.bookstores,
-    vibe: state.vibe
+    vibe: state.vibe,
+    borrowFormats: state.borrowFormats
   }
 }
 
 // Whether a payload holds anything at all. This decides whether a remote
 // snapshot is real enough to replace what's on this device, so it must only
-// ever count actual content — if a preference were ever added to the state,
-// it does not belong in here.
+// ever count actual content. `vibe` and `borrowFormats` are preferences and
+// are deliberately NOT counted here — a document holding nothing but "I read
+// ebooks" must never look real enough to overwrite a shelf that hasn't synced.
 export function isEmptyState(s){
   if(!s) return true
   const migrated = migrate(s)
