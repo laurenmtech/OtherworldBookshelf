@@ -25,7 +25,7 @@ import { onAuthChange } from './state/auth.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.63'
+export const APP_VERSION = '0.64'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
@@ -70,7 +70,11 @@ function mountAll(){
     libraryModal,
     bookstoreModal,
     vibePicker,
-    openButton: document.getElementById('shelf-btn')
+    openButton: document.getElementById('shelf-btn'),
+    // Picking a vibe from the shelf ends the errand: the sheet closes and you
+    // land on the reader, which is the only place the new look means anything.
+    // Reads `router` from below — this only ever runs on a tap, long after.
+    onVibePicked: () => router.navigate('/')
   })
 
   // A brand-new reader chooses before seeing the shelf. Someone who already has
@@ -81,7 +85,7 @@ function mountAll(){
 
   const tabs = mountTabBar(document.getElementById('tab-bar'))
 
-  createRouter({
+  const router = createRouter({
     routes: [
       { path: '/', el: readingEl },
       { path: '/finished', el: finishedEl }
