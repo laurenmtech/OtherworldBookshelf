@@ -8,7 +8,7 @@
 // stamp (0.<phase><release>) and this is the cache key. The footer shows this
 // number, read back from the installed cache — so it answers "what is my phone
 // actually running?" rather than what a constant somewhere claims.
-const BUILD = 20;
+const BUILD = 21;
 const CACHE = 'otherworld-reads-build-' + BUILD;
 const ASSETS = [
   './',
@@ -19,6 +19,10 @@ const ASSETS = [
   './styles/tokens.css',
   './styles/base.css',
   './styles/components.css',
+  './styles/vibes/cottage.css',
+  './styles/vibes/celestial.css',
+  './styles/vibes/dark-academia.css',
+  './styles/vibes/seaglass.css',
 
   './js/main.js',
   './js/state/store.js',
@@ -36,6 +40,9 @@ const ASSETS = [
   './js/components/tbr-pile.js',
   './js/components/finished-list.js',
   './js/components/places.js',
+  './js/components/vibe-picker.js',
+  './js/vibes/registry.js',
+  './js/vibes/apply.js',
   './js/components/modals/finish-modal.js',
   './js/components/modals/book-modal.js',
   './js/components/modals/place-modal.js',

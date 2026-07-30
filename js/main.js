@@ -1,11 +1,14 @@
 // Boot: load state, mount the shell, wire the routes, register the SW.
 import {
-  init as initStore, addLibrary, editLibrary, addBookstore, editBookstore
+  init as initStore, getState, addLibrary, editLibrary, addBookstore, editBookstore
 } from './state/store.js'
 import { mountFinishModal } from './components/modals/finish-modal.js'
 import { mountBookModal } from './components/modals/book-modal.js'
 import { mountPlaceModal } from './components/modals/place-modal.js'
 import { mountHiddenShelf } from './components/hidden-shelf.js'
+import { mountVibePicker } from './components/vibe-picker.js'
+import { mountVibe } from './vibes/apply.js'
+import { isEmptyState } from './state/migrate.js'
 import { mountTabBar } from './components/tab-bar.js'
 import { createRouter } from './routes/router.js'
 import { mountReading } from './routes/reading.js'
@@ -19,7 +22,7 @@ import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.22'
+export const APP_VERSION = '0.3'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
@@ -42,11 +45,23 @@ function mountAll(){
   mountReading(readingEl, { finishModal, bookModal })
   mountFinished(finishedEl)
 
+  // Keeps the document wearing whatever the store says, which is how a vibe
+  // follows you to a second device after signing in.
+  mountVibe()
+  const vibePicker = mountVibePicker(document.getElementById('vibe-picker'))
+
   mountHiddenShelf(document.getElementById('hidden-shelf'), {
     libraryModal,
     bookstoreModal,
+    vibePicker,
     openButton: document.getElementById('shelf-btn')
   })
+
+  // A brand-new reader chooses before seeing the shelf. Someone who already has
+  // books has an established look and is never interrupted to confirm it — they
+  // stay on Otherworld until they go looking for the picker themselves.
+  const state = getState()
+  if(!state.vibe && isEmptyState(state)) vibePicker.open({ firstRun: true })
 
   const tabs = mountTabBar(document.getElementById('tab-bar'))
 

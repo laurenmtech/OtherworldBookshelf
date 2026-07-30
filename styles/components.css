@@ -109,6 +109,52 @@
 .new-vibe{ display:flex; gap:8px; margin-top:12px }
 .new-vibe input{ flex:1; min-width:0 }
 
+/* ── Vibe picker ────────────────────────────────────────────────────────────
+   Each card carries .vibe-scope + data-vibe, so it declares that vibe's tokens
+   on itself and everything inside is drawn in the real thing. A card can't
+   drift from the stylesheet it advertises because it *is* the stylesheet. */
+.vibe-picker{ align-items:flex-start; overflow-y:auto; z-index:110 }
+.vibe-picker-inner{
+  width:100%; max-width:920px; margin:auto;
+  padding:24px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.vibe-picker-inner > .muted{ margin:0 0 4px }
+.vibe-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));
+  gap:14px; margin-top:16px;
+}
+.vibe-card{
+  display:flex; flex-direction:column; gap:9px; align-items:stretch;
+  font:inherit; text-align:left; cursor:pointer;
+  padding:12px; border-radius:14px;
+  background:linear-gradient(180deg, var(--bg-1), var(--bg-2));
+  border:1px solid var(--line-3); color:var(--ink);
+  transition:transform .14s ease, box-shadow .14s ease;
+}
+.vibe-card:hover{ transform:translateY(-3px); box-shadow:0 10px 24px var(--shadow-2) }
+.vibe-card[aria-pressed="true"]{ outline:2px solid var(--accent); outline-offset:2px }
+
+/* A miniature of the real UI: title, a book row, chips, a primary button. */
+.vibe-mini{ display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:10px; background:var(--surface-2) }
+.vibe-mini-title{ font-family:var(--font-display); font-size:13px; color:var(--accent-2) }
+.vibe-mini-panel{
+  display:flex; flex-direction:column; gap:7px; padding:9px;
+  border-radius:8px; background:var(--glass); border:1px solid var(--line-1);
+}
+.vibe-mini-row{ display:flex; align-items:center; gap:8px }
+.vibe-mini-book{ width:15px; height:20px; border-radius:2px; flex:0 0 auto;
+  background:linear-gradient(160deg, var(--accent), var(--accent-2)) }
+.vibe-mini-lines{ display:flex; flex-direction:column; gap:5px; flex:1 }
+.vibe-mini-line{ height:5px; border-radius:3px; background:var(--ink); opacity:.7 }
+.vibe-mini-line.short{ width:55%; background:var(--muted); opacity:.9 }
+.vibe-mini-chips{ display:flex; gap:5px }
+.vibe-mini-chip{ font-size:9px; padding:2px 8px; border-radius:999px;
+  border:1px solid var(--accent-soft); color:var(--accent) }
+.vibe-mini-btn{ align-self:flex-start; font-size:10px; padding:4px 11px; border-radius:6px;
+  background:linear-gradient(90deg, var(--accent), var(--accent-2)); color:var(--on-accent) }
+.vibe-name{ font-family:var(--font-display); font-size:15px; color:var(--ink) }
+.vibe-blurb{ font-size:12px; color:var(--muted) }
+
 /* The bookmark in the header. Absolute so the title stays optically centred —
    which also means the header's own top padding doesn't move it, so it pays
    the status-bar inset itself. */
