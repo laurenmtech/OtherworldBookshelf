@@ -1,7 +1,7 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
 
-export const SHAPE_VERSION = 4
+export const SHAPE_VERSION = 5
 
 export function emptyState(){
   return {
@@ -12,8 +12,9 @@ export function emptyState(){
 }
 
 // v1 → v2: `current` (a single book or null) becomes `currentReads` (an array).
-// The UI still renders only the first entry in this phase; the list arrives in
-// Phase 3. Running this on already-migrated data is a no-op.
+// Phase 4 renders all of them; running this on already-migrated data is a no-op,
+// and it stays here forever because a document written by v1 is still a document
+// someone might sign in with.
 function toCurrentReads(data){
   if(Array.isArray(data.currentReads)) return data.currentReads.filter(Boolean)
   if(data.current) return [data.current]
@@ -22,6 +23,14 @@ function toCurrentReads(data){
 
 // v2 → v3: bookstores. Older data simply defaults to an empty list — nothing to
 // convert, which is why this is safe to run against every snapshot forever.
+
+// v4 → v5: books may now carry workKey, coverId, year, source, seriesKey,
+// seriesName, seriesPosition and format, and a finished entry may carry
+// setDown. There is nothing to convert: every one of those is optional, and a
+// book without them is a book that was typed by hand, which stays a first-class
+// way to add one. Entries pass through untouched — deliberately, since the
+// record also holds legacy `notes` and `rating` fields that the Finished list
+// still renders.
 
 // Normalise any stored or remote payload into the shape the store guarantees.
 // Unknown keys are dropped; missing keys get empty defaults.
@@ -39,14 +48,18 @@ export function migrate(data){
   }
 }
 
-// What we actually persist. `current` is written alongside `currentReads` as a
-// mirror of the first entry so a device still running the previous release can
-// read — and round-trip — this document without losing the current book.
-// Remove this mirror in Phase 4, once no old clients remain.
+// What we actually persist.
+//
+// Until Phase 4 this also wrote a legacy `current` field mirroring
+// currentReads[0], so a device still running v14 could round-trip the document
+// without wiping the newer field. That mirror is gone: with three current reads
+// it could only ever describe one of them, and a client old enough to need it
+// would write the other two away on its next save. toCurrentReads() still reads
+// `current` on the way in, so an old document is understood — it just isn't
+// written back.
 export function toStorage(state){
   return {
     currentReads: state.currentReads,
-    current: state.currentReads[0] || null,
     wishlist: state.wishlist,
     finished: state.finished,
     library: state.library,
