@@ -8,13 +8,19 @@
 // stamp (0.<phase><release>) and this is the cache key. The footer shows this
 // number, read back from the installed cache — so it answers "what is my phone
 // actually running?" rather than what a constant somewhere claims.
-const BUILD = 21;
+const BUILD = 22;
 const CACHE = 'otherworld-reads-build-' + BUILD;
+// Cover art lives in its own cache, deliberately NOT keyed by BUILD: a cover is
+// immutable (the id IS the image) and re-downloading every one of them on each
+// deploy would be the most expensive thing this app does, for no gain.
+const COVERS = 'otherworld-reads-covers';
+const COVER_HOSTS = ['covers.openlibrary.org', 'books.google.com'];
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './firebase-config.js',
+  './search-config.js',
 
   './styles/tokens.css',
   './styles/base.css',
@@ -27,9 +33,14 @@ const ASSETS = [
   './js/main.js',
   './js/state/store.js',
   './js/state/migrate.js',
+  './js/state/moods.js',
   './js/state/persist-local.js',
   './js/state/persist-cloud.js',
   './js/state/auth.js',
+  './js/services/books.js',
+  './js/services/book-shape.js',
+  './js/services/open-library.js',
+  './js/services/google-books.js',
   './js/routes/router.js',
   './js/routes/reading.js',
   './js/routes/finished.js',
@@ -40,16 +51,22 @@ const ASSETS = [
   './js/components/tbr-pile.js',
   './js/components/finished-list.js',
   './js/components/places.js',
+  './js/components/typeahead.js',
   './js/components/vibe-picker.js',
   './js/vibes/registry.js',
   './js/vibes/apply.js',
   './js/components/modals/finish-modal.js',
   './js/components/modals/book-modal.js',
+  './js/components/modals/set-down-modal.js',
   './js/components/modals/place-modal.js',
   './js/ui/dom.js',
   './js/ui/modal.js',
   './js/ui/sheet.js',
   './js/ui/chips.js',
+  './js/ui/book-meta.js',
+  './js/ui/cover.js',
+  './js/ui/mood-picker.js',
+  './js/ui/reveal.js',
 
   './icon-192.png',
   './icon-512.png',
@@ -65,18 +82,39 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE && k !== COVERS).map((k) => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
+
+// Covers: cache-first into their own bucket, so a shelf you've seen once is a
+// shelf you can see on a plane. The response is opaque (an <img> is a no-cors
+// request, so res.ok is false and res.status is 0) — that's expected here and
+// is the one place this worker stores a response it can't read.
+function handleCover(e) {
+  e.respondWith(
+    caches.open(COVERS).then((c) => c.match(e.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(e.request).then((res) => {
+        if (res && (res.ok || res.type === 'opaque')) c.put(e.request, res.clone());
+        return res;
+      }).catch(() => cached || Response.error());
+    }))
+  );
+}
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (COVER_HOSTS.includes(url.hostname)) return handleCover(e);
   const sameOrigin = url.origin === self.location.origin;
   const cdn = CDN_HOSTS.includes(url.hostname);
-  // Let the browser handle data/API calls (Firestore, auth) — Firestore does its own offline cache.
+  // Let the browser handle data/API calls (Firestore, auth, and the Open
+  // Library search — which must FAIL offline rather than answer from a cache,
+  // so the typeahead can say so and fall back to manual entry).
   if (!sameOrigin && !cdn) return;
   // Cache-first for the app shell + SDK/font CDN, falling back to network and caching the result.
   e.respondWith(

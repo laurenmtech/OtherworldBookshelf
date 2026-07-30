@@ -79,6 +79,17 @@
     <symbol id="icon-bookmark" viewBox="0 0 24 24">
       <path d="M6 2h12a2 2 0 0 1 2 2v18l-8-4.2L4 22V4a2 2 0 0 1 2-2z" />
     </symbol>
+    <!-- Setting a book down: two bars, the universal "paused", not a cross.
+         Nothing about stopping a book is a failure state. -->
+    <symbol id="icon-setdown" viewBox="0 0 24 24">
+      <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+    </symbol>
+    <symbol id="icon-up" viewBox="0 0 24 24">
+      <path d="M12 4l8 9h-5v7H9v-7H4z" />
+    </symbol>
+    <symbol id="icon-down" viewBox="0 0 24 24">
+      <path d="M12 20l-8-9h5V4h6v7h5z" />
+    </symbol>
   </svg>
 
   <header class="site-header">
@@ -104,37 +115,15 @@
       <h1 class="route-heading visually-hidden" data-route-heading tabindex="-1">Reading</h1>
 
       <div class="container reading-grid">
+        <!-- Up to three, the first one large. The list, the covers and the
+             reorder controls are all built by current-reads.js. -->
         <section class="panel current-panel">
-          <h2>Current Read</h2>
-          <div class="box">
-            <div id="current-card" class="card empty">
-              <form id="current-form">
-                <div class="field">
-                  <label for="current-title">Title</label>
-                  <input id="current-title" name="title" placeholder="What's on your nightstand?">
-                </div>
-                <div class="field">
-                  <label for="current-author">Author</label>
-                  <input id="current-author" name="author" placeholder="Author">
-                </div>
-                <div class="actions">
-                  <button id="save-current" type="submit" class="btn primary">Set as current</button>
-                  <button id="finish-current" type="button" class="btn">Finish &amp; rate</button>
-                </div>
-              </form>
-
-              <div id="current-display" class="card-display hidden">
-                <div class="meta">
-                  <h3 id="display-title"></h3>
-                  <div id="display-author" class="muted"></div>
-                  <div class="card-actions">
-                    <button id="edit-current" class="btn"><svg><use href="#icon-edit"></use></svg>Edit</button>
-                    <button id="finish-current-display" class="btn"><svg><use href="#icon-finish"></use></svg>Finish &amp; rate</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="panel-head">
+            <h2>Current Reads</h2>
+            <button id="add-current-btn" type="button" class="btn btn-add">+ Add</button>
           </div>
+          <ul id="current-list" class="current-list"></ul>
+          <div id="current-empty" class="muted hidden">Nothing in progress — tap “+ Add”.</div>
         </section>
 
         <section class="panel wishlist-panel">
@@ -254,20 +243,24 @@
   </div>
 
   <!-- ───────────── Modals ───────────── -->
+  <!-- Finishing and setting down ask the same optional questions, so both use
+       the shared mood picker (ui/mood-picker.js) and find their parts by data
+       attribute rather than by id. -->
   <div id="finish-form" class="modal hidden" hidden>
     <form id="finish-form-inner" class="finish-inner">
       <h3>Finish</h3>
+      <p class="muted book-line" data-finish-book></p>
       <div class="field">
         <label>How was it?</label>
-        <div id="feeling-chips" class="chips"></div>
+        <div id="feeling-chips" class="chips" data-feeling-chips></div>
       </div>
       <div class="field">
         <label>Vibe <span class="muted">(optional)</span></label>
-        <div id="mood-groups"></div>
+        <div id="mood-groups" data-mood-groups></div>
         <div class="new-vibe">
           <label class="visually-hidden" for="new-vibe">Add a vibe of your own</label>
-          <input id="new-vibe" placeholder="+ New vibe…" autocomplete="off">
-          <button id="add-vibe" type="button" class="btn btn-add">Add</button>
+          <input id="new-vibe" data-new-vibe placeholder="+ New vibe…" autocomplete="off">
+          <button id="add-vibe" type="button" class="btn btn-add" data-add-vibe>Add</button>
         </div>
       </div>
       <div class="actions">
@@ -277,20 +270,79 @@
     </form>
   </div>
 
-  <div id="wishlist-modal" class="modal hidden" hidden>
-    <form id="wishlist-form" class="finish-inner">
-      <h3 id="wishlist-modal-title">Add to TBR Pile</h3>
+  <!-- Set it down: a pause or a parting, and optionally how it felt. -->
+  <div id="set-down-modal" class="modal hidden" hidden aria-labelledby="set-down-title">
+    <form class="finish-inner">
+      <h3 id="set-down-title">Set it down</h3>
+      <p class="muted book-line" data-set-down-book></p>
       <div class="field">
-        <label for="wish-title">Title</label>
-        <input id="wish-title" placeholder="Title" required>
+        <label>Which is it?</label>
+        <div class="chips" data-outcome-chips></div>
+        <p class="muted outcome-note" data-outcome-note></p>
       </div>
       <div class="field">
-        <label for="wish-author">Author</label>
-        <input id="wish-author" placeholder="Author">
+        <label>How was it? <span class="muted">(optional)</span></label>
+        <div class="chips" data-feeling-chips></div>
+      </div>
+      <div class="field">
+        <label>Vibe <span class="muted">(optional)</span></label>
+        <div data-mood-groups></div>
+        <div class="new-vibe">
+          <label class="visually-hidden" for="set-down-new-vibe">Add a vibe of your own</label>
+          <input id="set-down-new-vibe" data-new-vibe placeholder="+ New vibe…" autocomplete="off">
+          <button type="button" class="btn btn-add" data-add-vibe>Add</button>
+        </div>
       </div>
       <div class="actions">
-        <button type="submit" class="btn primary">Save</button>
-        <button id="cancel-wish" type="button" class="btn">Cancel</button>
+        <button type="submit" class="btn primary" data-submit disabled>Set it down</button>
+        <button type="button" class="btn" data-cancel>Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- One modal adds and edits books for both the TBR pile and Current Reads.
+       Adding is search-first; "Add manually" reveals the two fields, and is
+       revealed automatically when the search can't be reached. No `required`
+       attributes: the title field is hidden during a search, and a hidden
+       required field blocks submission with a validation bubble nobody can
+       see. book-modal.js validates instead. -->
+  <div id="book-modal" class="modal hidden" hidden aria-labelledby="book-modal-title">
+    <form id="book-form" class="finish-inner">
+      <h3 id="book-modal-title">Add to TBR Pile</h3>
+      <p class="muted cap-note" id="book-cap-note" hidden></p>
+
+      <div class="field typeahead" id="book-search-field">
+        <label for="book-search">Search for a book</label>
+        <input id="book-search" type="search" data-typeahead-input autocomplete="off"
+               role="combobox" aria-expanded="false" aria-controls="book-results"
+               aria-autocomplete="list" placeholder="Title, author…">
+        <ul id="book-results" class="typeahead-results" data-typeahead-results
+            role="listbox" aria-label="Search results" hidden></ul>
+        <div class="typeahead-status muted" data-typeahead-status role="status" aria-live="polite"></div>
+        <button id="manual-toggle" type="button" class="btn btn-add">Add manually</button>
+      </div>
+
+      <div id="manual-fields" hidden>
+        <div class="field">
+          <label for="book-title">Title</label>
+          <input id="book-title" placeholder="Title">
+        </div>
+        <div class="field">
+          <label for="book-author">Author</label>
+          <input id="book-author" placeholder="Author">
+        </div>
+      </div>
+
+      <div class="field" id="format-field" hidden>
+        <label>Format <span class="muted">(optional)</span></label>
+        <div id="format-chips" class="chips"></div>
+      </div>
+
+      <div id="book-duplicate" class="dup-note" hidden></div>
+
+      <div class="actions">
+        <button id="save-book" type="submit" class="btn primary" hidden>Save</button>
+        <button id="cancel-book" type="button" class="btn">Cancel</button>
       </div>
     </form>
   </div>
@@ -338,10 +390,13 @@
     <span class="version" id="app-version"></span>
   </footer>
 
-  <!-- firebase-config.js is a plain script: it sets window.FIREBASE_CONFIG,
-       which the auth module reads. main.js does everything else, including
-       registering the service worker. -->
+  <!-- Plain scripts, not modules: they set globals the modules read.
+       firebase-config.js sets window.FIREBASE_CONFIG for the auth module;
+       search-config.js sets window.GOOGLE_BOOKS_KEY for the second book
+       source. Both are committed deliberately — see the comments in them.
+       main.js does everything else, including registering the service worker. -->
   <script src="firebase-config.js"></script>
+  <script src="search-config.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

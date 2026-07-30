@@ -2,8 +2,6 @@
 
 .btn-add{ font-size:13px; padding:6px 10px }
 
-.card{ display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:10px; background:var(--glass); border:1px solid var(--line-1) }
-.card.empty{ padding:8px }
 .field{ margin-bottom:10px }
 .field.two{ display:flex; gap:12px }
 .field label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
@@ -27,10 +25,7 @@
 .btn.primary{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:var(--on-accent); border:none }
 .btn:active{ transform:translateY(1px) }
 
-.card-display{ display:flex; gap:12px; align-items:flex-start }
-.meta h3{ margin:0 0 6px; font-family:var(--font-display); color:var(--accent-2) }
 .muted{ color:var(--muted); font-size:13px }
-.card-actions{ margin-top:10px }
 
 .list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px }
 .list li{ padding:12px; border-radius:8px; background:var(--surface-2); display:flex; flex-direction:column; gap:8px; align-items:flex-start }
@@ -38,6 +33,71 @@
 
 /* wishlist title highlight */
 .wishlist-title{ color: var(--accent-2); font-weight:600 }
+
+/* A list row with cover art beside its text. The cover is optional everywhere —
+   `.row-main` has to read correctly with it and without it. */
+.row-main{ display:flex; gap:10px; align-items:flex-start; width:100% }
+.row-cover{
+  width:34px; flex:0 0 34px; border-radius:3px; display:block;
+  box-shadow:0 2px 8px var(--shadow-1);
+}
+
+/* ── Current Reads ──────────────────────────────────────────────────────────
+   One list; the first item is simply larger. Making the headline a different
+   element would mean two renderers and two sets of actions to keep in step. */
+.current-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px }
+.current-item{
+  display:flex; gap:12px; align-items:flex-start;
+  padding:12px; border-radius:10px;
+  background:var(--glass); border:1px solid var(--line-1);
+}
+.current-item.headline{ background:var(--surface-2); border-color:var(--line-3) }
+.current-meta{ flex:1; min-width:0 }
+.current-meta h3{
+  margin:0 0 6px; font-family:var(--font-display); color:var(--accent-2);
+  font-size:16px; overflow-wrap:anywhere;
+}
+.current-item.headline .current-meta h3{ font-size:20px }
+.current-cover{ width:44px; flex:0 0 44px; border-radius:4px; display:block; box-shadow:0 4px 14px var(--shadow-1) }
+.current-item.headline .current-cover{ width:86px; flex-basis:86px }
+.current-item .list-actions{ align-self:flex-start; flex-wrap:wrap; margin-top:10px }
+
+/* Genre and format: what the book is. Outlined, where the vibe tags are
+   filled — the two rows sit next to each other and must not read as one list,
+   because what a book IS and what you THOUGHT of it are different claims. */
+.tag-row{ display:flex; flex-wrap:wrap; gap:5px; margin-top:6px }
+.book-tag{
+  font-size:11px; padding:2px 9px; border-radius:999px;
+  color:var(--muted); border:1px solid var(--line-3);
+}
+
+/* Reorder: a keyboard and touch path that exists whether or not you can drag. */
+.reorder{ display:flex; gap:4px }
+.btn.icon-only{ padding:6px 8px }
+.btn.icon-only svg{ margin-right:0 }
+.btn[disabled]{ opacity:.35; cursor:default }
+.btn[disabled]:hover{ transform:none; box-shadow:none }
+.current-item[draggable="true"]{ cursor:grab }
+.current-item.dragging{ opacity:.5 }
+.current-item.drag-over{ outline:2px dashed var(--accent); outline-offset:2px }
+
+/* Where a book you already have turns out to live. Deliberately brief: the
+   scroll and the flash do the pointing. */
+.reveal-flash{ animation: revealFlash 1.6s ease-out }
+@keyframes revealFlash{
+  0%, 100%{ box-shadow:none }
+  15%, 60%{ box-shadow:0 0 0 2px var(--accent) }
+}
+@media (prefers-reduced-motion: reduce){
+  .reveal-flash{ animation:none; box-shadow:0 0 0 2px var(--accent) }
+}
+
+/* A book that was set down for good, marked in the record rather than hidden
+   from it. */
+.set-down-tag{
+  display:inline-block; margin-left:8px; font-size:11px; padding:2px 9px;
+  border-radius:999px; color:var(--muted); border:1px solid var(--line-3);
+}
 
 /* saved-place link styling (libraries, bookstores) */
 .place-panel .list a{ color:var(--accent-2); text-decoration:underline; word-break:break-all }
@@ -80,12 +140,10 @@
 
 .finished-count{ margin:0 0 10px; font-size:12px }
 
-/* Ordering here is load-bearing, and was inherited from the original single
-   stylesheet. `.hidden` must come AFTER `.card-display` — otherwise a hidden
-   current-read card would still be display:flex and show through — and BEFORE
-   `.modal`, because the modal elements keep their `hidden` class permanently
-   and are toggled via the `hidden` attribute; `.modal{display:flex}` has to win
-   over `.hidden{display:none}` for a modal to ever open. Don't move this. */
+/* Ordering here is load-bearing. `.hidden` must come BEFORE `.modal`, because
+   the modal elements keep their `hidden` class permanently and are toggled via
+   the `hidden` attribute; `.modal{display:flex}` has to win over
+   `.hidden{display:none}` for a modal to ever open. Don't move this. */
 .hidden{ display:none }
 
 /* Above the settings sheet (80): the library and TBR modals are opened *from*
@@ -108,6 +166,47 @@
 }
 .new-vibe{ display:flex; gap:8px; margin-top:12px }
 .new-vibe input{ flex:1; min-width:0 }
+
+/* Which book this modal is about — three current reads mean "Finish" and "Set
+   it down" can no longer assume. */
+.book-line{ margin:-4px 0 14px; font-family:var(--font-display); color:var(--accent-2); font-size:15px }
+.outcome-note{ margin:8px 0 0; min-height:1.2em }
+.cap-note{ margin:0 0 12px }
+
+/* ── Book typeahead ─────────────────────────────────────────────────────────
+   The results sit in the flow rather than floating: inside a modal that
+   already scrolls, an absolutely positioned list would be clipped by it on a
+   short phone, which is exactly where it matters most. */
+.typeahead{ position:relative }
+.typeahead-results{
+  list-style:none; margin:8px 0 0; padding:4px;
+  max-height:46vh; overflow-y:auto;
+  border:1px solid var(--line-3); border-radius:10px; background:var(--sunken);
+}
+.typeahead-results[hidden]{ display:none }
+.typeahead-option{
+  display:flex; gap:10px; align-items:center;
+  padding:8px; border-radius:8px; cursor:pointer;
+}
+.typeahead-option:hover{ background:var(--surface-2) }
+/* aria-selected is the highlighted option, which arrow keys move and the mouse
+   doesn't — so it needs to look different from :hover, not the same. */
+.typeahead-option[aria-selected="true"]{ background:var(--accent-soft) }
+.typeahead-cover{ width:30px; flex:0 0 30px; border-radius:3px; display:block }
+.typeahead-text{ min-width:0 }
+.typeahead-title{ color:var(--ink); font-weight:600; overflow-wrap:anywhere }
+.typeahead-series{ font-size:12px }
+.typeahead-status{ margin-top:8px; min-height:1.2em }
+#manual-toggle{ margin-top:4px }
+
+/* You already have this one. A note, not a refusal — the save underneath it
+   still works on a second press. */
+.dup-note{
+  margin:12px 0; padding:10px 12px; border-radius:10px;
+  background:var(--surface-2); border:1px solid var(--line-3);
+}
+.dup-note p{ margin:0 0 6px; font-size:13px }
+.dup-note .btn{ padding:5px 10px; font-size:13px }
 
 /* ── Vibe picker ────────────────────────────────────────────────────────────
    Each card carries .vibe-scope + data-vibe, so it declares that vibe's tokens

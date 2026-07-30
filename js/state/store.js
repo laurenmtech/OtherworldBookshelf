@@ -4,11 +4,11 @@
 import { migrate, emptyState } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
 
-// How many books may be current at once. Spec §04 wants 1–3, but no phase has
-// claimed the list UI yet, so this stays at 1 and withCurrent() sets the
-// displaced book down on the TBR pile. Raising it is a one-line change here
-// plus a list in current-reads.js.
-const CURRENT_CAP = 1
+// How many books may be current at once. Phase 4 brought the list UI, so this
+// is 3. Nothing refuses a fourth: withCurrent() sets whatever no longer fits
+// back on the TBR pile, and the add flow says which book that will be before
+// you commit to it.
+export const CURRENT_CAP = 3
 
 let state = emptyState()
 let cloudSave = null
@@ -84,9 +84,9 @@ export function resetAll(){
 // ---------- current reads ----------
 
 // Whatever no longer fits in currentReads goes back on the TBR pile instead of
-// vanishing. With CURRENT_CAP at 1 that means starting a new book sets the
-// previous one down rather than deleting it — the single most destructive thing
-// this app could do quietly. Raise CURRENT_CAP and this displaces nothing.
+// vanishing — quietly deleting a book someone is part-way through is the single
+// most destructive thing this app could do. At CURRENT_CAP 3 that only bites on
+// a fourth book, and the add flow warns first.
 function withCurrent(list, extraWishlist = []){
   const displaced = list.slice(CURRENT_CAP)
   return {
@@ -113,6 +113,55 @@ export function finishCurrent(index, { feeling = null, moods = [] } = {}){
     ...state,
     currentReads: state.currentReads.filter((_, i) => i !== index),
     finished: [entry, ...state.finished]
+  })
+}
+
+// Move a current read to a new position. Which book is first is not cosmetic —
+// the first entry is the one rendered large — so this is content, persisted and
+// synced like anything else.
+export function reorderCurrent(from, to){
+  const list = state.currentReads
+  if(from === to) return
+  if(from < 0 || from >= list.length) return
+  const target = Math.max(0, Math.min(to, list.length - 1))
+  const next = [...list]
+  const [moved] = next.splice(from, 1)
+  next.splice(target, 0, moved)
+  commit({ ...state, currentReads: next })
+}
+
+// Setting a book down, which is not the same as finishing it and not the same
+// as never having started.
+//
+//   'later' — not right now. Back on the TBR pile, still suggestible, no mark
+//             against it. Any feeling or vibes given ride along, so picking it
+//             up again comes with the note you left yourself.
+//   'never' — not for me. Into the record, marked setDown so it renders
+//             distinctly and can be filtered, and excluded from future
+//             suggestions (Phase 8 reads this flag; nothing else may).
+//
+// Feeling and vibes are optional on both — the point of this action is that it
+// costs nothing to be honest about abandoning a book.
+export function setDownCurrent(index, { outcome = 'later', feeling = null, moods = [] } = {}){
+  const book = state.currentReads[index]
+  if(!book) return
+  const rest = state.currentReads.filter((_, i) => i !== index)
+
+  if(outcome === 'never'){
+    const entry = {
+      ...book, setDown: true, finishedAt: new Date().toISOString(), feeling, moods
+    }
+    commit({ ...state, currentReads: rest, finished: [entry, ...state.finished] })
+    return
+  }
+
+  const shelved = { ...book }
+  if(feeling) shelved.feeling = feeling
+  if(moods && moods.length) shelved.moods = moods
+  commit({
+    ...state,
+    currentReads: rest,
+    wishlist: sortedWishlist([...state.wishlist, shelved])
   })
 }
 

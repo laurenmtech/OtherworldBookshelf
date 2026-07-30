@@ -4,6 +4,7 @@ import {
 } from './state/store.js'
 import { mountFinishModal } from './components/modals/finish-modal.js'
 import { mountBookModal } from './components/modals/book-modal.js'
+import { mountSetDownModal } from './components/modals/set-down-modal.js'
 import { mountPlaceModal } from './components/modals/place-modal.js'
 import { mountHiddenShelf } from './components/hidden-shelf.js'
 import { mountVibePicker } from './components/vibe-picker.js'
@@ -22,11 +23,12 @@ import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.3'
+export const APP_VERSION = '0.4'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
-  const bookModal = mountBookModal(document.getElementById('wishlist-modal'))
+  const bookModal = mountBookModal(document.getElementById('book-modal'))
+  const setDownModal = mountSetDownModal(document.getElementById('set-down-modal'))
   const libraryModal = mountPlaceModal(document.getElementById('library-modal'), {
     addTitle: 'Add to Library', editTitle: 'Edit Library',
     onAdd: addLibrary, onEdit: editLibrary
@@ -42,7 +44,7 @@ function mountAll(){
   // Both routes mount once, at boot, and stay mounted. They re-render from the
   // store whether or not they're the visible tab, which costs nothing at this
   // size and means switching tabs never waits on a render.
-  mountReading(readingEl, { finishModal, bookModal })
+  mountReading(readingEl, { finishModal, bookModal, setDownModal })
   mountFinished(finishedEl)
 
   // Keeps the document wearing whatever the store says, which is how a vibe
