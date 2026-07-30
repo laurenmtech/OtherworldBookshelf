@@ -1,0 +1,39 @@
+/* Cottage — warm cream, sage and terracotta. Light.
+   The overlay tokens invert: on a light ground, surfaces lift with white and
+   hairlines are drawn with brown-black rather than the reverse. */
+html[data-vibe="cottage"],
+.vibe-scope[data-vibe="cottage"]{
+  --bg-1: #fbf7f0;
+  --bg-2: #f2e9da;
+  --bg-glow-1: #e6d6b81f;
+  --bg-glow-2: #cfe0c81f;
+  --card: #fffdf8;
+
+  --ink: #2f261c;
+  --muted: #5d5142;
+  --on-accent: #fffaf2;
+
+  --accent: #3d6b46;
+  --accent-2: #8f3f22;
+  --accent-soft: rgba(61,107,70,0.22);
+
+  --danger: #96291f;
+  --danger-line: rgba(150,41,31,0.35);
+
+  --glass: rgba(255,255,255,0.55);
+  --surface-1: rgba(255,255,255,0.40);
+  --surface-2: rgba(255,255,255,0.70);
+  --line-1: rgba(60,45,30,0.06);
+  --line-2: rgba(60,45,30,0.10);
+  --line-3: rgba(60,45,30,0.16);
+  --line-4: rgba(60,45,30,0.22);
+  --sunken: rgba(60,45,30,0.05);
+
+  --shadow-1: rgba(90,70,45,0.10);
+  --shadow-2: rgba(90,70,45,0.16);
+  --scrim-1: rgba(40,30,20,0.45);
+  --scrim-2: rgba(40,30,20,0.62);
+
+  --font-body: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+}

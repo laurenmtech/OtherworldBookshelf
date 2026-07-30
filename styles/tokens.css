@@ -1,7 +1,17 @@
-/* Every colour in the app, in one place.
-   Components reference these and never a raw hex or rgba() — that's what makes
-   Phase 3's vibes a new token file rather than a rewrite of every rule. */
-:root{
+/* THE VIBE CONTRACT.
+   Every token a component may reference, and the Otherworld palette as the
+   default value of each. Components reference these and never a raw hex or
+   rgba() — that is what makes a vibe one small file instead of a rewrite.
+
+   Otherworld deliberately has no file under styles/vibes/. It IS this file:
+   duplicating 27 values under html[data-vibe="otherworld"] would only create
+   somewhere for them to drift apart. Selecting Otherworld sets the attribute,
+   nothing overrides, and these defaults apply.
+
+   A vibe file must define EVERY token below. styles/vibes/audit.mjs fails if
+   one is missing, so a half-finished vibe can't ship looking almost right. */
+:root,
+.vibe-scope[data-vibe="otherworld"]{
   /* Ground */
   --bg-1: #0b0710;
   --bg-2: #0f0d1a;
@@ -42,4 +52,11 @@
   /* Type */
   --font-body: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   --font-display: 'Cinzel', serif;
+}
+
+/* Re-skinning is instant because only these values change — no layout, no
+   re-render, so scroll position and half-typed forms survive it. */
+html{ transition: background-color .35s ease, color .35s ease }
+@media (prefers-reduced-motion: reduce){
+  html{ transition: none }
 }

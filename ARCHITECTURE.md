@@ -26,12 +26,20 @@ firebase-config.js    plain script; sets window.FIREBASE_CONFIG
 manifest.webmanifest
 
 styles/
-  tokens.css          every colour and font, as custom properties
+  tokens.css          THE VIBE CONTRACT — every token, defaulting to Otherworld
   base.css            reset, page chrome, layout grid
   components.css      panels, cards, lists, buttons, chips, modals
+  vibes/
+    cottage.css  celestial.css  dark-academia.css  seaglass.css
+    audit.mjs         contract + WCAG AA check; fails the build on a gap
+    CONTRAST.md       generated audit results, per vibe
 
 js/
   main.js             boot: init store, mount the shell, wire routes, register SW
+
+  vibes/
+    registry.js       id, name, blurb, fonts, status-bar colour
+    apply.js          attribute + fonts + theme-color + local cache
 
   routes/
     router.js         hash routing, per-tab scroll, focus on change
@@ -53,6 +61,7 @@ js/
     tbr-pile.js       what's next
     finished-list.js  the record — renders an already-filtered list
     places.js         saved places: libraries AND bookstores, one list impl
+    vibe-picker.js    the grid of live vibe cards
     modals/
       finish-modal.js   how was it? feeling + vibes
       book-modal.js     add/edit a TBR book
@@ -86,7 +95,33 @@ near-identical files. Each section supplies its own hooks by data attribute
 (`data-place-list`, `data-place-add`, `data-place-empty`) and its own store
 actions, which is all that differs between them.
 
-## Vibes
+## Vibes (the app's look)
+
+Every vibe is one file declaring the same set of custom properties. Components
+reference tokens and never a raw colour, so a vibe is ~30 lines rather than a
+rewrite — `grep` for `#` or `rgba(` outside `styles/tokens.css` and
+`styles/vibes/` should return nothing, and every hit is a bug.
+
+Otherworld has no file of its own: it *is* `tokens.css`, so the default values
+live in exactly one place and can't drift from a copy.
+
+Each block is selected twice — `html[data-vibe="x"]` skins the app, and
+`.vibe-scope[data-vibe="x"]` lets a picker card wear a vibe the page isn't
+wearing. That's why the picker previews can never go stale: they are the
+stylesheet, not a screenshot of it.
+
+An inline script in `<head>` stamps `data-vibe` before the first paint —
+otherwise a light vibe opens with a frame of black. It necessarily duplicates
+the font URLs and theme colours from `registry.js` (no module has loaded yet);
+a test asserts the two agree.
+
+Webfonts are fetched only for the vibe being worn, except while the picker is
+open, when all five load so the cards show their real faces.
+
+Run `node styles/vibes/audit.mjs` after touching any of this. It fails on a
+missing token or a pair below WCAG AA, and `--write` regenerates `CONTRAST.md`.
+
+## Vibes (the ones on a book)
 
 The vibe vocabulary lives in `MOOD_GROUPS` in `finish-modal.js`. Vibes you type
 yourself are **not** stored in their own list — `customMoods()` reads them back
@@ -120,7 +155,8 @@ addCurrent(book)    // …and the other actions, the only way to change anything
 
 Actions: `addCurrent`, `editCurrent`, `finishCurrent`, `addToTbr`, `editTbr`,
 `removeTbr`, `makeTbrCurrent`, `removeFinished`, `addLibrary`, `editLibrary`,
-`removeLibrary`, `makeLibraryCurrent`, plus the lifecycle calls `init`,
+`removeLibrary`, `makeLibraryCurrent`, `addBookstore`, `editBookstore`,
+`removeBookstore`, `setVibe` and `resetAll`, plus the lifecycle calls `init`,
 `reloadLocal`, `applyRemote` and `setCloudSave`.
 
 `applyRemote` and `reloadLocal` commit **without** persisting — state that came
@@ -130,16 +166,25 @@ Actions: `addCurrent`, `editCurrent`, `finishCurrent`, `addToTbr`, `editTbr`,
 
 ```js
 {
-  currentReads: [ { title, author } ],   // capped at 1 until Phase 3
+  currentReads: [ { title, author } ],   // capped at 1 — see CURRENT_CAP
   wishlist:     [ { title, author } ],   // kept sorted by title
   finished:     [ { title, author, finishedAt, feeling, moods[] } ],
-  library:      [ { name, url } ]
+  library:      [ { name, url } ],
+  bookstores:   [ { name, url } ],
+  vibe:         'cottage' | null         // preference, not content
 }
 ```
 
 `migrate.js` normalises anything loaded or received: unknown keys are dropped,
-missing keys get empty defaults, and it is safe to run twice. It currently
-performs one migration, `current` → `currentReads[]`.
+missing keys get empty defaults, and it is safe to run twice — it runs on every
+load *and* every remote snapshot. Shape v4: `current` → `currentReads[]`, then
+`bookstores`, then `vibe`.
+
+**`isEmptyState()` counts content only.** It decides whether a remote snapshot
+is real enough to replace what's on this device, so a document holding nothing
+but a preference must never qualify — otherwise signing in on a second device
+could let "I like the Cottage vibe" wipe a shelf that hadn't synced yet. If you
+add a preference to the state, it does not belong in that function.
 
 **Transitional:** `toStorage()` also writes a legacy `current` field mirroring
 `currentReads[0]`, so a device still running v14 can read and round-trip the

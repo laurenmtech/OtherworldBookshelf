@@ -5,16 +5,17 @@
 // software, and this is a reading app. The bottom-sheet presentation it happens
 // to use lives in ui/sheet.js, where "sheet" means the interaction pattern.
 //
-// Vibe (the app's look) belongs here too and is deliberately absent — it
-// arrives in Phase 3. An empty section promising a feature that doesn't exist
-// is worse than no section, so this file gains it when the feature does.
+// Vibe lives here as a name and a Change button; the picker itself is its own
+// component, because it's also what a brand-new reader meets before they ever
+// see this sheet.
 import { el } from '../ui/dom.js'
 import { createSheet } from '../ui/sheet.js'
 import { mountPlaceList } from './places.js'
 import { mountHeader } from './header.js'
 import {
-  getState, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent
+  getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent
 } from '../state/store.js'
+import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
 import { iconButton } from '../ui/dom.js'
 
@@ -36,7 +37,7 @@ function exportShelf(){
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function mountHiddenShelf(root, { libraryModal, bookstoreModal, openButton }){
+export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicker, openButton }){
   if(!root) return { open(){}, close(){} }
 
   const sheet = createSheet(root)
@@ -45,6 +46,21 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, openButto
   // Account controls moved out of the header and into the sheet; mountHeader
   // still owns them, it just renders somewhere quieter now.
   mountHeader(root.querySelector('#auth-area'))
+
+  // The picker layers above the sheet rather than replacing it, so closing it
+  // puts you back where you were instead of at the top of the app.
+  const changeVibeBtn = root.querySelector('#change-vibe')
+  changeVibeBtn && vibePicker && changeVibeBtn.addEventListener('click', () => vibePicker.open())
+
+  const vibeLabel = root.querySelector('#current-vibe')
+  if(vibeLabel){
+    const showVibe = (state) => {
+      const vibe = getVibe(state.vibe) || getVibe(DEFAULT_VIBE)
+      vibeLabel.textContent = `${vibe.name} — ${vibe.blurb}`
+    }
+    showVibe(getState())
+    subscribe(showVibe)
+  }
 
   mountPlaceList(root.querySelector('#library-list'), {
     modal: libraryModal,

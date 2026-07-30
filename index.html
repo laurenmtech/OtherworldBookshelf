@@ -24,11 +24,45 @@
   <meta name="apple-mobile-web-app-title" content="Otherworld">
 
   <link rel="stylesheet" href="styles/tokens.css">
+  <!-- Vibe files are only custom-property declarations — a few hundred bytes
+       each — so all four load up front and switching costs no network at all.
+       Their WEBFONTS are what's gated: see the boot script below. -->
+  <link rel="stylesheet" href="styles/vibes/cottage.css">
+  <link rel="stylesheet" href="styles/vibes/celestial.css">
+  <link rel="stylesheet" href="styles/vibes/dark-academia.css">
+  <link rel="stylesheet" href="styles/vibes/seaglass.css">
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/components.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@300;600&display=swap" rel="stylesheet">
+
+  <!-- Runs before the first paint, which is the whole point: stamping data-vibe
+       from a module would mean a frame of the default theme first, and on a
+       light vibe that frame is a black flash.
+
+       It duplicates the fonts and theme colours from js/vibes/registry.js
+       because no module has loaded yet. A test asserts the two agree, so they
+       can't quietly drift; add a vibe in both places. -->
+  <script>
+  (function(){
+    var V = {
+      'otherworld':    { t:'#0b0710', f:'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@300;600&display=swap' },
+      'cottage':       { t:'#fbf7f0', f:'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=Nunito:wght@300;600&display=swap' },
+      'celestial':     { t:'#070a1a', f:'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Inter:wght@300;600&display=swap' },
+      'dark-academia': { t:'#15100c', f:'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:wght@400;600&display=swap' },
+      'seaglass':      { t:'#f5fbf9', f:'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Karla:wght@300;600&display=swap' }
+    };
+    var id = null;
+    try{ id = localStorage.getItem('otherworld_vibe'); }catch(e){}
+    if(!id || !V[id]) id = 'otherworld';
+    document.documentElement.setAttribute('data-vibe', id);
+    var link = document.createElement('link');
+    link.id = 'vibe-fonts'; link.rel = 'stylesheet'; link.href = V[id].f;
+    document.head.appendChild(link);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute('content', V[id].t);
+  })();
+  </script>
 </head>
 <body>
   <!-- SVG icons -->
@@ -170,6 +204,14 @@
         </div>
       </section>
 
+      <section class="sheet-section" id="vibe-section">
+        <div class="panel-head">
+          <h3>Vibe</h3>
+          <button id="change-vibe" type="button" class="btn btn-add">Change</button>
+        </div>
+        <p class="muted" id="current-vibe"></p>
+      </section>
+
       <section class="sheet-section place-panel" id="library-list">
         <div class="panel-head">
           <h3>My Local Library</h3>
@@ -196,6 +238,18 @@
           <button id="delete-data" type="button" class="btn danger">Delete everything</button>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- ───────────── Vibe picker ───────────── -->
+  <div id="vibe-picker" class="modal vibe-picker hidden" hidden aria-labelledby="vibe-picker-title">
+    <div class="vibe-picker-inner">
+      <div class="sheet-head">
+        <h2 id="vibe-picker-title">Choose a vibe</h2>
+        <button id="vibe-done" class="btn primary" type="button">Done</button>
+      </div>
+      <p class="muted" id="vibe-picker-note"></p>
+      <div class="vibe-grid" id="vibe-grid"></div>
     </div>
   </div>
 

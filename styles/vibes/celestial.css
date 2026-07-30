@@ -1,0 +1,37 @@
+/* Celestial — deep indigo night, periwinkle and starlight. Dark. */
+html[data-vibe="celestial"],
+.vibe-scope[data-vibe="celestial"]{
+  --bg-1: #070a1a;
+  --bg-2: #10152f;
+  --bg-glow-1: #1e2a5e2e;
+  --bg-glow-2: #3a2a5e2e;
+  --card: #141a38;
+
+  --ink: #e9ecf9;
+  --muted: #a7b0d4;
+  --on-accent: #0a0f22;
+
+  --accent: #9fb4ff;
+  --accent-2: #efdca6;
+  --accent-soft: rgba(159,180,255,0.25);
+
+  --danger: #ff8f86;
+  --danger-line: rgba(255,143,134,0.35);
+
+  --glass: rgba(255,255,255,0.04);
+  --surface-1: rgba(255,255,255,0.02);
+  --surface-2: rgba(255,255,255,0.045);
+  --line-1: rgba(200,210,255,0.05);
+  --line-2: rgba(200,210,255,0.08);
+  --line-3: rgba(200,210,255,0.13);
+  --line-4: rgba(200,210,255,0.18);
+  --sunken: rgba(0,0,0,0.28);
+
+  --shadow-1: rgba(0,0,0,0.5);
+  --shadow-2: rgba(0,0,0,0.65);
+  --scrim-1: rgba(4,6,18,0.62);
+  --scrim-2: rgba(4,6,18,0.76);
+
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+}

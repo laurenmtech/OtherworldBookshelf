@@ -1,0 +1,37 @@
+/* Dark Academia — lamplit wood, antique gold and oxblood. Dark. */
+html[data-vibe="dark-academia"],
+.vibe-scope[data-vibe="dark-academia"]{
+  --bg-1: #15100c;
+  --bg-2: #1e1811;
+  --bg-glow-1: #3a2a162e;
+  --bg-glow-2: #2a1c122e;
+  --card: #241d15;
+
+  --ink: #efe5d2;
+  --muted: #b8a98d;
+  --on-accent: #1a140c;
+
+  --accent: #d3ab33;
+  --accent-2: #cd7a5e;
+  --accent-soft: rgba(211,171,51,0.22);
+
+  --danger: #e8756a;
+  --danger-line: rgba(232,117,106,0.35);
+
+  --glass: rgba(255,244,224,0.04);
+  --surface-1: rgba(255,244,224,0.02);
+  --surface-2: rgba(255,244,224,0.045);
+  --line-1: rgba(255,240,214,0.05);
+  --line-2: rgba(255,240,214,0.08);
+  --line-3: rgba(255,240,214,0.12);
+  --line-4: rgba(255,240,214,0.17);
+  --sunken: rgba(0,0,0,0.26);
+
+  --shadow-1: rgba(0,0,0,0.5);
+  --shadow-2: rgba(0,0,0,0.66);
+  --scrim-1: rgba(12,8,4,0.62);
+  --scrim-2: rgba(12,8,4,0.78);
+
+  --font-body: 'EB Garamond', Georgia, serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+}

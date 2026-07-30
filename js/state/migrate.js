@@ -1,12 +1,13 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
 
-export const SHAPE_VERSION = 3
+export const SHAPE_VERSION = 4
 
 export function emptyState(){
   return {
     currentReads: [], wishlist: [], finished: [],
-    library: [], bookstores: []
+    library: [], bookstores: [],
+    vibe: null
   }
 }
 
@@ -31,7 +32,10 @@ export function migrate(data){
     wishlist: Array.isArray(data.wishlist) ? data.wishlist : [],
     finished: Array.isArray(data.finished) ? data.finished : [],
     library: Array.isArray(data.library) ? data.library : [],
-    bookstores: Array.isArray(data.bookstores) ? data.bookstores : []
+    bookstores: Array.isArray(data.bookstores) ? data.bookstores : [],
+    // Validated where it's used, not here: an unknown id falls back to the
+    // default vibe rather than being silently dropped from storage.
+    vibe: typeof data.vibe === 'string' && data.vibe ? data.vibe : null
   }
 }
 
@@ -46,7 +50,8 @@ export function toStorage(state){
     wishlist: state.wishlist,
     finished: state.finished,
     library: state.library,
-    bookstores: state.bookstores
+    bookstores: state.bookstores,
+    vibe: state.vibe
   }
 }
 

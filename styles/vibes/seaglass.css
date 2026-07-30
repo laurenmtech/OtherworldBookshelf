@@ -1,0 +1,37 @@
+/* Seaglass — pale tide, sea green and wet sand. Light. */
+html[data-vibe="seaglass"],
+.vibe-scope[data-vibe="seaglass"]{
+  --bg-1: #f5fbf9;
+  --bg-2: #e4efec;
+  --bg-glow-1: #bfe0d81f;
+  --bg-glow-2: #d8e6ee1f;
+  --card: #ffffff;
+
+  --ink: #1b3133;
+  --muted: #4f686a;
+  --on-accent: #f7fffd;
+
+  --accent: #226b63;
+  --accent-2: #8a5a24;
+  --accent-soft: rgba(34,107,99,0.22);
+
+  --danger: #9c2f26;
+  --danger-line: rgba(156,47,38,0.35);
+
+  --glass: rgba(255,255,255,0.60);
+  --surface-1: rgba(255,255,255,0.45);
+  --surface-2: rgba(255,255,255,0.75);
+  --line-1: rgba(20,50,50,0.06);
+  --line-2: rgba(20,50,50,0.10);
+  --line-3: rgba(20,50,50,0.15);
+  --line-4: rgba(20,50,50,0.20);
+  --sunken: rgba(20,50,50,0.05);
+
+  --shadow-1: rgba(30,70,70,0.10);
+  --shadow-2: rgba(30,70,70,0.16);
+  --scrim-1: rgba(12,32,32,0.45);
+  --scrim-2: rgba(12,32,32,0.62);
+
+  --font-body: 'Karla', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Josefin Sans', system-ui, sans-serif;
+}

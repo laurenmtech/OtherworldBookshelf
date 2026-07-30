@@ -4,9 +4,10 @@
 import { migrate, emptyState } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
 
-// How many books may be current at once. Phase 3 raises this to 3 and adds the
-// list UI; until then adding a current read replaces the one that was there,
-// which is exactly what the single-slot card has always done.
+// How many books may be current at once. Spec §04 wants 1–3, but no phase has
+// claimed the list UI yet, so this stays at 1 and withCurrent() sets the
+// displaced book down on the TBR pile. Raising it is a one-line change here
+// plus a list in current-reads.js.
 const CURRENT_CAP = 1
 
 let state = emptyState()
@@ -85,7 +86,7 @@ export function resetAll(){
 // Whatever no longer fits in currentReads goes back on the TBR pile instead of
 // vanishing. With CURRENT_CAP at 1 that means starting a new book sets the
 // previous one down rather than deleting it — the single most destructive thing
-// this app could do quietly. Phase 3 raises the cap and this displaces nothing.
+// this app could do quietly. Raise CURRENT_CAP and this displaces nothing.
 function withCurrent(list, extraWishlist = []){
   const displaced = list.slice(CURRENT_CAP)
   return {
@@ -183,3 +184,11 @@ export function removeBookstore(index){
   commit({ ...state, bookstores: state.bookstores.filter((_, i) => i !== index) })
 }
 
+// ---------- preferences ----------
+
+// Which vibe the library wears. Persisted like anything else, so signing in on
+// a second device brings your look with you. js/vibes/apply.js watches for it.
+export function setVibe(id){
+  if(state.vibe === id) return
+  commit({ ...state, vibe: id })
+}
