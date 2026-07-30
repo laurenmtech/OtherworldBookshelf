@@ -3,7 +3,7 @@ import { el, iconButton, escapeHtml } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
 import { bookKey } from '../services/books.js'
 import {
-  libbySearchUrl, libbyTitleUrl, bookshopUrl,
+  libbySearchUrl, libbyTitleUrl, bookshopUrl, shopSearchUrl,
   cachedAvailability, requestAvailability, AVAILABILITY
 } from '../services/libby.js'
 import { subtitle, tagRow } from '../ui/book-meta.js'
@@ -13,6 +13,12 @@ import { subscribe, getState, removeTbr, makeTbrCurrent } from '../state/store.j
 // no key is a bookmark — a link you keep — and gets no borrow links.
 export function primaryLibrary(state){
   return (state.library || []).find(l => l && l.libraryKey) || null
+}
+
+// The first saved bookshop. Yours beats a default — if you've told the app
+// where you like to buy books, that's where the link should go.
+export function primaryShop(state){
+  return (state.bookstores || [])[0] || null
 }
 
 // "about 3 weeks" beats "estimated wait: 19 days". Nobody plans a reading life
@@ -65,14 +71,19 @@ function borrowRow(book, library, formats){
 //
 // Bookshop.org rather than Amazon: buying a book should be able to send money
 // to a shop instead of to the company trying to replace them all.
-function findRow(book, library){
+function findRow(book, library, shop, want){
   const links = []
-  if(library){
+  if(want.includes('library') && library){
     const url = libbySearchUrl(library.libraryKey, book.title)
     if(url) links.push({ url, label: `Find at ${library.name}` })
   }
-  const shop = bookshopUrl(book.title, book.author)
-  if(shop) links.push({ url: shop, label: 'Bookshop.org' })
+  if(want.includes('shop')){
+    // Your shop if you've saved one — deep-linked when it taught us its search
+    // URL, its front page otherwise. Bookshop.org only when you haven't.
+    const url = shop ? shopSearchUrl(shop, book.title, book.author)
+                     : bookshopUrl(book.title, book.author)
+    if(url) links.push({ url, label: shop ? `Find at ${shop.name}` : 'Bookshop.org' })
+  }
   if(!links.length) return ''
   return `<div class="find-row">${links.map(l =>
     `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.label)}</a>`
@@ -93,7 +104,7 @@ export function mountTbrPile(root, { bookModal }){
     if(btn) btn.click()
   })
 
-  function row(book, idx, library, formats){
+  function row(book, idx, library, formats, shop, want){
     // data-book-key is what "you already have this — go to it" finds.
     const li = el('li', { 'data-book-key': bookKey(book) })
 
@@ -110,7 +121,7 @@ export function mountTbrPile(root, { bookModal }){
       className: 'small-meta',
       html: `<span class="wishlist-title">${escapeHtml(book.title)}</span>` +
             `<div class=muted>${bits}</div>${tagRow(book)}${moodTags}` +
-            `${borrowRow(book, library, formats)}${findRow(book, library)}`
+            `${borrowRow(book, library, formats)}${findRow(book, library, shop, want)}`
     }))
 
     const actions = el('div', { className: 'list-actions' },
@@ -147,11 +158,15 @@ export function mountTbrPile(root, { bookModal }){
     latest = state
     const library = primaryLibrary(state)
     const formats = state.borrowFormats || []
+    const shop = primaryShop(state)
+    const want = state.findLinks || []
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', state.wishlist.length > 0)
-    state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats)))
+    state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats, shop, want)))
     // One prompt for the pile, and only when there is a pile to prompt about.
-    if(prompt) prompt.classList.toggle('hidden', !!library || state.wishlist.length === 0)
+    // Only nudge about a library if borrowing is something they've asked to see.
+    if(prompt) prompt.classList.toggle('hidden',
+      !!library || state.wishlist.length === 0 || !want.includes('library'))
     fetchAvailability(state, library, formats)
   }
 

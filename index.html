@@ -132,15 +132,16 @@
         </section>
 
         <section class="panel wishlist-panel">
+          <!-- Above the heading, full width, and not a second "+ Add": this
+               asks a question rather than adding a row. Hidden until signed in —
+               the recommender needs a verified identity, and offering something
+               that would be rejected is worse than not offering it. -->
+          <button id="find-something-btn" type="button" class="btn ask-btn hidden">
+            <span aria-hidden="true">✦</span> What should I read?
+          </button>
           <div class="panel-head">
             <h2>The TBR Pile</h2>
-            <div class="panel-head-actions">
-              <!-- Hidden until signed in — the recommender needs a verified
-                   identity, and offering something that would be rejected is
-                   worse than not offering it. main.js unhides it. -->
-              <button id="find-something-btn" type="button" class="btn btn-add hidden">Find me something…</button>
-              <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
-            </div>
+            <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
           </div>
           <ul id="wishlist" class="list"></ul>
           <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
@@ -239,6 +240,12 @@
         </div>
         <ul data-place-list class="list"></ul>
         <div data-place-empty class="muted hidden">No bookstores yet — tap “+ Add”.</div>
+        <!-- Some readers always borrow, some always buy. Both by default; one
+             tap to drop the half you never use. -->
+        <div class="field borrow-formats">
+          <label>Where to look for a book</label>
+          <div id="find-link-chips" class="chips"></div>
+        </div>
       </section>
 
       <section class="sheet-section">
@@ -441,6 +448,12 @@
       <div class="field">
         <label for="store-url">URL</label>
         <input id="store-url" data-place-url placeholder="https://...">
+      </div>
+      <div class="field">
+        <label for="store-search">Search link <span class="muted">(optional)</span></label>
+        <input id="store-search" data-place-search placeholder="https://theirshop.com/search?q=piranesi">
+        <p class="muted place-key-status" data-place-search-status>Search their site for any book and paste the
+          results address here — then every book on your pile links straight to it at their shop.</p>
       </div>
       <div class="actions">
         <button type="submit" class="btn primary">Save</button>

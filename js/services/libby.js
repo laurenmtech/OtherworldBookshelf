@@ -46,11 +46,61 @@ export function libbyLibraryUrl(libraryKey){
 }
 
 // Bookshop.org, not Amazon. Buying a book should be able to send money to a
-// shop rather than to the company trying to replace them all.
+// shop rather than to the company trying to replace them all. Used only when
+// you haven't saved a shop of your own — yours beats a default.
 export function bookshopUrl(title, author){
   const q = [title, author].filter(Boolean).join(' ')
   if(!q) return null
   return `https://bookshop.org/search?keywords=${encodeURIComponent(q)}`
+}
+
+// ── Learning a shop's search URL ────────────────────────────────────────────
+// There is no common pattern. Harvard Book Store searches at `/search/?q=`,
+// Powell's at `/searchresults?keyword=`, Bookshop.org at `/search?keywords=`.
+// Nothing can be guessed, so the shop teaches us: search for anything on their
+// site, paste the results URL, and we find the search term in it and remember
+// the shape. Same idea as pasting a Libby link.
+const SEARCH_KEYS = ['q', 'query', 'keyword', 'keywords', 'search', 'searchterm', 's', 'term', 'k']
+
+// Returns a template with %s where the search term goes, or null if the URL
+// doesn't look like a search at all.
+export function learnSearchUrl(pasted){
+  const text = String(pasted || '').trim()
+  if(!text) return null
+  let u
+  try{ u = new URL(text) }catch(e){ return null }
+  if(!/^https?:$/.test(u.protocol)) return null
+
+  // A query parameter is how nearly every shop does it.
+  for(const key of SEARCH_KEYS){
+    for(const [name, value] of u.searchParams){
+      if(name.toLowerCase() !== key || !value) continue
+      const copy = new URL(u)
+      copy.searchParams.set(name, '%s')
+      // searchParams encodes the placeholder; put it back so it's readable and
+      // so we can substitute without double-encoding.
+      return copy.toString().replace(/%25s/g, '%s')
+    }
+  }
+
+  // Some shops put the term in the path: /search/piranesi
+  const parts = u.pathname.split('/').filter(Boolean)
+  if(parts.length >= 2 && /search|browse|catalog/i.test(parts[parts.length - 2])){
+    parts[parts.length - 1] = '%s'
+    u.pathname = '/' + parts.join('/')
+    return u.toString().replace(/%25s/g, '%s')
+  }
+  return null
+}
+
+// Fill a learned template with a book. Falls back to the shop's plain URL when
+// there's no template — their front page is still more useful than a default
+// shop, it just costs you one more search.
+export function shopSearchUrl(shop, title, author){
+  if(!shop) return null
+  const q = [title, author].filter(Boolean).join(' ')
+  if(shop.searchUrl && q) return shop.searchUrl.replace(/%s/g, encodeURIComponent(q))
+  return shop.url || null
 }
 
 // A pasted Libby URL is the most reliable way someone can tell us their

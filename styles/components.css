@@ -366,3 +366,12 @@ body.sheet-open{ overflow:hidden }
   .filters input[type=search]{ font-size:16px; padding:10px 12px }
   .btn{ padding:10px 14px }
 }
+
+/* "What should I read?" — full width above the TBR heading, and deliberately
+   not styled like "+ Add": it asks a question rather than adding a row. */
+.ask-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; margin-bottom:14px; padding:11px 12px;
+  color:var(--accent-2); border-color:var(--line-3); background:var(--surface-2);
+}
+.ask-btn:hover{ border-color:var(--accent-2) }
