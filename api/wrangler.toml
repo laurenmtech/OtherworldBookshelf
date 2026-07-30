@@ -1,0 +1,32 @@
+name = "otherworld-reads-api"
+main = "src/index.js"
+compatibility_date = "2026-07-30"
+
+# The Anthropic SDK expects a few Node built-ins. Without this the deploy
+# succeeds and the first real request fails on a missing module, which is a
+# miserable way to find out.
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Public, not secret. The project id is half of what makes a Firebase ID token
+# verifiable — a token minted for any other project fails the `aud` check.
+FIREBASE_PROJECT_ID = "books-7a105"
+
+# Comma-separated. The Pages origin, plus localhost for working on the app.
+# A wildcard here would let any website spend a signed-in reader's daily quota.
+ALLOWED_ORIGINS = "https://laurenmtech.github.io,http://localhost:8000"
+
+# Asks per reader per UTC day. Lowering this is the other cost lever, alongside
+# the model in src/recommend.js.
+DAILY_CAP = "10"
+
+# One integer per reader per day, nothing else. Create it with:
+#   npx wrangler kv namespace create QUOTA
+# then paste the printed id below (and the preview_id if you use `wrangler dev`).
+[[kv_namespaces]]
+binding = "QUOTA"
+id = "9bbc8b5bd166476e9b5c67a5d02678e0"
+
+# ANTHROPIC_API_KEY is NOT here. It is a secret:
+#   npx wrangler secret put ANTHROPIC_API_KEY
+# Putting it in this file would commit a billable credential to a public repo.
