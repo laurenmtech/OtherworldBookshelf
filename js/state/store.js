@@ -189,6 +189,25 @@ export function makeTbrCurrent(index){
   commit({ ...state, ...withCurrent([book, ...state.currentReads], rest) })
 }
 
+// ---------- suggestions ----------
+
+// A book you were offered and didn't want. Kept so a second ask returns
+// genuinely different books rather than the same five with new wording — and
+// kept forever, because "not this one" doesn't expire.
+export function passSuggestion(book){
+  if(!book || !book.title) return
+  commit({ ...state, passed: [...state.passed, { title: book.title, author: book.author || '' }] })
+}
+
+// "I've already read this." Goes into the record with NO finishedAt — we know
+// they read it, we have no idea when, and stamping today's date on a book from
+// years ago would be inventing a fact. The Finished list already renders undated
+// entries without a date and sorts them below dated ones.
+export function addAlreadyRead(book){
+  if(!book || !book.title) return
+  commit({ ...state, finished: [{ ...book }, ...state.finished] })
+}
+
 // ---------- finished ----------
 
 export function removeFinished(index){

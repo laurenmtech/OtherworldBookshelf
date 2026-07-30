@@ -5,6 +5,7 @@ import {
 import { mountFinishModal } from './components/modals/finish-modal.js'
 import { mountBookModal } from './components/modals/book-modal.js'
 import { mountSetDownModal } from './components/modals/set-down-modal.js'
+import { mountRecommendModal } from './components/modals/recommend-modal.js'
 import { mountPlaceModal } from './components/modals/place-modal.js'
 import { mountHiddenShelf } from './components/hidden-shelf.js'
 import { mountVibePicker } from './components/vibe-picker.js'
@@ -15,6 +16,7 @@ import { createRouter } from './routes/router.js'
 import { mountReading } from './routes/reading.js'
 import { mountFinished } from './routes/finished.js'
 import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
+import { onAuthChange } from './state/auth.js'
 
 // Shown in the footer, and bumped on EVERY release so you can tell at a glance
 // whether your phone has the newest one.
@@ -23,12 +25,22 @@ import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.51'
+export const APP_VERSION = '0.6'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
   const bookModal = mountBookModal(document.getElementById('book-modal'))
   const setDownModal = mountSetDownModal(document.getElementById('set-down-modal'))
+
+  // The recommender is the one feature that needs a verified identity, so it is
+  // hidden outright when signed out rather than shown and then rejected. The
+  // button lives in the TBR panel head; auth.js tells us when to reveal it.
+  const recommendModal = mountRecommendModal(document.getElementById('recommend-modal'))
+  const findBtn = document.getElementById('find-something-btn')
+  findBtn && findBtn.addEventListener('click', () => recommendModal.open())
+  onAuthChange((user) => {
+    if(findBtn) findBtn.classList.toggle('hidden', !user)
+  })
   const libraryModal = mountPlaceModal(document.getElementById('library-modal'), {
     addTitle: 'Add to Library', editTitle: 'Edit Library',
     onAdd: addLibrary, onEdit: editLibrary,
