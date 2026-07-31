@@ -79,21 +79,23 @@ function row({ item, index }){
   // Puts a clean copy on the pile and leaves this entry untouched — a re-read
   // is a book you've read AND a book that's next, and the record shouldn't
   // quietly lose a year of reading to make the sentence simpler.
-  // The book lands on a pile you can't see from here, so the button says so
-  // itself for a moment. Nothing else on screen changes, and without a word
-  // the tap reads as having done nothing at all.
+  //
+  // The pile isn't visible from here, so the button says where the book went
+  // rather than that something happened — "Added!" answers a question nobody
+  // was asking. It's also nearly the same length as "Read again", so the row
+  // holds still while it says it.
   const key = bookKey(item)
-  const added = flashing.has(key)
-  const again = iconButton(added ? 'finish' : 'bookmark', added ? 'Added!' : 'Read again', () => {
+  const onPile = flashing.has(key)
+  const again = iconButton(onPile ? 'finish' : 'bookmark', onPile ? 'On the pile' : 'Read again', () => {
     if(flashing.has(key)) return          // already flashing — don't stack timers
     flashing.add(key)
-    readAgain(index)                      // re-renders this row into its Added! state
+    readAgain(index)                      // re-renders this row into its flashed state
     setTimeout(() => {
       flashing.delete(key)
       repaint && repaint()
     }, FLASH)
   })
-  if(added) again.classList.add('flashed')
+  if(onPile) again.classList.add('flashed')
   actions.appendChild(again)
   actions.appendChild(iconButton('trash', 'Remove', () => removeFinished(index)))
 
