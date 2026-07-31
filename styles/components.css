@@ -1,4 +1,4 @@
-/* Panels, cards, lists, buttons, chips, dropdowns, modals. */
+/* Panels, cards, lists, buttons, chips, modals. */
 
 .btn-add{ font-size:13px; padding:6px 10px }
 
@@ -171,11 +171,6 @@
 @media (max-width:760px){ .list-actions{ align-self:center } }
 
 /* Dropdown for finished items */
-.dropdown{ position:relative }
-.dropdown-toggle{ display:inline-flex; align-items:center; gap:6px }
-.dropdown-menu{ display:none; position:absolute; right:0; top:calc(100% + 8px); background:var(--card); padding:8px; border-radius:8px; box-shadow:0 8px 20px var(--shadow-2); min-width:120px; flex-direction:column; }
-.dropdown.open .dropdown-menu{ display:flex }
-.dropdown-menu .btn{ width:100%; justify-content:flex-start }
 
 /* Finished route: filter bar and the year groups */
 .filters{ margin-bottom:16px }

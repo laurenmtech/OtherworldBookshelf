@@ -52,30 +52,25 @@ function row({ item, index }){
           `<div class=muted>${sub}</div>${tagRow(item)}${moodTags}</div>`
   }))
 
-  const dropdown = el('div', { className: 'dropdown' })
-  const toggle = el('button', {
-    className: 'btn dropdown-toggle',
-    type: 'button',
-    onClick: () => dropdown.classList.toggle('open')
-  }, 'Actions')
-  const menu = el('div', { className: 'dropdown-menu' })
+  // Two buttons, shown plainly, the way every other row in the app shows them.
+  // A menu labelled "Actions" is a menu that makes you open it to find out
+  // there was nothing worth hiding.
+  const actions = el('div', { className: 'list-actions' })
 
   // Legacy entries may still carry freeform notes; surface them if present.
   if(item.notes){
-    menu.appendChild(el('button', {
+    actions.appendChild(el('button', {
       className: 'btn', type: 'button', onClick: () => alert(item.notes)
     }, 'Notes'))
   }
   // Puts a clean copy on the pile and leaves this entry untouched — a re-read
   // is a book you've read AND a book that's next, and the record shouldn't
   // quietly lose a year of reading to make the sentence simpler.
-  menu.appendChild(iconButton('bookmark', 'Read again', () => readAgain(index)))
-  menu.appendChild(iconButton('trash', 'Remove', () => removeFinished(index)))
+  actions.appendChild(iconButton('bookmark', 'Read again', () => readAgain(index)))
+  actions.appendChild(iconButton('trash', 'Remove', () => removeFinished(index)))
 
-  dropdown.appendChild(toggle)
-  dropdown.appendChild(menu)
   li.appendChild(left)
-  li.appendChild(el('div', { className: 'list-actions' }, dropdown))
+  li.appendChild(actions)
   return li
 }
 

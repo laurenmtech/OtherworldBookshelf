@@ -1,18 +1,23 @@
-// Add or edit a book — for the TBR pile and for Current Reads, which want the
-// same three questions and differ only in where the answer lands.
+// Add a book — to the TBR pile, to Current Reads, or straight to the record for
+// something read before this app existed. Three destinations, same three
+// questions, differing only in where the answer lands.
 //
 // Adding is search-first: type, pick, done, one tap, fully populated. Typing it
 // yourself is never further away than the button underneath the results, and it
 // is what you get automatically when the search can't be reached — adding a
 // book must never depend on a network.
+//
+// There is no edit. Books arrive from a real catalogue with their own title,
+// author, cover and series, so the thing you'd have edited is usually already
+// right — and when it isn't, the honest fix is to remove it and search again
+// rather than to hand-correct a record that's meant to mirror a real book.
 import { createModal } from '../../ui/modal.js'
-import { singleSelect } from '../../ui/chips.js'
 import { escapeHtml } from '../../ui/dom.js'
 import { revealBook } from '../../ui/reveal.js'
 import { mountTypeahead } from '../typeahead.js'
-import { findExisting, bookKey, FORMATS } from '../../services/books.js'
+import { findExisting, bookKey } from '../../services/books.js'
 import {
-  addToTbr, editTbr, addCurrent, editCurrent, addAlreadyRead, getState, CURRENT_CAP
+  addToTbr, addCurrent, addAlreadyRead, getState, CURRENT_CAP
 } from '../../state/store.js'
 
 const WHERE = {
@@ -30,18 +35,12 @@ export function mountBookModal(root){
   const manualFields = root.querySelector('#manual-fields')
   const titleInput = root.querySelector('#book-title')
   const authorInput = root.querySelector('#book-author')
-  const formatField = root.querySelector('#format-field')
   const dupNote = root.querySelector('#book-duplicate')
   const saveBtn = root.querySelector('#save-book')
   const cancelBtn = root.querySelector('#cancel-book')
 
-  const formats = singleSelect(root.querySelector('#format-chips'), FORMATS)
-
   let dest = 'tbr'          // 'tbr' | 'current' | 'finished'
-  let editIndex = null      // null = adding, number = editing that entry
-  let editing = null        // the entry being edited, so its extra fields survive
   let acknowledged = null   // a duplicate the user has been shown and may override
-  let asksFormat = false    // whether the format chips are on screen this open
 
   const typeahead = mountTypeahead(searchField, {
     onPick: (book) => commit(book),
@@ -53,8 +52,6 @@ export function mountBookModal(root){
 
   const modal = createModal(root, {
     onClose(){
-      editIndex = null
-      editing = null
       acknowledged = null
       typeahead.reset()
       hideDuplicate()
@@ -102,31 +99,14 @@ export function mountBookModal(root){
   // way: a search result already carries its genre and its series, so picking
   // one waits on nothing.
   function commit(book){
-    if(editIndex === null && blockedAsDuplicate(book)) return
-    const format = asksFormat ? formats.getValue() : null
-
-    if(editIndex !== null){
-      // Merge, don't replace: an edit here must not throw away the cover, the
-      // work key or the series that came with the book when it was added.
-      const merged = { ...editing, ...book }
-      // Only when the chips were actually on screen. Clearing a format nobody
-      // was shown would quietly delete it on a book edited from the TBR pile.
-      if(asksFormat){
-        if(format) merged.format = format
-        else delete merged.format
-      }
-      if(dest === 'current') editCurrent(editIndex, merged)
-      else editTbr(editIndex, merged)
-    } else {
-      const next = { ...book }
-      if(format) next.format = format
-      if(dest === 'current') addCurrent(next)
-      // A book read before the app existed. It lands undated on purpose —
-      // see addAlreadyRead — so the record never claims you finished
-      // something today that you finished years ago.
-      else if(dest === 'finished') addAlreadyRead(next)
-      else addToTbr(next)
-    }
+    if(blockedAsDuplicate(book)) return
+    const next = { ...book }
+    if(dest === 'current') addCurrent(next)
+    // A book read before the app existed. It lands undated on purpose — see
+    // addAlreadyRead — so the record never claims you finished something today
+    // that you finished years ago.
+    else if(dest === 'finished') addAlreadyRead(next)
+    else addToTbr(next)
     modal.close()
   }
 
@@ -150,43 +130,32 @@ export function mountBookModal(root){
     commit({ title, author: authorInput.value.trim() })
   })
 
-  // Editing what you already have is not a search: the book is chosen, and the
-  // question is only what its title and author should say.
-  function open({ dest: to = 'tbr', index = null, entry = null } = {}){
+  function open({ dest: to = 'tbr' } = {}){
     dest = to
-    editIndex = (typeof index === 'number') ? index : null
-    editing = editIndex !== null ? (entry || null) : null
     acknowledged = null
     hideDuplicate()
     typeahead.reset()
-    formats.clear()
 
-    const isEdit = editIndex !== null
-    heading.textContent = isEdit
-      ? 'Edit book'
-      : (dest === 'current' ? 'Start a book'
-        : dest === 'finished' ? 'Add a book you’ve read'
-        : 'Add to TBR Pile')
+    heading.textContent =
+      dest === 'current' ? 'Start a book'
+      : dest === 'finished' ? 'Add a book you’ve read'
+      : 'Add to TBR Pile'
 
-    if(searchField) searchField.hidden = isEdit
-    if(manualToggle) manualToggle.hidden = isEdit
-    if(manualFields) manualFields.hidden = !isEdit
-    if(saveBtn) saveBtn.hidden = !isEdit
-    titleInput.value = isEdit ? (entry && entry.title) || '' : ''
-    authorInput.value = isEdit ? (entry && entry.author) || '' : ''
-
-    // Format belongs to a book you're actually reading, and only once it exists
-    // — it is never part of the one tap that adds one.
-    asksFormat = dest === 'current' && isEdit
-    if(formatField) formatField.hidden = !asksFormat
-    if(asksFormat && entry && entry.format) formats.setValue(entry.format)
+    // Always the search-first state now: the fields underneath are the fallback
+    // for a book the catalogue doesn't have, not a second way in.
+    if(searchField) searchField.hidden = false
+    if(manualToggle) manualToggle.hidden = false
+    if(manualFields) manualFields.hidden = true
+    if(saveBtn) saveBtn.hidden = true
+    titleInput.value = ''
+    authorInput.value = ''
 
     // Nothing is refused at three. Say what adding a fourth will actually do,
     // and name the book it will do it to, so the alternative — finishing one,
     // or setting one down — is a choice rather than an error message.
     const state = getState()
     if(capNote){
-      const displaced = !isEdit && dest === 'current' && state.currentReads.length >= CURRENT_CAP
+      const displaced = dest === 'current' && state.currentReads.length >= CURRENT_CAP
         ? state.currentReads[CURRENT_CAP - 1]
         : null
       capNote.hidden = !displaced
@@ -197,8 +166,8 @@ export function mountBookModal(root){
       }
     }
 
-    modal.open(isEdit ? titleInput : null)
-    if(!isEdit) typeahead.focus()
+    modal.open(null)
+    typeahead.focus()
   }
 
   return { open }
