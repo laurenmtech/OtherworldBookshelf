@@ -12,7 +12,7 @@ import { el, escapeHtml, iconButton } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
 import { bookKey } from '../services/books.js'
 import { subtitle, tagRow } from '../ui/book-meta.js'
-import { subscribe, getState, reorderCurrent } from '../state/store.js'
+import { subscribe, getState, reorderCurrent, removeCurrent } from '../state/store.js'
 
 export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }){
   const list = root.querySelector('#current-list')
@@ -53,7 +53,19 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
     const actions = el('div', { className: 'list-actions' },
       iconButton('finish', 'Finish', () => finishModal.open(idx, book)),
       iconButton('setdown', 'Set down', () => setDownModal.open(idx)),
-      iconButton('edit', 'Edit', () => bookModal.open({ dest: 'current', index: idx, entry: book }))
+      // Remove rather than Edit. Search autofill means a book usually arrives
+      // correct, so the thing you actually want from this row is a way out for
+      // one you shouldn't have started. It confirms because it sits beside two
+      // buttons that also make a book leave — and unlike those two, this one
+      // leaves nothing behind.
+      iconButton('trash', 'Remove', () => {
+        const ok = confirm(
+          `Remove “${book.title}”?\n\n` +
+          'It goes nowhere — not to the record, not back to the TBR pile. ' +
+          'Finish it or set it down instead if you want it remembered.'
+        )
+        if(ok) removeCurrent(idx)
+      })
     )
 
     // The keyboard path for reordering, and the touch one: dragging is a mouse

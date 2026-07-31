@@ -168,6 +168,14 @@
 
       <div class="container finished-grid">
         <section class="panel finished-panel">
+          <!-- Adding here is for books read before the app existed, or read
+               somewhere it wasn't. They go in undated rather than stamped with
+               today, which is why this isn't just "finish a book you never
+               started". -->
+          <div class="panel-head">
+            <h2>Finished</h2>
+            <button id="add-finished-btn" type="button" class="btn btn-add">+ Add</button>
+          </div>
           <div class="filters">
             <div class="field">
               <label class="visually-hidden" for="finished-search">Search finished books</label>

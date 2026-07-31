@@ -22,8 +22,11 @@ function ordered(present, known){
   return [...inKnown, ...extra]
 }
 
-export function mountFinished(root){
+export function mountFinished(root, { bookModal } = {}){
   if(!root) return
+
+  const addBtn = root.querySelector('#add-finished-btn')
+  addBtn && bookModal && addBtn.addEventListener('click', () => bookModal.open({ dest: 'finished' }))
 
   const searchInput = root.querySelector('#finished-search')
   const feelingBox = root.querySelector('#feeling-filter')
