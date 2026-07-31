@@ -278,7 +278,14 @@
 
 /* A miniature of the real UI: title, a book row, chips, a primary button. */
 .vibe-mini{ display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:10px; background:var(--surface-2) }
-.vibe-mini-title{ font-family:var(--font-display); font-size:13px; color:var(--accent-2) }
+/* One line, always. Each card wears a different display font and they vary a
+   lot in width, so a name long enough to wrap would wrap in some vibes and not
+   others — and the cards would stop being comparable, which is the only reason
+   the picker is built this way. */
+.vibe-mini-title{
+  font-family:var(--font-display); font-size:13px; color:var(--accent-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 .vibe-mini-panel{
   display:flex; flex-direction:column; gap:7px; padding:9px;
   border-radius:8px; background:var(--glass); border:1px solid var(--line-1);

@@ -1,4 +1,4 @@
-// Service worker for Otherworld Reads — offline support via cache-first for the app shell.
+// Service worker for Otherworld Bookshelf — offline support via cache-first for the app shell.
 //
 // BUILD must increase on EVERY deploy that changes any file in ASSETS — a
 // deploy that doesn't move it serves stale files to everyone who already has
@@ -8,7 +8,7 @@
 // stamp (0.<phase><release>) and this is the cache key. The footer shows this
 // number, read back from the installed cache — so it answers "what is my phone
 // actually running?" rather than what a constant somewhere claims.
-const BUILD = 36;
+const BUILD = 37;
 const CACHE = 'otherworld-reads-build-' + BUILD;
 // Cover art lives in its own cache, deliberately NOT keyed by BUILD: a cover is
 // immutable (the id IS the image) and re-downloading every one of them on each

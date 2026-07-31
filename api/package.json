@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "The one piece of backend Otherworld Reads needs: a Cloudflare Worker holding the Anthropic key.",
+  "description": "The one piece of backend Otherworld Bookshelf needs: a Cloudflare Worker holding the Anthropic key.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
