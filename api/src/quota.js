@@ -32,10 +32,21 @@ export async function readUsed(kv, uid){
 // Take one ask, if there is one to take.
 //
 // The credit is claimed BEFORE the model is called, not after. KV has no
-// transactions, so a check-then-call-then-increment would let two requests in
-// flight at once both pass a check that only one of them should — and the thing
-// being protected is a real bill. Reserving first can't be raced into
-// overspending; refund() below covers the honest failure case.
+// transactions, so a check-then-call-then-increment would leave the whole model
+// call — seconds — sitting between the check and the increment, and every
+// request arriving in that window would pass a check only one of them should.
+// Claiming first narrows that window to a single KV round trip.
+//
+// It does NOT close it. This is still read-then-write with nothing holding the
+// two together: two requests that read the same count will both write count+1
+// and both proceed. KV is also eventually consistent between regions, so a
+// reader on two networks can see a stale count for up to a minute. The cap is
+// therefore a strong nudge, not an enforced ceiling — someone determined, or
+// merely double-tapping on a bad connection, can exceed it by a little.
+//
+// That is an accepted trade for a personal app: the failure costs pennies, and
+// the fix is a Durable Object, which is the thing to reach for the moment this
+// needs to be exact. refund() below covers the honest failure case.
 export async function claim(kv, uid, cap = DAILY_CAP){
   const used = await readUsed(kv, uid)
   if(used >= cap) return { ok: false, used, remaining: 0 }

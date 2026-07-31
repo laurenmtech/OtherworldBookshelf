@@ -59,6 +59,35 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     exit 1
   fi
 
+  # Every precached path must actually exist in the revision being pushed.
+  #
+  # install() calls cache.addAll(ASSETS), which is all-or-nothing: one 404 and
+  # the whole install rejects, the new worker never activates, and every
+  # installed phone keeps serving the OLD app — the same silent-stale failure
+  # the BUILD check below exists to prevent, reached by renaming or deleting a
+  # file and leaving its entry behind. './' is the app root and has no blob.
+  missing=""
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    if ! git cat-file -e "$local_sha:$f" 2>/dev/null; then
+      missing+="  $f"$'\n'
+    fi
+  done <<<"$assets"
+
+  if [[ -n "$missing" ]]; then
+    fail "pre-push: sw.js precaches files that don't exist on ${local_ref#refs/heads/}:
+
+$missing
+cache.addAll() is all-or-nothing — one missing file and the service worker
+install fails, so installed phones keep serving the old app with nothing on
+screen to say so. Remove these entries from ASSETS in sw.js (or restore the
+files), then push again.
+
+To push anyway: git push --no-verify"
+    status=1
+    continue
+  fi
+
   # Which of the changed files are actually precached?
   hits=""
   while IFS= read -r f; do

@@ -6,12 +6,13 @@
 // book sits, and a parting goes into the record as something you read part of
 // and chose to stop.
 //
-// Feeling and vibes are optional on both. Setting a book down should cost less
+// It asks that and nothing else. How a book felt and what its vibes were are
+// questions for finishing — a book you set down is one you didn't get through,
+// so there's often no answer to give, and being asked for one anyway makes
+// stopping feel like it needs justifying. Setting a book down should cost less
 // than finishing one, not more.
 import { createModal } from '../../ui/modal.js'
 import { singleSelect } from '../../ui/chips.js'
-import { mountMoodPicker } from '../../ui/mood-picker.js'
-import { FEELINGS } from '../../state/moods.js'
 import { setDownCurrent, getState } from '../../state/store.js'
 
 const OUTCOMES = [
@@ -36,12 +37,6 @@ export function mountSetDownModal(root){
   const outcomes = singleSelect(root.querySelector('[data-outcome-chips]'), OUTCOMES, {
     onChange: paintOutcome
   })
-  const feelings = singleSelect(root.querySelector('[data-feeling-chips]'), FEELINGS)
-  const moods = mountMoodPicker(root.querySelector('[data-mood-groups]'), {
-    input: root.querySelector('[data-new-vibe]'),
-    addButton: root.querySelector('[data-add-vibe]')
-  })
-
   // The consequence of each answer, in words, before it happens. "Not for me"
   // writes to the record and excludes the book from suggestions; that is worth
   // knowing in advance rather than discovering afterwards.
@@ -53,8 +48,6 @@ export function mountSetDownModal(root){
   const modal = createModal(root, {
     onClose(){
       outcomes.clear()
-      feelings.clear()
-      moods.setValue([])
       paintOutcome(null)
     }
   })
@@ -65,11 +58,7 @@ export function mountSetDownModal(root){
     e.preventDefault()
     const outcome = outcomes.getValue()
     if(!outcome) return
-    setDownCurrent(targetIndex, {
-      outcome,
-      feeling: feelings.getValue(),
-      moods: moods.getValue()
-    })
+    setDownCurrent(targetIndex, { outcome })
     modal.close()
   })
 
@@ -80,8 +69,6 @@ export function mountSetDownModal(root){
       if(!book) return
       if(bookLine) bookLine.textContent = book.title
       outcomes.clear()
-      feelings.clear()
-      moods.reset()
       paintOutcome(null)
       modal.open()
     }

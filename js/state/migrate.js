@@ -1,7 +1,12 @@
 // Forward migrations. Every one must be safe to run twice — this runs on every
 // load, on local data and on each remote snapshot.
-
-export const SHAPE_VERSION = 8
+//
+// There is deliberately no version number, here or in storage. Every migration
+// below reads the shape it finds and normalises it, so a document written by
+// any past build is understood without being asked what it is — which is the
+// only thing that works when the writer might be a phone that hasn't opened
+// the app in a year. A stamped version would have to be trusted, and a
+// document whose stamp disagrees with its shape is worse than no stamp.
 
 // The formats you'd actually borrow. Defaults to ebook alone, because an
 // "available now" you'd never take is worse than no answer — it's the app

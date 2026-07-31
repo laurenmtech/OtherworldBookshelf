@@ -124,7 +124,13 @@ async function get(url, { signal } = {}){
   const timer = new AbortController()
   const stop = setTimeout(() => timer.abort(), TIMEOUT_MS)
   const forward = () => timer.abort()
-  if(signal) signal.addEventListener('abort', forward, { once: true })
+  // Checked before listening: addEventListener on an ALREADY-aborted signal
+  // never fires, so a caller who gave up before we got here would otherwise be
+  // ignored and the request would run to completion regardless.
+  if(signal){
+    if(signal.aborted) forward()
+    else signal.addEventListener('abort', forward, { once: true })
+  }
   try{
     const res = await fetch(url, { signal: timer.signal, headers: { Accept: 'application/json' } })
     if(!res.ok) return null
@@ -237,8 +243,17 @@ function pump(){
 // The formats are part of the key, not just the query: change what you borrow
 // and the old answers are answers to a different question. Keying them in
 // means switching back finds the previous results still there.
-const cacheKey = (libraryKey, book, formats) =>
-  `${libraryKey}|${[...formats].sort().join('+')}|${(book.workKey || book.title || '').toLowerCase()}`
+//
+// The author is in the key too, for books typed by hand — those have no
+// workKey, so title alone would file two different books under one entry and
+// hand the second one the first one's availability. sameBook() below checks
+// the author, so only the cache was ever wrong, and only silently.
+const cacheKey = (libraryKey, book, formats) => {
+  const identity = book.workKey
+    ? String(book.workKey)
+    : `${String(book.title || '')}|${String(book.author || '')}`
+  return `${libraryKey}|${[...formats].sort().join('+')}|${identity.toLowerCase()}`
+}
 
 // What we already know, without asking: undefined = never asked.
 export function cachedAvailability(libraryKey, book, formats = ['ebook']){

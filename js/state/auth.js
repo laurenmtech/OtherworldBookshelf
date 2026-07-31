@@ -72,15 +72,31 @@ export async function initAuth(){
 // mounting synchronously — like the recommender button — registered into the
 // void and never heard about a sign-in. A subscription that quietly does nothing
 // is a worse failure than one that throws.
+// Returns an unsubscribe, the same as store.subscribe() — including for a
+// subscriber registered before the SDK finished loading, which is why the
+// pending entry is a mutable box rather than the callback itself: unsubscribing
+// while still queued has to be able to cancel the attachment that hasn't
+// happened yet.
 const pending = []
 
 export function onAuthChange(cb){
-  if(!auth){ pending.push(cb); return }
-  authApi.onAuthStateChanged(auth, cb)
+  if(!auth){
+    const entry = { cb, off: null, cancelled: false }
+    pending.push(entry)
+    return () => {
+      entry.cancelled = true
+      if(entry.off) entry.off()
+    }
+  }
+  return authApi.onAuthStateChanged(auth, cb)
 }
 
 function flushSubscribers(){
-  while(pending.length) authApi.onAuthStateChanged(auth, pending.shift())
+  while(pending.length){
+    const entry = pending.shift()
+    if(entry.cancelled) continue
+    entry.off = authApi.onAuthStateChanged(auth, entry.cb)
+  }
 }
 
 // The signed-in reader's ID token — the one thing the recommender backend needs
