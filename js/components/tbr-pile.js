@@ -15,8 +15,7 @@ export function primaryLibrary(state){
   return (state.library || []).find(l => l && l.libraryKey) || null
 }
 
-// The first saved bookshop. Yours beats a default — if you've told the app
-// where you like to buy books, that's where the link should go.
+// The first saved bookshop, if there is one.
 export function primaryShop(state){
   return (state.bookstores || [])[0] || null
 }
@@ -42,8 +41,6 @@ function borrowRow(book, library, formats){
   if(result === undefined || result === null) return ''   // unasked, or no answer
 
   if(result.status === 'none'){
-    // Neutral on purpose. We searched by title text and may simply have missed
-    // it; asserting the library doesn't own a book is not ours to do.
     return `<div class="borrow-row muted">Didn’t find it at ${escapeHtml(library.name)}</div>`
   }
 
@@ -68,9 +65,6 @@ function borrowRow(book, library, formats){
 // Where else this book might come from. Ordinary links, built by string
 // concatenation, independent of any availability lookup — they work whether or
 // not the catalogue API is reachable, or enabled, or still exists.
-//
-// Bookshop.org rather than Amazon: buying a book should be able to send money
-// to a shop instead of to the company trying to replace them all.
 function findRow(book, library, shop, want){
   const links = []
   if(want.includes('library') && library){
@@ -78,8 +72,6 @@ function findRow(book, library, shop, want){
     if(url) links.push({ url, label: `Find at ${library.name}` })
   }
   if(want.includes('shop')){
-    // Your shop if you've saved one — deep-linked when it taught us its search
-    // URL, its front page otherwise. Bookshop.org only when you haven't.
     const url = shop ? shopSearchUrl(shop, book.title, book.author)
                      : bookshopUrl(book.title, book.author)
     if(url) links.push({ url, label: shop ? `Find at ${shop.name}` : 'Bookshop.org' })
@@ -108,8 +100,8 @@ export function mountTbrPile(root, { bookModal }){
     // data-book-key is what "you already have this — go to it" finds.
     const li = el('li', { 'data-book-key': bookKey(book) })
 
-    // A book set down as "not right now" keeps whatever you said about it, so
-    // picking it up again comes with the note you left yourself.
+    // Nothing puts vibes on a TBR entry any more, but a book set down by an
+    // older build may still carry them. Rendered rather than dropped.
     const moodTags = (book.moods && book.moods.length)
       ? `<div class="mood-row">${book.moods.map(m => `<span class="mood-tag">${escapeHtml(m)}</span>`).join('')}</div>`
       : ''
@@ -162,8 +154,7 @@ export function mountTbrPile(root, { bookModal }){
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', state.wishlist.length > 0)
     state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats, shop, want)))
-    // One prompt for the pile, and only when there is a pile to prompt about.
-    // Only nudge about a library if borrowing is something they've asked to see.
+    // Never nudge about a library unless borrowing is something they asked to see.
     if(prompt) prompt.classList.toggle('hidden',
       !!library || state.wishlist.length === 0 || !want.includes('library'))
     fetchAvailability(state, library, formats)

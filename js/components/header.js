@@ -16,7 +16,6 @@ export async function mountHeader(root){
   const setStatus = (msg) => { if(statusEl) statusEl.textContent = msg || '' }
 
   if(!isConfigured){
-    // Local-only mode until Firebase is configured.
     if(signinBtn) signinBtn.classList.add('hidden')
     setStatus('Cloud sync not set up yet')
     return
@@ -41,7 +40,6 @@ export async function mountHeader(root){
     detachCloud()
 
     if(!user){
-      // Signed out -> local-only.
       if(signinBtn) signinBtn.classList.remove('hidden')
       if(userInfo) userInfo.classList.add('hidden')
       setStatus('')
@@ -49,7 +47,6 @@ export async function mountHeader(root){
       return
     }
 
-    // Signed in -> cloud mode.
     if(signinBtn) signinBtn.classList.add('hidden')
     if(userInfo) userInfo.classList.remove('hidden')
     if(userName) userName.textContent = user.displayName || user.email || 'Signed in'

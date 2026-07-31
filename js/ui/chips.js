@@ -1,5 +1,5 @@
-// The selectable-chip control used by the finish modal.
-// Single-select (feelings) and multi-select (moods) share one implementation.
+// The selectable-chip control. Single-select and multi-select share one look
+// and one option format.
 
 // options: [{ key, label }] or ['Label', …]
 // Returns { getValue, setValue, clear } — single-select value is a key or null.

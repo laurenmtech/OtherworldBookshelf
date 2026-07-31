@@ -84,10 +84,6 @@ function row({ item, index }){
       className: 'btn', type: 'button', onClick: () => alert(item.notes)
     }, 'Notes'))
   }
-  // Puts a clean copy on the pile and leaves this entry untouched — a re-read
-  // is a book you've read AND a book that's next, and the record shouldn't
-  // quietly lose a year of reading to make the sentence simpler.
-  //
   // The pile isn't visible from here, so the button says where the book went
   // rather than that something happened — "Added!" answers a question nobody
   // was asking. It's also nearly the same length as "Read again", so the row

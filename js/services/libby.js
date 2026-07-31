@@ -21,9 +21,7 @@
 const THUNDER = 'https://thunder.api.overdrive.com/v2/libraries'
 const TIMEOUT_MS = 6000
 
-// The single flag the plan asked for from day one. Turn this off and every
-// availability lookup stops; the deep links, the library names and the borrow
-// prompts all carry on exactly as they are.
+// The single flag the plan asked for from day one.
 export const AVAILABILITY = true
 
 // ── Deep links ──────────────────────────────────────────────────────────────
@@ -166,26 +164,25 @@ export async function lookupLibrary(key, opts){
 // What the library has, for one book.
 //
 // Matching is by title text — the API returns nothing for an ISBN query, so
-// the plan's ISBN mitigation isn't available. The matched title comes back
-// with the result so a wrong edition is visible on screen rather than silent,
-// and "not found" is reported the same neutral way as "not owned": we are in
-// no position to assert what a library does not have.
+// the plan's ISBN mitigation isn't available. The matched title comes back with
+// the result so a wrong edition is visible on screen rather than silent.
 //
 // Returns:
 //   null                       — no usable answer. The endpoint failed, timed
 //                                out, or is switched off. Render NOTHING; we
 //                                know nothing and must not imply otherwise.
-//   { status: 'none' }         — the library answered and had no match. Shown
-//                                neutrally: "not found" and "not owned" are
-//                                indistinguishable here, and neither justifies
-//                                telling someone their library lacks a book.
+//   { status: 'none' }         — the library answered and had no match. "Not
+//                                found" and "not owned" are indistinguishable
+//                                here, and neither justifies telling someone
+//                                their library lacks a book, so it is shown
+//                                neutrally.
 //   { status, copies[] }       — 'available' or 'wait', best copy first.
 export async function availability(libraryKey, book, opts = {}){
   if(!AVAILABILITY) return null
   if(!libraryKey || !book || !book.title) return null
-  // Formats you'd actually borrow. An "available now" you'd never take is
-  // worse than no answer at all — it's the app telling you about a copy that
-  // isn't for you, and burying the one that is behind it.
+  // An "available now" you'd never take is worse than no answer at all — it's
+  // the app telling you about a copy that isn't for you, and burying the one
+  // that is behind it.
   const formats = opts.formats || ['ebook']
   if(!formats.length) return null
   const q = encodeURIComponent(book.title)

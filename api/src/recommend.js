@@ -64,18 +64,14 @@ Rules:
 - Moods the reader gives you are alternatives, never requirements to satisfy all at once.
 - No preamble and no commentary outside the structured fields.`
 
-// Everything the model is told about the reader. The full shelf never leaves
-// the device: the caller sends a compressed summary and an exclusion list, and
-// this is the only place either is used.
+// Everything the model is told about the reader — the compressed summary and
+// the exclusion list, and nothing else.
 export function buildUserPrompt({ moods = [], freeText = '', tasteSummary = '', exclude = [] } = {}){
   const parts = []
-  // Moods are alternatives, not requirements — the same rule the Finished
-  // filters use, where picking two widens the results rather than narrowing to
-  // books carrying both. Said explicitly because a bare list reads as a
-  // conjunction: asked for cozy AND creepy AND epic, a model will go hunting
-  // for the one book that is somehow all three, when what the reader wants is
-  // a spread. Someone can genuinely be up for comfort fantasy or creepy horror
-  // on the same evening, and both should turn up.
+  // The alternatives rule is spelled out at length because a bare list reads as
+  // a conjunction: asked for cozy AND creepy AND epic, a model goes hunting for
+  // the one book that is somehow all three. Someone can be up for comfort
+  // fantasy or creepy horror on the same evening, and both should turn up.
   if(moods.length){
     parts.push(
       `They are in the mood for ANY of these, not all at once: ${moods.join(', ')}.\n` +

@@ -23,9 +23,7 @@ export function mountPlaceList(root, { modal, select, remove, extraAction, reord
 
   addBtn && addBtn.addEventListener('click', () => modal.open())
 
-  // Reordering rebuilds the list, which destroys the button just pressed, so a
-  // keyboard user would lose focus to the body on every press. Same fix as the
-  // current reads list: carry focus to the same control in the new position.
+  // Same focus-carrying fix as the current reads list — see the note there.
   let refocus = null
 
   function row(entry, idx, total){
@@ -41,8 +39,7 @@ export function mountPlaceList(root, { modal, select, remove, extraAction, reord
     const official = entry.officialName && entry.officialName !== entry.name
       ? `<div class="muted place-official">${escapeHtml(entry.officialName)}</div>`
       : ''
-    // Only the first library is used for availability, so it says so rather
-    // than leaving you to infer it from position.
+    // Said rather than left to be inferred from position.
     const primary = reorder && idx === 0 && total > 1 && entry.libraryKey
       ? '<span class="place-badge">Primary</span>'
       : ''
