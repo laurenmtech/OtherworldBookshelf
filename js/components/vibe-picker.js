@@ -21,7 +21,7 @@ import { setVibe, getState, subscribe } from '../state/store.js'
 
 function miniature(){
   return el('span', { className: 'vibe-mini' },
-    el('span', { className: 'vibe-mini-title' }, 'Otherworld Reads'),
+    el('span', { className: 'vibe-mini-title' }, 'Otherworld Bookshelf'),
     el('span', { className: 'vibe-mini-panel' },
       el('span', { className: 'vibe-mini-row' },
         el('span', { className: 'vibe-mini-book' }),
