@@ -371,3 +371,34 @@ body.sheet-open{ overflow:hidden }
 }
 .ask-btn:hover{ border-color:var(--accent-2) }
 .mood-hint{ margin:8px 0 0; font-size:12px }
+
+/* ── Toast ──────────────────────────────────────────────────────────────────
+   A brief confirmation for actions whose result lands somewhere off-screen.
+   Above the tab bar on a phone (which is fixed at z-index 60) and below the
+   modals, so it can never cover a question it can't answer. Colours come from
+   the vibe like everything else. */
+.toast{
+  position:fixed; z-index:70;
+  left:50%; transform:translateX(-50%) translateY(8px);
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  max-width:min(92vw, 420px);
+  padding:11px 18px; border-radius:10px;
+  background:var(--card); color:var(--ink);
+  border:1px solid var(--line-1);
+  box-shadow:0 10px 26px var(--shadow-2);
+  font-size:14px; text-align:center;
+  opacity:0; pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+}
+.toast.showing{ opacity:1; transform:translateX(-50%) translateY(0) }
+
+/* On a wide screen the tab bar is back up in the header, so the toast can sit
+   where a toast normally sits. */
+@media (min-width:761px){
+  .toast{ bottom:28px }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .toast{ transition:opacity .18s ease }
+  .toast, .toast.showing{ transform:translateX(-50%) }
+}
