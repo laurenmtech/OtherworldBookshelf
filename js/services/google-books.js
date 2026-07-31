@@ -45,9 +45,7 @@ export function normalise(item){
   const title = String(v.title || '').trim()
   if(!title) return null
   const book = { title, author: authorsToString(v.authors), source: 'google-books' }
-  // Deliberately NOT workKey: a Google volume id is a different namespace, and
-  // claiming one would stop this book ever being recognised as the same book
-  // when Open Library catches up and offers it with a real work key.
+  // Deliberately NOT workKey — see bookKey() in book-shape.js.
   if(item.id) book.googleId = String(item.id)
   const cover = coverFrom(v.imageLinks)
   if(cover) book.coverSrc = cover

@@ -23,9 +23,7 @@ import { migrate, emptyState } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
 
 // How many books may be current at once. Phase 4 brought the list UI, so this
-// is 3. Nothing refuses a fourth: withCurrent() sets whatever no longer fits
-// back on the TBR pile, and the add flow says which book that will be before
-// you commit to it.
+// is 3. Nothing refuses a fourth — see withCurrent().
 export const CURRENT_CAP = 3
 
 let state = emptyState()
@@ -256,9 +254,9 @@ export function removeLibrary(index){
   commit({ ...state, library: state.library.filter((_, i) => i !== index) })
 }
 
-// Order matters here the same way it does for current reads: the FIRST library
-// is the primary one, and it's the one availability is checked against. So
-// reordering is content, persisted and synced, not a local view preference.
+// The FIRST library is the primary one, and it's the one availability is
+// checked against — so like reorderCurrent, this is content rather than a
+// local view preference.
 export function reorderLibrary(from, to){
   const list = state.library
   if(from === to) return
@@ -304,8 +302,7 @@ export function setVibe(id){
 }
 
 // Which links appear under a book you haven't got yet. A preference, so it
-// follows you to a second device — and like the others, it must never count as
-// content in isEmptyState().
+// follows you to a second device.
 export function setFindLinks(links){
   const next = Array.isArray(links) ? links : []
   if(next.join() === (state.findLinks || []).join()) return
@@ -313,8 +310,7 @@ export function setFindLinks(links){
 }
 
 // Which formats you'd actually borrow. A preference, so it follows you to a
-// second device — and like `vibe`, it must never count as content in
-// isEmptyState(), or "I read ebooks" could overwrite an unsynced shelf.
+// second device.
 export function setBorrowFormats(formats){
   const next = Array.isArray(formats) ? formats : []
   if(next.join() === (state.borrowFormats || []).join()) return

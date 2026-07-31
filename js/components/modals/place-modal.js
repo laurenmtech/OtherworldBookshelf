@@ -42,11 +42,10 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
     keyStatus.className = 'muted place-key-status' + (kind ? ' ' + kind : '')
   }
 
-  // Confirming is the whole point of this field. Searching for a library by
-  // name isn't possible — the API ignores the query and hands back all 13,050
-  // of them — so the reader supplies the key and we supply the name back. That
-  // turns a silent wrong guess into a visible one: type "austin" and it says
-  // Austin ISD, which is not the library you meant.
+  // Confirming is the whole point of this field: it turns a silent wrong guess
+  // into a visible one. Type "austin" and it says Austin ISD, which is not the
+  // library you meant. See lookupLibrary() for why searching by name isn't an
+  // option.
   async function check(){
     if(!keyInput || checking) return
     const raw = keyInput.value.trim()
@@ -92,9 +91,8 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
     if(!name){ nameInput.focus(); return }
     const entry = { name, url: urlInput.value.trim() }
 
-    // A shop that taught us its search URL gets deep links to every book on
-    // the pile; one that didn't still gets its own front page, which beats a
-    // default shop. Nothing here is required.
+    // Optional: a shop that teaches us its search URL gets deep links to every
+    // book on the pile. See learnSearchUrl().
     if(shop && searchInput){
       const learned = learnSearchUrl(searchInput.value)
       if(learned) entry.searchUrl = learned

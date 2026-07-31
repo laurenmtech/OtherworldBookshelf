@@ -8,9 +8,8 @@
 // the app in a year. A stamped version would have to be trusted, and a
 // document whose stamp disagrees with its shape is worse than no stamp.
 
-// The formats you'd actually borrow. Defaults to ebook alone, because an
-// "available now" you'd never take is worse than no answer — it's the app
-// telling you about a copy that isn't for you.
+// The formats you'd actually borrow. Defaults to ebook alone — see
+// availability() in services/libby.js for why the narrower default is kinder.
 export const BORROW_FORMATS = ['ebook', 'audiobook']
 const DEFAULT_BORROW_FORMATS = ['ebook']
 
@@ -39,9 +38,8 @@ function toBorrowFormats(data){
   return data.borrowFormats.filter(f => BORROW_FORMATS.includes(f))
 }
 
-// v7 → v8: findLinks. Absent means never chosen and gets both; present but
-// empty means deliberately neither, and is respected — an empty list is a real
-// answer and simply means no find links.
+// v7 → v8: findLinks. Absent versus empty reads the same way as
+// toBorrowFormats above.
 function toFindLinks(data){
   if(!Array.isArray(data.findLinks)) return [...DEFAULT_FIND_LINKS]
   return data.findLinks.filter(f => FIND_LINKS.includes(f))
@@ -57,8 +55,7 @@ function toCurrentReads(data){
   return []
 }
 
-// v2 → v3: bookstores. Older data simply defaults to an empty list — nothing to
-// convert, which is why this is safe to run against every snapshot forever.
+// v2 → v3: bookstores. Older data simply defaults to an empty list.
 
 // v4 → v5: books may now carry workKey, coverId, year, source, seriesKey,
 // seriesName, seriesPosition and format, and a finished entry may carry
@@ -115,9 +112,8 @@ export function toStorage(state){
 // Whether a payload holds anything at all. This decides whether a remote
 // snapshot is real enough to replace what's on this device, so it must only
 // ever count actual content. `vibe`, `borrowFormats` and `findLinks` are
-// preferences and
-// are deliberately NOT counted here — a document holding nothing but "I read
-// ebooks" must never look real enough to overwrite a shelf that hasn't synced.
+// preferences and are deliberately NOT counted — a document holding nothing but
+// "I read ebooks" must never look real enough to overwrite an unsynced shelf.
 //
 // `passed` is not counted either, and that is a deliberate trade: a remote doc
 // holding only pass history can be overwritten by an empty local shelf. Losing

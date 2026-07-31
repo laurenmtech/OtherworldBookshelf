@@ -78,8 +78,6 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     modal: libraryModal,
     select: s => s.library,
     remove: removeLibrary,
-    // The first library is the one availability is checked against, so the
-    // order is worth being able to change.
     reorder: reorderLibrary,
     // Long-standing behaviour, kept: a library entry can become the current
     // book, with its name as the title.
@@ -101,8 +99,7 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     if(want !== formatChips.getValue().join()) formatChips.setValue(s.borrowFormats || [])
   })
 
-  // Some readers always borrow, some always buy. Built once — the options are
-  // fixed — with only the selection kept in step with the store.
+  // Some readers always borrow, some always buy. Built once, as above.
   const FIND_LABELS = { library: 'My library', shop: 'A bookshop' }
   const findChips = multiSelect(
     root.querySelector('#find-link-chips'),

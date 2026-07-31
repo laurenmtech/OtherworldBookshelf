@@ -113,8 +113,7 @@
     <button id="shelf-btn" class="icon-btn" type="button" aria-label="The Hidden Shelf" aria-haspopup="dialog">
       <svg aria-hidden="true"><use href="#icon-bookmark"></use></svg>
     </button>
-    <!-- Bottom bar on a phone, header links on a wide screen. Filled by
-         tab-bar.js; the move between the two is done entirely in CSS. -->
+    <!-- Filled by tab-bar.js; bottom bar or header links, decided in CSS. -->
     <nav id="tab-bar" class="tab-bar" aria-label="Sections"></nav>
   </header>
 
@@ -128,8 +127,7 @@
       <h1 class="route-heading visually-hidden" data-route-heading tabindex="-1">Reading</h1>
 
       <div class="container reading-grid">
-        <!-- Up to three, the first one large. The list, the covers and the
-             reorder controls are all built by current-reads.js. -->
+        <!-- Built by current-reads.js. -->
         <section class="panel current-panel">
           <div class="panel-head">
             <h2>Current Reads</h2>
@@ -203,9 +201,8 @@
   </main>
 
   <!-- ───────────── The Hidden Shelf ─────────────
-       The one shelf that isn't for books: your card, your places, your record.
-       Presented as a bottom sheet (see ui/sheet.js) — "sheet" throughout the
-       CSS and the ui/ layer is the interaction pattern, not the product name. -->
+       "sheet" throughout the CSS and the ui/ layer is the interaction pattern,
+       not the product name. See components/hidden-shelf.js. -->
   <div id="hidden-shelf" class="sheet" hidden aria-labelledby="hidden-shelf-title">
     <div class="sheet-inner">
       <div class="sheet-head">
@@ -241,8 +238,7 @@
         </div>
         <ul data-place-list class="list"></ul>
         <div data-place-empty class="muted hidden">No libraries yet — tap “+ Add”.</div>
-        <!-- Only what you'd actually borrow. An "available now" you'd never
-             take is worse than no answer — it buries the copy you would. -->
+        <!-- Only what you'd actually borrow — see availability() in libby.js. -->
         <div class="field borrow-formats">
           <label>Which formats do you borrow?</label>
           <div id="borrow-format-chips" class="chips"></div>
@@ -326,8 +322,7 @@
           <div class="field">
             <label>What are you in the mood for? <span class="muted">(optional)</span></label>
             <div id="recommend-moods" class="chips"></div>
-            <!-- Says the rule out loud so nobody has to guess whether picking
-                 two narrows or widens. Same rule as the Finished filters. -->
+            <!-- Same rule as the Finished filters, said out loud. -->
             <p class="muted mood-hint">Pick as many as you like — you’ll get a spread, not one book that
               somehow fits them all.</p>
           </div>
@@ -412,9 +407,8 @@
 
   <!-- Both place dialogs are driven by one module (modals/place-modal.js);
        the fields are found by data attribute so the ids can stay unique. -->
-  <!-- The library dialog asks one extra thing: which library on Libby. There is
-       no way to search for one — the API ignores the query and returns all
-       13,050 — so you give the key and it gives the name back to confirm. -->
+  <!-- The library dialog asks one extra thing: which library on Libby. You give
+       the key and it gives the name back to confirm — see lookupLibrary(). -->
   <div id="library-modal" class="modal hidden" hidden>
     <form class="finish-inner">
       <h3 data-place-title>Add to Library</h3>

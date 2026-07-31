@@ -45,8 +45,7 @@ export function mountBookModal(root){
   const typeahead = mountTypeahead(searchField, {
     onPick: (book) => commit(book),
     // Offline, or the search is down: open the manual fields rather than leave
-    // someone tapping a box that can't answer. Adding a book must never depend
-    // on a network.
+    // someone tapping a box that can't answer.
     onState: (s) => { if(s === 'offline' || s === 'error') showManual(false) }
   })
 
@@ -103,8 +102,7 @@ export function mountBookModal(root){
     const next = { ...book }
     if(dest === 'current') addCurrent(next)
     // A book read before the app existed. It lands undated on purpose — see
-    // addAlreadyRead — so the record never claims you finished something today
-    // that you finished years ago.
+    // addAlreadyRead().
     else if(dest === 'finished') addAlreadyRead(next)
     else addToTbr(next)
     modal.close()

@@ -53,11 +53,8 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
     const actions = el('div', { className: 'list-actions' },
       iconButton('finish', 'Finish', () => finishModal.open(idx, book)),
       iconButton('setdown', 'Set down', () => setDownModal.open(idx)),
-      // Remove rather than Edit. Search autofill means a book usually arrives
-      // correct, so the thing you actually want from this row is a way out for
-      // one you shouldn't have started. It confirms because it sits beside two
-      // buttons that also make a book leave — and unlike those two, this one
-      // leaves nothing behind.
+      // Confirms because it sits beside two buttons that also make a book
+      // leave — and unlike those two, this one leaves nothing behind.
       iconButton('trash', 'Remove', () => {
         const ok = confirm(
           `Remove “${book.title}”?\n\n` +
