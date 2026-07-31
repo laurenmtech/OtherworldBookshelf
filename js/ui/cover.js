@@ -1,5 +1,5 @@
 // Cover art, or nothing. There is no placeholder.
-import { coverUrl } from '../services/books.js'
+import { coverUrl } from '../services/book-shape.js'
 import { el } from './dom.js'
 
 export function coverImg(book, { size = 'M', className = 'cover' } = {}){

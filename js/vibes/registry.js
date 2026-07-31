@@ -40,4 +40,3 @@ export const VIBES = [
 export const DEFAULT_VIBE = 'otherworld'
 
 export const getVibe = id => VIBES.find(v => v.id === id) || null
-export const isVibe = id => !!getVibe(id)

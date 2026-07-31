@@ -8,20 +8,19 @@ import * as openLibrary from './open-library.js'
 import * as googleBooks from './google-books.js'
 import { bookKey, authorsToString } from './book-shape.js'
 
-export {
-  coverUrl, FORMATS, bookKey, findExisting, genresFrom, parseSeries,
-  SERIES, inSeries, sameSeries, byVolume
-} from './book-shape.js'
-export { isEnabled as googleBooksEnabled } from './google-books.js'
+// This module owns SEARCH and nothing else. It used to re-export the whole book
+// shape as a convenience, which quietly made ui/cover.js and ui/book-meta.js
+// depend on both network sources to reach a URL builder and a constant. Import
+// shape helpers from book-shape.js — it has no dependencies at all.
 
 export const MIN_QUERY = 3
-export const MAX_RESULTS = 6
+const MAX_RESULTS = 6
 const TIMEOUT_MS = 8000
 const DEBOUNCE_MS = 250
 
 const PER_SOURCE = MAX_RESULTS * 2
 
-export class OfflineError extends Error {}
+class OfflineError extends Error {}
 
 function norm(s){
   return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()

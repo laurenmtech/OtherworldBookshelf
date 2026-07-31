@@ -52,10 +52,6 @@ export function inSeries(book){
   return !!(SERIES && book && book.seriesKey && !book.seriesDetached)
 }
 
-export function sameSeries(a, b){
-  return inSeries(a) && inSeries(b) && a.seriesKey === b.seriesKey
-}
-
 export function byVolume(a, b){
   const pa = Number.isFinite(a && a.seriesPosition) ? a.seriesPosition : Infinity
   const pb = Number.isFinite(b && b.seriesPosition) ? b.seriesPosition : Infinity

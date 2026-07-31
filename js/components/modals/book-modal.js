@@ -7,7 +7,7 @@ import { createModal } from '../../ui/modal.js'
 import { escapeHtml } from '../../ui/dom.js'
 import { revealBook } from '../../ui/reveal.js'
 import { mountTypeahead } from '../typeahead.js'
-import { findExisting, bookKey } from '../../services/books.js'
+import { findExisting, bookKey } from '../../services/book-shape.js'
 import { enrich } from '../../services/series.js'
 import {
   addToTbr, addCurrent, addAlreadyRead, getState, CURRENT_CAP

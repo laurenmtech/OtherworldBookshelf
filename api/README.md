@@ -144,14 +144,15 @@ about that book, and it is shared by everyone. Nothing in it says who asked.
 
 There are no `console.log` calls in the Worker, deliberately: no prompt, no
 mood, no book title, no suggestion and none of a reader's own words are written
-anywhere. A test asserts the absence. `wrangler tail` shows request metadata
+anywhere. `tests/worker.test.mjs` asserts the absence — it fails on any
+`console.` call in `src/`. `wrangler tail` shows request metadata
 only — if you add logging while debugging, take it out again.
 
 ## The four things not to "simplify"
 
 1. **The uid comes from the verified token, never the request body.** A caller
    can put any user id they like in the JSON they post; it changes nothing.
-   There is a test named after this.
+   `tests/worker.test.mjs` posts a `uid` in the body and asserts a 401.
 2. **The quota credit is claimed *before* the model is called.** KV has no
    transactions, so a check-then-call-then-increment lets two concurrent
    requests both pass a check only one should — and what's being protected is a
@@ -163,6 +164,16 @@ only — if you add logging while debugging, take it out again.
    truth. An unverifiable sequel is dropped, and — separately — a verification
    that *couldn't run* is never cached, so one unreachable minute doesn't
    become a permanent wrong answer.
+
+## Tests
+
+```sh
+node tests/run.mjs      # from the repo root — covers the client and this Worker
+```
+
+No dependencies and no config. The Worker tests run the real `fetch` handler
+against a fake KV and deliberately malformed tokens, so nothing here touches the
+network.
 
 ## Files
 

@@ -34,8 +34,6 @@ export function iconButton(icon, label, onClick, className = 'btn'){
   return b
 }
 
-export function qs(root, sel){ return root ? root.querySelector(sel) : null }
-
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
 
 export function trapFocus(container){

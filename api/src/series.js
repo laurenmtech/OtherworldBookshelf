@@ -105,7 +105,9 @@ const userPrompt = ({ title, author }) =>
 // parser derives seriesKey from an Open Library subject tag with the same
 // function, so a book enriched here and a book parsed there have to land on the
 // same key or the shelf would render one series as two.
-function slug(s){
+// Exported for tests/contract.test.mjs, which pins this against the client's
+// copy in js/services/book-shape.js. Drift here splits one series into two.
+export function slug(s){
   return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
@@ -124,14 +126,14 @@ const OL_TIMEOUT_MS = 6000
 // anti-hallucination guard failing in the direction nobody notices. The same
 // function decides whether the queried book appears in the returned list, so
 // "Heir of Fire" matching "Heir of Fire (Throne of Glass #3)" is deliberate.
-function norm(s){
+export function norm(s){
   return String(s || '').toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
 }
 
-function sameTitle(a, b){
+export function sameTitle(a, b){
   const x = norm(a), y = norm(b)
   if(!x || !y) return false
   return x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')
@@ -180,7 +182,7 @@ async function verifyVolume(title, author){
 // self-evidently about some other series, and the whole answer is thrown away.
 // That is what catches "Heir of Fire → Crescent City" without needing to know
 // anything about either series.
-function shape(parsed, title){
+export function shape(parsed, title){
   if(!parsed || parsed.inSeries !== true) return null
   const name = String(parsed.seriesName || '').trim()
   if(!name) return null
