@@ -100,11 +100,6 @@ export function addCurrent(book){
   commit({ ...state, ...withCurrent([book, ...state.currentReads], rest) })
 }
 
-export function editCurrent(index, book){
-  const next = state.currentReads.map((b, i) => (i === index ? book : b))
-  commit({ ...state, currentReads: next })
-}
-
 // Taking a book off the shelf without saying anything about it: a mis-add, a
 // wrong edition, a book you'd rather not have a record of. Deliberately NOT the
 // same as finishing or setting down — those both write to the record, and this
@@ -180,11 +175,6 @@ export function setDownCurrent(index, { outcome = 'later', feeling = null, moods
 
 export function addToTbr(book){
   commit({ ...state, wishlist: sortedWishlist([...state.wishlist, book]) })
-}
-
-export function editTbr(index, book){
-  const next = state.wishlist.map((b, i) => (i === index ? book : b))
-  commit({ ...state, wishlist: sortedWishlist(next) })
 }
 
 export function removeTbr(index){

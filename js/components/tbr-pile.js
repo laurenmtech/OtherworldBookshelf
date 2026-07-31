@@ -126,7 +126,6 @@ export function mountTbrPile(root, { bookModal }){
 
     const actions = el('div', { className: 'list-actions' },
       iconButton('finish', 'Set current', () => makeTbrCurrent(idx)),
-      iconButton('edit', 'Edit', () => bookModal.open({ dest: 'tbr', index: idx, entry: book })),
       iconButton('trash', 'Remove', () => removeTbr(idx))
     )
     li.appendChild(left)

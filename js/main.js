@@ -25,7 +25,7 @@ import { onAuthChange } from './state/auth.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.65'
+export const APP_VERSION = '0.66'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
@@ -94,12 +94,6 @@ function mountAll(){
     onChange: (path) => tabs.setActive(path)
   })
 
-  // Close any open dropdown when clicking elsewhere.
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('.dropdown.open').forEach(d => {
-      if(!d.contains(e.target)) d.classList.remove('open')
-    })
-  })
 
   // The running version, as a plain label — there is nothing to tap. Updates
   // arrive on their own (see registerServiceWorker below).
