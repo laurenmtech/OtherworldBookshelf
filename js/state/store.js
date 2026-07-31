@@ -1,6 +1,24 @@
 // The single source of truth for the shelf.
 // Components never touch localStorage or Firestore and never mutate state —
 // they dispatch an action and re-render when notified.
+//
+// ── The index invariant ─────────────────────────────────────────────────────
+// Almost every action here identifies a book by its POSITION in a list —
+// removeFinished(index), readAgain(index), removeTbr(index), editLibrary(index).
+// Those positions are captured in render closures, so they are only ever
+// correct because of one rule:
+//
+//     commit() notifies SYNCHRONOUSLY, and every listener re-renders in place.
+//
+// That is what guarantees a button can't outlive the list it was drawn from.
+// A remote snapshot arriving mid-session (persist-cloud.js) re-renders too, so
+// the handler holding a stale index is destroyed before anyone can tap it.
+//
+// Break that rule — batch renders into a rAF, debounce a listener, put a
+// diffing layer in front of the DOM — and every action on this page starts
+// removing the wrong book. Silently. bookKey() in services/book-shape.js is the
+// real identity and is already stamped on every row as data-book-key; that is
+// where to go if this ever needs to stop being positional.
 import { migrate, emptyState } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
 
@@ -139,35 +157,32 @@ export function reorderCurrent(from, to){
 // Setting a book down, which is not the same as finishing it and not the same
 // as never having started.
 //
-//   'later' — not right now. Back on the TBR pile, still suggestible, no mark
-//             against it. Any feeling or vibes given ride along, so picking it
-//             up again comes with the note you left yourself.
+//   'later' — not right now. Back on the TBR pile, exactly as it was, still
+//             suggestible and with no mark against it.
 //   'never' — not for me. Into the record, marked setDown so it renders
 //             distinctly and can be filtered, and excluded from future
 //             suggestions (Phase 8 reads this flag; nothing else may).
 //
-// Feeling and vibes are optional on both — the point of this action is that it
-// costs nothing to be honest about abandoning a book.
-export function setDownCurrent(index, { outcome = 'later', feeling = null, moods = [] } = {}){
+// The outcome is the only question. How it felt and what its vibes were belong
+// to finishing a book — asking them here would make stopping something you have
+// to account for, and the point of this action is that it costs nothing to be
+// honest about abandoning a book. Older entries may still carry a feeling from
+// when it was asked; the record renders them either way.
+export function setDownCurrent(index, { outcome = 'later' } = {}){
   const book = state.currentReads[index]
   if(!book) return
   const rest = state.currentReads.filter((_, i) => i !== index)
 
   if(outcome === 'never'){
-    const entry = {
-      ...book, setDown: true, finishedAt: new Date().toISOString(), feeling, moods
-    }
+    const entry = { ...book, setDown: true, finishedAt: new Date().toISOString() }
     commit({ ...state, currentReads: rest, finished: [entry, ...state.finished] })
     return
   }
 
-  const shelved = { ...book }
-  if(feeling) shelved.feeling = feeling
-  if(moods && moods.length) shelved.moods = moods
   commit({
     ...state,
     currentReads: rest,
-    wishlist: sortedWishlist([...state.wishlist, shelved])
+    wishlist: sortedWishlist([...state.wishlist, { ...book }])
   })
 }
 
@@ -288,9 +303,6 @@ export function setVibe(id){
   commit({ ...state, vibe: id })
 }
 
-// Which formats you'd actually borrow. A preference, so it follows you to a
-// second device — and like `vibe`, it must never count as content in
-// isEmptyState(), or "I read ebooks" could overwrite an unsynced shelf.
 // Which links appear under a book you haven't got yet. A preference, so it
 // follows you to a second device — and like the others, it must never count as
 // content in isEmptyState().
@@ -300,6 +312,9 @@ export function setFindLinks(links){
   commit({ ...state, findLinks: next })
 }
 
+// Which formats you'd actually borrow. A preference, so it follows you to a
+// second device — and like `vibe`, it must never count as content in
+// isEmptyState(), or "I read ebooks" could overwrite an unsynced shelf.
 export function setBorrowFormats(formats){
   const next = Array.isArray(formats) ? formats : []
   if(next.join() === (state.borrowFormats || []).join()) return

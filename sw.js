@@ -120,8 +120,13 @@ self.addEventListener('fetch', (e) => {
   // so the typeahead can say so and fall back to manual entry).
   if (!sameOrigin && !cdn) return;
   // Cache-first for the app shell + SDK/font CDN, falling back to network and caching the result.
+  //
+  // Scoped to THIS build's cache rather than a bare caches.match(), which
+  // searches every cache including COVERS — a cover is stored opaque and keyed
+  // by its own URL, so it could never answer a shell request, but a lookup that
+  // can reach into a bucket with different rules is a lookup waiting to.
   e.respondWith(
-    caches.match(req).then((cached) => {
+    caches.open(CACHE).then((c) => c.match(req)).then((cached) => {
       if (cached) return cached;
       return fetch(req).then((res) => {
         if (res.ok) {

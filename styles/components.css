@@ -372,7 +372,15 @@ body.sheet-open{ overflow:hidden }
 .ask-btn:hover{ border-color:var(--accent-2) }
 .mood-hint{ margin:8px 0 0; font-size:12px }
 
-/* "On the pile" — the moment after Read again puts a book somewhere you can't
-   see from the record. Same size and shape as the button it replaces, so the
-   row doesn't jump; only the colour says something happened. */
+/* "On the pile!" — the moment after Read again puts a book somewhere you can't
+   see from the record. Only the colour and the icon say so: the width is held
+   wide enough for either label, because Remove sits against this button's edge
+   and a row that shuffles sideways reads as a misfire rather than an answer. */
+/* 44px of chrome (14px icon + 8px gap + 20px padding + 2px border) and room
+   for "On the pile!", the longer of the two labels. */
+.btn.read-again{ min-width:calc(44px + 10ch) }
 .btn.flashed{ color:var(--accent-2); border-color:var(--accent-soft) }
+
+/* A redraw that isn't news — see renderFinished(). The entrance animation is
+   for rows arriving, not for rows that were already sitting there. */
+.list.no-entrance .list-actions{ animation:none }
