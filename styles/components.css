@@ -372,7 +372,7 @@ body.sheet-open{ overflow:hidden }
 .ask-btn:hover{ border-color:var(--accent-2) }
 .mood-hint{ margin:8px 0 0; font-size:12px }
 
-/* "Added!" — the moment after Read again puts a book on a pile you can't see
-   from the record. Same size and shape as the button it replaces, so the row
-   doesn't jump; only the colour says something happened. */
+/* "On the pile" — the moment after Read again puts a book somewhere you can't
+   see from the record. Same size and shape as the button it replaces, so the
+   row doesn't jump; only the colour says something happened. */
 .btn.flashed{ color:var(--accent-2); border-color:var(--accent-soft) }
