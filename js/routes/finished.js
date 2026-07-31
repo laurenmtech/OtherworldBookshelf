@@ -128,9 +128,15 @@ export function mountFinished(root, { bookModal } = {}){
       .map((item, index) => ({ item, index }))
       .filter(e => matches(e.item))
 
-    renderFinished(listRoot, entries)
-
     const filtering = !!query || feelings.length > 0 || moods.length > 0
+
+    // Filtering ungroups. A series is one entry while you're browsing, but the
+    // moment you ask a question — "which of these did I love?" — you want the
+    // books that answer it, not a seven-volume row containing one of them.
+    // It also keeps the count below honest without a special case: filtered or
+    // not, it counts volumes, because volumes are what you read.
+    renderFinished(listRoot, entries, { group: !filtering })
+
     if(clearBtn) clearBtn.hidden = !filtering
 
     // A count, and only a count. It says how much is here, not how well you're

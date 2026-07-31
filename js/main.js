@@ -21,11 +21,15 @@ import { onAuthChange } from './state/auth.js'
 // Shown in the footer, and bumped on EVERY release so you can tell at a glance
 // whether your phone has the newest one.
 //
-// The digit after the point is the plan phase; the digit after that counts
-// releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
-// finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
-// is what makes this 1.0.
-export const APP_VERSION = '0.72'
+// It started as 0.<phase><release> — phase 2 shipped as 0.2, its next release
+// as 0.21 — and phase 6 outgrew that when its release count passed 9 and 0.69
+// rolled into 0.70. So it is now simply a counter that goes up every release,
+// and the phase it belongs to is a thing the commit message says rather than
+// something the number encodes. 0.73–0.75 is phase 7: series travel together.
+//
+// 1.0 is the "ready to share" milestone — phase 8 in the plan — and is the one
+// number here that still means something.
+export const APP_VERSION = '0.75'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))

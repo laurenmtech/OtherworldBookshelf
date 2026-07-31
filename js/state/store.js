@@ -21,6 +21,7 @@
 // where to go if this ever needs to stop being positional.
 import { migrate, emptyState } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
+import { bookKey, byVolume, inSeries } from '../services/book-shape.js'
 
 // How many books may be current at once. Phase 4 brought the list UI, so this
 // is 3. Nothing refuses a fourth — see withCurrent().
@@ -127,15 +128,142 @@ export function removeCurrent(index){
   commit({ ...state, currentReads: state.currentReads.filter((_, i) => i !== index) })
 }
 
-export function finishCurrent(index, { feeling = null, moods = [] } = {}){
+// Finishing a book, and — when it's a volume of a series — advancing the entry
+// to the next one IN PLACE rather than adding a second entry beside it. That
+// in-place swap is the whole reason a series occupies one slot on Current Reads
+// however long it runs; the cap never has to know series exist.
+//
+// `next` comes from nextVolume() in services/series.js, which owns every rule
+// about whether there is a next volume at all. This function only moves things.
+// A null next is the ordinary case and behaves exactly as it always has.
+export function finishCurrent(index, { feeling = null, moods = [], next = null } = {}){
   const book = state.currentReads[index]
   if(!book) return
   const entry = { ...book, finishedAt: new Date().toISOString(), feeling, moods }
+
+  const currentReads = [...state.currentReads]
+  let wishlist = state.wishlist
+  if(next && next.book && !next.forthcoming){
+    currentReads[index] = next.book
+    // Promoted, not duplicated: a next volume already on the pile leaves it.
+    if(Number.isInteger(next.fromWishlist)){
+      wishlist = state.wishlist.filter((_, i) => i !== next.fromWishlist)
+    }
+  } else if(next && next.book){
+    // The next volume isn't out yet, so the series entry leaves Current Reads
+    // the way any finished book does and the forthcoming volume waits on the
+    // pile. Updated in place when it's already there rather than added twice.
+    currentReads.splice(index, 1)
+    wishlist = Number.isInteger(next.fromWishlist)
+      ? state.wishlist.map((b, i) => (i === next.fromWishlist ? next.book : b))
+      : [...state.wishlist, next.book]
+  } else {
+    currentReads.splice(index, 1)
+  }
+
   commit({
     ...state,
-    currentReads: state.currentReads.filter((_, i) => i !== index),
+    currentReads,
+    wishlist: sortedWishlist(wishlist),
     finished: [entry, ...state.finished]
   })
+}
+
+// ---- series ----
+
+// The answer from the series lookup, landing late.
+//
+// Patched by bookKey rather than by position because the lookup is fired and
+// forgotten at add time: by the time it returns, the book may have moved, been
+// finished, or been removed. Every copy is patched, in every list, because the
+// same book can legitimately be on the pile and in the record at once.
+//
+// `series` null means the lookup said "not a series", and that CLEARS whatever
+// the free Open Library parser guessed — the Worker is the authority when it
+// answers, and the parser is only there for when it can't be reached. A lookup
+// that failed never gets here; enrich() drops those.
+//
+// seriesDetached survives untouched — it isn't one of the fields replaced, so a
+// reader who said stop has not un-said it by being handed a fresh answer about
+// the series.
+const SERIES_FIELDS = ['seriesKey', 'seriesName', 'seriesPosition', 'seriesTotal', 'seriesVolumes']
+
+export function applySeries(key, series){
+  if(!key) return
+  let changed = false
+
+  const patch = (book) => {
+    if(!book || bookKey(book) !== key) return book
+    const { seriesKey, seriesName, seriesPosition, seriesTotal, seriesVolumes, ...rest } = book
+    const next = series ? { ...rest, ...series } : rest
+    // Compare the series fields specifically rather than the whole book. A
+    // whole-object compare would have to be order-insensitive to be right —
+    // rebuilding an object reorders its keys — and these are the only fields
+    // this function can change anyway. Getting it wrong would mean every
+    // no-op answer writing to storage and syncing to the cloud.
+    for(const f of SERIES_FIELDS){
+      if(JSON.stringify(book[f]) !== JSON.stringify(next[f])){ changed = true; break }
+    }
+    return next
+  }
+
+  const nextState = {
+    ...state,
+    currentReads: state.currentReads.map(patch),
+    wishlist: state.wishlist.map(patch),
+    finished: state.finished.map(patch)
+  }
+  if(!changed) return
+  commit(nextState)
+}
+
+// "Stop handing me volumes of this."
+//
+// A reader who wants to stop at book 3, or who is reading out of order, or who
+// was offered the wrong next book, is never argued with. Detaching marks every
+// copy of the series that's still ahead of them — on Current Reads and on the
+// pile — so nothing advances and nothing groups.
+//
+// The RECORD is deliberately untouched. Detaching says "this isn't a series to
+// me going forward"; it does not say "un-group the seven books I already read",
+// and silently rearranging someone's history to answer a different question
+// would be the app overreaching.
+export function detachSeries(seriesKey){
+  if(!seriesKey) return
+  const mark = (b) => (b && b.seriesKey === seriesKey && !b.seriesDetached
+    ? { ...b, seriesDetached: true } : b)
+  const currentReads = state.currentReads.map(mark)
+  const wishlist = state.wishlist.map(mark)
+  if(currentReads.every((b, i) => b === state.currentReads[i]) &&
+     wishlist.every((b, i) => b === state.wishlist[i])) return
+  commit({ ...state, currentReads, wishlist })
+}
+
+// Everything in the record belonging to one series. The confirmation that names
+// the count lives in the row that calls this — a single control that can delete
+// seven books has to say so before it does.
+export function removeFinishedSeries(seriesKey){
+  if(!seriesKey) return
+  const rest = state.finished.filter(b => !(inSeries(b) && b.seriesKey === seriesKey))
+  if(rest.length === state.finished.length) return
+  commit({ ...state, finished: rest })
+}
+
+// "Read again" on a series row: the earliest volume in the record goes back on
+// the pile CARRYING its series fields, so starting it re-forms the series entry
+// and advancing works again. Re-reading a series means reading it from the
+// start, and the record is left exactly as it stands — both are true at once.
+//
+// The earliest volume we HAVE, not book 1: someone who only ever read books 3
+// to 7 is handed book 3, because inventing a book 1 we've never seen would be
+// inventing a fact.
+export function readAgainSeries(seriesKey){
+  if(!seriesKey) return
+  const volumes = state.finished.filter(b => inSeries(b) && b.seriesKey === seriesKey)
+  if(!volumes.length) return
+  const first = [...volumes].sort(byVolume)[0]
+  const { finishedAt, feeling, moods, setDown, notes, rating, ...book } = first
+  commit({ ...state, wishlist: sortedWishlist([...state.wishlist, book]) })
 }
 
 // Move a current read to a new position. Which book is first is not cosmetic —
@@ -166,6 +294,12 @@ export function reorderCurrent(from, to){
 // to account for, and the point of this action is that it costs nothing to be
 // honest about abandoning a book. Older entries may still carry a feeling from
 // when it was asked; the record renders them either way.
+//
+// NEITHER OUTCOME ADVANCES A SERIES, and that's the point rather than an
+// oversight. Being handed book 2 of something you just gave up on is the app
+// arguing with you — abandonedSeries() in the recommender already encodes
+// exactly this rule for suggestions. A pause is a pause: the book goes back on
+// the pile at the volume it was on, and picking it up again resumes from there.
 export function setDownCurrent(index, { outcome = 'later' } = {}){
   const book = state.currentReads[index]
   if(!book) return

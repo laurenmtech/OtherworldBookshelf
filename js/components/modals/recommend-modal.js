@@ -11,6 +11,7 @@ import { coverImg } from '../../ui/cover.js'
 import { subtitle } from '../../ui/book-meta.js'
 import { MOODS } from '../../state/moods.js'
 import { askForBooks, messageFor } from '../../services/recommend.js'
+import { enrich } from '../../services/series.js'
 import { getState, addToTbr, addAlreadyRead, passSuggestion } from '../../state/store.js'
 
 export function mountRecommendModal(root){
@@ -117,11 +118,19 @@ export function mountRecommendModal(root){
         results.appendChild(el('p', { className: 'muted' }, 'That’s all of them.'))
       }
     }
+    // Same as the book modal: the book lands first, the series lookup follows
+    // it and is never awaited. A suggestion accepted offline is still accepted.
+    const take = (add) => () => {
+      const clean = strip(book)
+      add(clean)
+      enrich(clean)
+      done()
+    }
     const actions = el('div', { className: 'list-actions' },
       el('button', { type: 'button', className: 'btn primary',
-        onClick: () => { addToTbr(strip(book)); done() } }, '+ TBR'),
+        onClick: take(addToTbr) }, '+ TBR'),
       el('button', { type: 'button', className: 'btn',
-        onClick: () => { addAlreadyRead(strip(book)); done() } }, 'Already read'),
+        onClick: take(addAlreadyRead) }, 'Already read'),
       el('button', { type: 'button', className: 'btn',
         onClick: () => { passSuggestion(book); done() } }, 'Pass')
     )

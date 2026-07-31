@@ -147,6 +147,42 @@
   border-radius:999px; color:var(--muted); border:1px solid var(--line-3);
 }
 
+/* ── Series ─────────────────────────────────────────────────────────────────
+   A series reads as one thing being read. On Current Reads the series is the
+   heading and the volume sits beneath it, so the eye lands on what you're
+   reading before which part of it you're on. */
+.series-volume{ color:var(--accent-2); font-weight:600; margin-bottom:2px; overflow-wrap:anywhere }
+
+/* "Stop the series" is a correction, not an action anyone is looking for, so it
+   stays quieter than the buttons beside it — present when wanted, never the
+   thing your eye goes to. */
+.series-detach{ color:var(--muted); border-color:var(--line-2) }
+.series-detach:hover{ color:var(--accent) }
+
+/* The announcement in the finish modal. Announced, never silent — and the
+   correction point, which is why the refusal sits inside the same box. */
+.series-next{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  margin:12px 0 0; padding:10px 12px; border-radius:9px;
+  background:var(--sunken); border:1px solid var(--line-2);
+}
+.series-next p{ margin:0; flex:1; min-width:0; color:var(--accent-2); font-weight:600 }
+.series-next .btn{ padding:5px 10px; font-size:12px }
+
+/* A series entry in the record: one row, with its volumes folded inside it. */
+.series-volumes{
+  list-style:none; margin:4px 0 0; padding:8px 0 0; width:100%;
+  border-top:1px solid var(--line-1);
+  display:flex; flex-direction:column; gap:6px;
+}
+.series-volume-row{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start;
+  justify-content:space-between;
+  padding:8px 10px; border-radius:7px; background:var(--sunken);
+}
+.series-volume-row .list-actions{ margin-top:0; align-self:center; animation:none }
+.series-volume-row strong{ font-weight:600; overflow-wrap:anywhere }
+
 /* saved-place link styling (libraries, bookstores) */
 .place-panel .list a{ color:var(--accent-2); text-decoration:underline; word-break:break-all }
 

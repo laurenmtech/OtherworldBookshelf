@@ -1,16 +1,23 @@
-// The entire backend: one route, one file's worth of decisions.
+// The entire backend: two routes, one file's worth of decisions.
 //
 //   POST /recommend
 //   Authorization: Bearer <Firebase ID token>
 //   { moods[], freeText, tasteSummary, exclude[] }
 //     → { suggestions: [{title, author, why}], remaining }
 //
+//   POST /series
+//   Authorization: Bearer <Firebase ID token>
+//   { title, author }
+//     → { series: null }
+//     → { series: { key, name, position?, total?, next? } }
+//
 // The Anthropic key lives in a Worker secret and never reaches a browser. The
 // user id comes from the verified token and never from the request body. And
 // nothing about what anyone reads is logged — see logging note at the bottom.
 import { verifyIdToken } from './firebase.js'
-import { claim, refund, DAILY_CAP } from './quota.js'
+import { claim, refund, readUsed, DAILY_CAP, SERIES_DAILY_CAP } from './quota.js'
 import { recommend } from './recommend.js'
+import { lookupSeries } from './series.js'
 
 // Typed so the UI can show them verbatim rather than inventing its own copy for
 // each failure. The status codes matter as much as the strings: 429 is what a
@@ -55,6 +62,89 @@ function allowedOrigins(env){
     .split(',').map(s => s.trim()).filter(Boolean)
 }
 
+// ── POST /recommend ─────────────────────────────────────────────────────────
+
+async function handleRecommend(env, uid, body, cors){
+  // Whatever the body claims about identity is ignored — `uid` is the only one
+  // that exists as far as this Worker is concerned.
+  const ask = {
+    moods: Array.isArray(body.moods) ? body.moods.slice(0, 20).map(String) : [],
+    freeText: typeof body.freeText === 'string' ? body.freeText.slice(0, 500) : '',
+    tasteSummary: typeof body.tasteSummary === 'string' ? body.tasteSummary.slice(0, 4000) : '',
+    exclude: Array.isArray(body.exclude) ? body.exclude.slice(0, 300).map(String) : []
+  }
+
+  // ---- how many left ----
+  const cap = Number(env.DAILY_CAP) > 0 ? Number(env.DAILY_CAP) : DAILY_CAP
+  let claimed
+  try{
+    claimed = await claim(env.QUOTA, uid, cap)
+  }catch(e){
+    return fail('upstream_failure', cors)
+  }
+  if(!claimed.ok) return json(
+    { error: { type: 'over_quota', message: overQuotaMessage(cap) }, remaining: 0 },
+    ERRORS.over_quota.status, cors
+  )
+
+  // ---- ask ----
+  try{
+    const { suggestions } = await recommend(env.ANTHROPIC_API_KEY, ask)
+    return json({ suggestions, remaining: claimed.remaining }, 200, cors)
+  }catch(e){
+    // The credit goes back: an outage on our side shouldn't spend someone's
+    // allowance. Best-effort by nature — see quota.js.
+    await refund(env.QUOTA, uid, cap)
+    return fail('upstream_failure', cors)
+  }
+}
+
+// ── POST /series ────────────────────────────────────────────────────────────
+
+// Metered differently from /recommend, on purpose.
+//
+// A recommendation is asked for; a series lookup happens because someone added
+// a book. So the counter here is an abuse ceiling rather than an allowance: it
+// is never surfaced, it has its own generous cap, and — because a cache hit
+// costs nothing to serve — it is only charged when we actually had to ask the
+// model. That is what makes "the second reader to add this book costs nothing"
+// true rather than merely cheap.
+//
+// The cap is checked BEFORE the ask and incremented AFTER it, which is a wider
+// race than /recommend's claim-first. That is the right trade here: the failure
+// mode is someone slightly exceeding an unstated ceiling, and the alternative
+// charges every cache hit.
+async function handleSeries(env, uid, body, cors){
+  const title = typeof body.title === 'string' ? body.title.trim().slice(0, 300) : ''
+  const author = typeof body.author === 'string' ? body.author.trim().slice(0, 200) : ''
+  if(!title) return fail('bad_request', cors)
+
+  const cap = Number(env.SERIES_DAILY_CAP) > 0 ? Number(env.SERIES_DAILY_CAP) : SERIES_DAILY_CAP
+  try{
+    if(await readUsed(env.QUOTA, uid, 's') >= cap){
+      return json({ error: { type: 'over_quota', message: ERRORS.over_quota.message } },
+        ERRORS.over_quota.status, cors)
+    }
+  }catch(e){
+    return fail('upstream_failure', cors)
+  }
+
+  try{
+    const { series, cached } = await lookupSeries(env, { title, author })
+    if(!cached) await claim(env.QUOTA, uid, cap, 's')
+    return json({ series: series || null }, 200, cors)
+  }catch(e){
+    return fail('upstream_failure', cors)
+  }
+}
+
+// ── Dispatch ────────────────────────────────────────────────────────────────
+
+const ROUTES = {
+  '/recommend': handleRecommend,
+  '/series': handleSeries
+}
+
 export default {
   async fetch(request, env){
     const origin = request.headers.get('Origin') || ''
@@ -63,7 +153,8 @@ export default {
     if(request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
 
     const { pathname } = new URL(request.url)
-    if(pathname !== '/recommend') return fail('not_found', cors)
+    const handler = ROUTES[pathname]
+    if(!handler) return fail('not_found', cors)
     if(request.method !== 'POST') return fail('bad_request', cors)
 
     // ---- who ----
@@ -87,38 +178,7 @@ export default {
     }
     if(!body || typeof body !== 'object') return fail('bad_request', cors)
 
-    // Whatever the body claims about identity is ignored — `uid` above is the
-    // only one that exists as far as this Worker is concerned.
-    const ask = {
-      moods: Array.isArray(body.moods) ? body.moods.slice(0, 20).map(String) : [],
-      freeText: typeof body.freeText === 'string' ? body.freeText.slice(0, 500) : '',
-      tasteSummary: typeof body.tasteSummary === 'string' ? body.tasteSummary.slice(0, 4000) : '',
-      exclude: Array.isArray(body.exclude) ? body.exclude.slice(0, 300).map(String) : []
-    }
-
-    // ---- how many left ----
-    const cap = Number(env.DAILY_CAP) > 0 ? Number(env.DAILY_CAP) : DAILY_CAP
-    let claimed
-    try{
-      claimed = await claim(env.QUOTA, uid, cap)
-    }catch(e){
-      return fail('upstream_failure', cors)
-    }
-    if(!claimed.ok) return json(
-      { error: { type: 'over_quota', message: overQuotaMessage(cap) }, remaining: 0 },
-      ERRORS.over_quota.status, cors
-    )
-
-    // ---- ask ----
-    try{
-      const { suggestions } = await recommend(env.ANTHROPIC_API_KEY, ask)
-      return json({ suggestions, remaining: claimed.remaining }, 200, cors)
-    }catch(e){
-      // The credit goes back: an outage on our side shouldn't spend someone's
-      // allowance. Best-effort by nature — see quota.js.
-      await refund(env.QUOTA, uid, cap)
-      return fail('upstream_failure', cors)
-    }
+    return handler(env, uid, body, cors)
   }
 }
 

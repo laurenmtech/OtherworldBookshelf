@@ -65,15 +65,79 @@ export function authorsToString(names){
   return list.slice(0, 2).join(' & ')
 }
 
+// ── Series ──────────────────────────────────────────────────────────────────
+//
+// The whole of Phase 7, on or off. It lives HERE rather than beside the network
+// code in services/series.js because the store, the record and Current Reads
+// all have to ask "is this on?" and none of them should have to import a module
+// that can make a request to find out. services/series.js re-exports it.
+export const SERIES = true
+
+// A book carries its series as four optional fields plus a pointer forward:
+//
+//   seriesKey       slug of the name — the identity everything groups on
+//   seriesName      "Throne of Glass"
+//   seriesPosition  where THIS book sits, 1-based. Absent when unknown
+//   seriesTotal     how many volumes the series has
+//   seriesVolumes   every volume, in publication order:
+//                     [{ title, verified, author?, workKey?, coverId?, year? }]
+//                   Absent for a standalone or a book nobody has looked up.
+//   seriesDetached  true once the reader has said stop. See detachSeries().
+//
+// seriesVolumes is carried by EVERY volume of the series rather than looked up
+// per book, and that redundancy is the point: advancing from one volume to the
+// next is then array indexing over data already in hand — local, offline,
+// instant, and with no chance for a second lookup to contradict the first.
+// It costs a few KB on a long series, which is not a constraint here.
+//
+// Nothing else is stored. A series is a normal book carrying these fields, and
+// every place a series appears as one row is a rendering decision made at paint
+// time — so sync, export, migration, search, the filters and the recommender's
+// exclusion list all keep operating on individual books and never learn that
+// series exist.
+
+// Whether this book takes part in series behaviour at all. Every caller asks
+// this rather than testing seriesKey directly, so the flag and the reader's
+// detach decision are honoured in one place.
+export function inSeries(book){
+  return !!(SERIES && book && book.seriesKey && !book.seriesDetached)
+}
+
+export function sameSeries(a, b){
+  return inSeries(a) && inSeries(b) && a.seriesKey === b.seriesKey
+}
+
+// Earliest volume first: by position where it's known, and by when it was
+// finished otherwise — "the first one they read", as closely as we can tell.
+// Anything undated sorts last rather than as 1970.
+export function byVolume(a, b){
+  const pa = Number.isFinite(a && a.seriesPosition) ? a.seriesPosition : Infinity
+  const pb = Number.isFinite(b && b.seriesPosition) ? b.seriesPosition : Infinity
+  if(pa !== pb) return pa - pb
+  const ta = Date.parse(a && a.finishedAt)
+  const tb = Date.parse(b && b.finishedAt)
+  if(Number.isNaN(ta) && Number.isNaN(tb)) return 0
+  if(Number.isNaN(ta)) return 1
+  if(Number.isNaN(tb)) return -1
+  return ta - tb
+}
+
 // "The Stormlight Archive #1", "Discworld, Book 12", "Wayfarers no. 3" — the
 // position is a suffix on the name often enough to be worth pulling apart, and
 // absent often enough that finding none must be normal rather than a failure.
 const POSITION = /[,;]?\s*(?:#|no\.?\s*|bk\.?\s*|book\s+|vol\.?\s*|part\s+)(\d+(?:\.\d+)?)\s*$/i
 
-function slug(s){
+// Must match slug() in api/src/series.js. A book whose series came from the
+// Worker and a book whose series was parsed off an Open Library subject tag
+// have to land on the same key, or one series renders as two.
+export function slug(s){
   return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
+// The free fallback. It reads a series off an Open Library subject tag and is
+// right about a third of the time, which beats nothing when the Worker can't be
+// reached — see the measurement in services/series.js for why it can only ever
+// be a fallback.
 export function parseSeries(raw){
   const text = String(raw || '').trim()
   if(!text) return null

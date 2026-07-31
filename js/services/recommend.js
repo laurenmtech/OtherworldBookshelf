@@ -11,7 +11,10 @@ import { idToken } from '../state/auth.js'
 import { searchBooks } from './books.js'
 import { bookKey } from './book-shape.js'
 
-export const API_URL = 'https://otherworld-reads-api.laurenmtech-aef.workers.dev/recommend'
+// One base, two routes. services/series.js builds /series off this, so the
+// deployment only has to be written down once.
+export const API_BASE = 'https://otherworld-reads-api.laurenmtech-aef.workers.dev'
+export const API_URL = `${API_BASE}/recommend`
 
 const TIMEOUT_MS = 45000
 
