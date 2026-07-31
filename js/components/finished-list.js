@@ -16,7 +16,7 @@ import { el, escapeHtml, iconButton } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
 import { bookKey } from '../services/books.js'
 import { tagRow } from '../ui/book-meta.js'
-import { removeFinished } from '../state/store.js'
+import { removeFinished, readAgain } from '../state/store.js'
 import { feelingLabel, SET_DOWN_LABEL } from '../state/moods.js'
 
 // Newest first, whatever order the stored array happens to be in. Anything
@@ -66,6 +66,10 @@ function row({ item, index }){
       className: 'btn', type: 'button', onClick: () => alert(item.notes)
     }, 'Notes'))
   }
+  // Puts a clean copy on the pile and leaves this entry untouched — a re-read
+  // is a book you've read AND a book that's next, and the record shouldn't
+  // quietly lose a year of reading to make the sentence simpler.
+  menu.appendChild(iconButton('bookmark', 'Read again', () => readAgain(index)))
   menu.appendChild(iconButton('trash', 'Remove', () => removeFinished(index)))
 
   dropdown.appendChild(toggle)

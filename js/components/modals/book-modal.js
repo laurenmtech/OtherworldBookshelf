@@ -12,7 +12,7 @@ import { revealBook } from '../../ui/reveal.js'
 import { mountTypeahead } from '../typeahead.js'
 import { findExisting, bookKey, FORMATS } from '../../services/books.js'
 import {
-  addToTbr, editTbr, addCurrent, editCurrent, getState, CURRENT_CAP
+  addToTbr, editTbr, addCurrent, editCurrent, addAlreadyRead, getState, CURRENT_CAP
 } from '../../state/store.js'
 
 const WHERE = {
@@ -37,7 +37,7 @@ export function mountBookModal(root){
 
   const formats = singleSelect(root.querySelector('#format-chips'), FORMATS)
 
-  let dest = 'tbr'          // 'tbr' | 'current'
+  let dest = 'tbr'          // 'tbr' | 'current' | 'finished'
   let editIndex = null      // null = adding, number = editing that entry
   let editing = null        // the entry being edited, so its extra fields survive
   let acknowledged = null   // a duplicate the user has been shown and may override
@@ -121,6 +121,10 @@ export function mountBookModal(root){
       const next = { ...book }
       if(format) next.format = format
       if(dest === 'current') addCurrent(next)
+      // A book read before the app existed. It lands undated on purpose —
+      // see addAlreadyRead — so the record never claims you finished
+      // something today that you finished years ago.
+      else if(dest === 'finished') addAlreadyRead(next)
       else addToTbr(next)
     }
     modal.close()
@@ -160,7 +164,9 @@ export function mountBookModal(root){
     const isEdit = editIndex !== null
     heading.textContent = isEdit
       ? 'Edit book'
-      : (dest === 'current' ? 'Start a book' : 'Add to TBR Pile')
+      : (dest === 'current' ? 'Start a book'
+        : dest === 'finished' ? 'Add a book you’ve read'
+        : 'Add to TBR Pile')
 
     if(searchField) searchField.hidden = isEdit
     if(manualToggle) manualToggle.hidden = isEdit

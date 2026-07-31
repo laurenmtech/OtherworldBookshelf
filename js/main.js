@@ -25,7 +25,7 @@ import { onAuthChange } from './state/auth.js'
 // releases within it. So phase 2 shipped as 0.2, its next release is 0.21, and
 // finishing phase 3 resets to 0.3. Phase 7 — the "ready to share" milestone —
 // is what makes this 1.0.
-export const APP_VERSION = '0.64'
+export const APP_VERSION = '0.65'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
@@ -59,7 +59,7 @@ function mountAll(){
   // store whether or not they're the visible tab, which costs nothing at this
   // size and means switching tabs never waits on a render.
   mountReading(readingEl, { finishModal, bookModal, setDownModal })
-  mountFinished(finishedEl)
+  mountFinished(finishedEl, { bookModal })
 
   // Keeps the document wearing whatever the store says, which is how a vibe
   // follows you to a second device after signing in.

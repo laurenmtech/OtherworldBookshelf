@@ -105,6 +105,17 @@ export function editCurrent(index, book){
   commit({ ...state, currentReads: next })
 }
 
+// Taking a book off the shelf without saying anything about it: a mis-add, a
+// wrong edition, a book you'd rather not have a record of. Deliberately NOT the
+// same as finishing or setting down — those both write to the record, and this
+// writes nothing at all. Nothing displaced comes back, because nothing was
+// displaced by removing.
+export function removeCurrent(index){
+  const book = state.currentReads[index]
+  if(!book) return
+  commit({ ...state, currentReads: state.currentReads.filter((_, i) => i !== index) })
+}
+
 export function finishCurrent(index, { feeling = null, moods = [] } = {}){
   const book = state.currentReads[index]
   if(!book) return
@@ -209,6 +220,18 @@ export function addAlreadyRead(book){
 }
 
 // ---------- finished ----------
+
+// Re-reading a book does not un-read it. The record keeps the entry exactly as
+// it stands — the date, the feeling, the vibes — and a clean copy goes on the
+// pile. Both are true at once: you have read it, and it is what's next. The
+// finish metadata is stripped on the way over so the TBR entry is a book again
+// rather than a half-erased memory of finishing it.
+export function readAgain(index){
+  const item = state.finished[index]
+  if(!item) return
+  const { finishedAt, feeling, moods, setDown, notes, rating, ...book } = item
+  commit({ ...state, wishlist: sortedWishlist([...state.wishlist, book]) })
+}
 
 export function removeFinished(index){
   commit({ ...state, finished: state.finished.filter((_, i) => i !== index) })
