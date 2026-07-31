@@ -1,21 +1,14 @@
-// The Hidden Shelf — the one shelf that isn't for books. Your card, the places
-// you borrow and buy from, and your record.
-//
-// Named for what it is rather than what it does: "settings" is a word for
-// software, and this is a reading app. The bottom-sheet presentation it happens
-// to use lives in ui/sheet.js, where "sheet" means the interaction pattern.
-//
-// Vibe lives here as a name and a Change button; the picker itself is its own
-// component, because it's also what a brand-new reader meets before they ever
-// see this sheet.
+// The Hidden Shelf — the one shelf that isn't for books. Your card, the places you
+// borrow and buy from, and your record: export, import, delete.
 import { el } from '../ui/dom.js'
 import { createSheet } from '../ui/sheet.js'
 import { mountPlaceList } from './places.js'
 import { mountHeader } from './header.js'
 import { multiSelect } from '../ui/chips.js'
+import { askConfirm, showMessage } from '../ui/dialog.js'
 import {
   getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent,
-  reorderLibrary, setBorrowFormats, setFindLinks
+  reorderLibrary, setBorrowFormats, setFindLinks, importShelf
 } from '../state/store.js'
 import { BORROW_FORMATS, FIND_LINKS } from '../state/migrate.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
@@ -28,8 +21,6 @@ function stamp(){
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-// A plain JSON file, in the shape the app actually stores. Readable, and the
-// thing you'd hand to an importer.
 function exportShelf(){
   const json = JSON.stringify(toStorage(getState()), null, 2)
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
@@ -46,14 +37,8 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
   const sheet = createSheet(root)
   openButton && openButton.addEventListener('click', () => sheet.open())
 
-  // Account controls moved out of the header and into the sheet; mountHeader
-  // still owns them, it just renders somewhere quieter now.
   mountHeader(root.querySelector('#auth-area'))
 
-  // The picker layers above the sheet, so backing out of it without choosing
-  // puts you back here rather than at the top of the app. Choosing is the other
-  // case: the whole point of a new vibe is seeing your shelf wearing it, so a
-  // pick drops both layers and hands you to the reader.
   const changeVibeBtn = root.querySelector('#change-vibe')
   changeVibeBtn && vibePicker && changeVibeBtn.addEventListener('click', () => {
     vibePicker.open({
@@ -79,14 +64,9 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     select: s => s.library,
     remove: removeLibrary,
     reorder: reorderLibrary,
-    // Long-standing behaviour, kept: a library entry can become the current
-    // book, with its name as the title.
     extraAction: (_entry, idx) => iconButton('finish', 'Set current', () => makeLibraryCurrent(idx))
   })
 
-  // Which formats the borrow rows are allowed to be about. Built once — the
-  // options are fixed — and only the selection is kept in step with the store,
-  // so a chip never rebuilds itself out from under the tap that changed it.
   const FORMAT_LABELS = { ebook: 'Ebook', audiobook: 'Audiobook' }
   const formatChips = multiSelect(
     root.querySelector('#borrow-format-chips'),
@@ -99,7 +79,6 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     if(want !== formatChips.getValue().join()) formatChips.setValue(s.borrowFormats || [])
   })
 
-  // Some readers always borrow, some always buy. Built once, as above.
   const FIND_LABELS = { library: 'My library', shop: 'A bookshop' }
   const findChips = multiSelect(
     root.querySelector('#find-link-chips'),
@@ -121,17 +100,68 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
   const exportBtn = root.querySelector('#export-data')
   exportBtn && exportBtn.addEventListener('click', exportShelf)
 
+  const importBtn = root.querySelector('#import-data')
+  const importInput = root.querySelector('#import-file')
+  importBtn && importInput && importBtn.addEventListener('click', () => importInput.click())
+
+  importInput && importInput.addEventListener('change', async () => {
+    const file = importInput.files && importInput.files[0]
+    importInput.value = ''
+    if(!file) return
+
+    let raw
+    try{
+      raw = JSON.parse(await file.text())
+    }catch(err){
+      await showMessage({
+        title: 'That file couldn’t be read',
+        body: `“${file.name}” isn’t valid JSON, so there was nothing to import.\n\n` +
+              'It should be a file this app exported — they’re named like ' +
+              'otherworld-reads-2026-07-31.json.'
+      })
+      return
+    }
+
+    if(!raw || typeof raw !== 'object' || Array.isArray(raw)){
+      await showMessage({
+        title: 'That doesn’t look like a shelf',
+        body: `“${file.name}” is valid JSON, but it isn’t in the shape this app exports, ` +
+              'so nothing was imported.'
+      })
+      return
+    }
+
+    const added = importShelf(raw)
+    const lines = [
+      [added.currentReads, 'current read', 'current reads'],
+      [added.wishlist, 'book on the pile', 'books on the pile'],
+      [added.finished, 'book in your record', 'books in your record'],
+      [added.library, 'library', 'libraries'],
+      [added.bookstores, 'bookshop', 'bookshops']
+    ].filter(([n]) => n > 0)
+      .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
+
+    await showMessage({
+      title: lines.length ? 'Imported' : 'Nothing new to add',
+      body: lines.length
+        ? `Added ${lines.join(', ')}.\n\nNothing already on your shelf was changed.`
+        : `Everything in “${file.name}” was already here, so nothing changed.`
+    })
+  })
+
   const deleteBtn = root.querySelector('#delete-data')
-  deleteBtn && deleteBtn.addEventListener('click', () => {
+  deleteBtn && deleteBtn.addEventListener('click', async () => {
     const { currentReads, wishlist, finished, library, bookstores } = getState()
     const total = currentReads.length + wishlist.length + finished.length + library.length + bookstores.length
-    const ok = confirm(
-      `Delete everything?\n\n` +
-      `This erases ${total} item${total === 1 ? '' : 's'} — current reads, the TBR pile, ` +
-      `your finished books, your libraries and your bookstores.\n\n` +
-      `If you're signed in it deletes them from the cloud too, on every device. ` +
-      `This cannot be undone — export first if you might want them back.`
-    )
+    const ok = await askConfirm({
+      title: 'Delete everything?',
+      body: `This erases ${total} item${total === 1 ? '' : 's'} — current reads, the TBR pile, ` +
+            'your finished books, your libraries and your bookstores.\n\n' +
+            'If you’re signed in it deletes them from the cloud too, on every device. ' +
+            'This cannot be undone — export first if you might want them back.',
+      confirm: 'Delete everything',
+      danger: true
+    })
     if(ok) resetAll()
   })
 

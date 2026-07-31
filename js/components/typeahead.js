@@ -1,13 +1,5 @@
-// The book typeahead: type three characters, get real books.
-//
-// Combobox semantics done properly, because this is the one control in the app
-// that a keyboard and a screen reader have to agree about. The input is the
-// combobox, the <ul> is its listbox, and the highlighted option is named by
-// aria-activedescendant — focus never leaves the input, which is what lets you
-// keep typing while arrowing through results.
-//
-// The network, the debounce and the request supersession all belong to
-// services/books.js. This file is the list, the keys and the announcements.
+// The book search combobox. Debounced, and every request carries a sequence number
+// so a slow reply to "pir" can't repaint over a fast reply to "piranesi".
 import { el, escapeHtml } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
 import { createBookSearch, MIN_QUERY } from '../services/books.js'
@@ -21,10 +13,6 @@ const MESSAGES = {
   error: 'Search is unavailable right now — add it manually.'
 }
 
-// root must contain [data-typeahead-input], [data-typeahead-results] and
-// [data-typeahead-status]. onPick receives a normalised book; onState receives
-// the search state, which is how the modal knows to open manual entry when the
-// search can't be reached.
 export function mountTypeahead(root, { onPick, onState } = {}){
   if(!root) return { focus(){}, reset(){}, isOpen: () => false }
 
@@ -40,8 +28,6 @@ export function mountTypeahead(root, { onPick, onState } = {}){
     onResults: (books) => { results = books; active = -1; paint() },
     onState: (s) => {
       if(status) status.textContent = MESSAGES[s] || ''
-      // 'results' says how many, so the count is spoken once rather than on
-      // every keystroke that returns the same list length.
       if(s === 'results' && status){
         status.textContent = `${results.length} result${results.length === 1 ? '' : 's'}.`
       }
@@ -81,8 +67,6 @@ export function mountTypeahead(root, { onPick, onState } = {}){
         html: `<div class="typeahead-title">${escapeHtml(book.title)}</div>` +
               `<div class="muted">${bits}</div>${series}`
       }))
-      // mousedown, not click: a click would fire after the input's blur, and by
-      // then a modal that closes on blur-ish behaviour has already moved on.
       li.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i) })
       li.addEventListener('click', () => pick(i))
       list.appendChild(li)
@@ -119,13 +103,10 @@ export function mountTypeahead(root, { onPick, onState } = {}){
     else if(e.key === 'Home' && results.length){ e.preventDefault(); active = 0; paint() }
     else if(e.key === 'End' && results.length){ e.preventDefault(); active = results.length - 1; paint() }
     else if(e.key === 'Enter'){
-      // Enter with a highlighted result takes it; Enter with nothing highlighted
-      // must not submit the form and silently add whatever was half-typed.
       e.preventDefault()
       if(active >= 0) pick(active)
     }
     else if(e.key === 'Escape' && results.length){
-      // Dismiss the list first; a second Escape then closes the modal.
       e.stopPropagation()
       search.cancel()
       close()

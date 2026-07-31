@@ -1,16 +1,8 @@
-// Add a book — to the TBR pile, to Current Reads, or straight to the record for
-// something read before this app existed. Three destinations, same three
-// questions, differing only in where the answer lands.
+// Add a book — to the pile, to Current Reads, or straight to the record.
 //
-// Adding is search-first: type, pick, done, one tap, fully populated. Typing it
-// yourself is never further away than the button underneath the results, and it
-// is what you get automatically when the search can't be reached — adding a
-// book must never depend on a network.
-//
-// There is no edit. Books arrive from a real catalogue with their own title,
-// author, cover and series, so the thing you'd have edited is usually already
-// right — and when it isn't, the honest fix is to remove it and search again
-// rather than to hand-correct a record that's meant to mirror a real book.
+// Search-first, and committing is synchronous: a search result already carries its
+// genre and series. The series lookup fires AFTER the book is on the shelf and is
+// never awaited — adding must not depend on a network.
 import { createModal } from '../../ui/modal.js'
 import { escapeHtml } from '../../ui/dom.js'
 import { revealBook } from '../../ui/reveal.js'
@@ -45,8 +37,6 @@ export function mountBookModal(root){
 
   const typeahead = mountTypeahead(searchField, {
     onPick: (book) => commit(book),
-    // Offline, or the search is down: open the manual fields rather than leave
-    // someone tapping a box that can't answer.
     onState: (s) => { if(s === 'offline' || s === 'error') showManual(false) }
   })
 
@@ -66,9 +56,6 @@ export function mountBookModal(root){
     dupNote.innerHTML = ''
   }
 
-  // Say where the book already is, and offer to go there. Returns true when the
-  // add should stop; a second attempt on the same book goes through, because
-  // two editions of one book is a real thing and this is a note, not a rule.
   function blockedAsDuplicate(book){
     const found = findExisting(getState(), book)
     if(!found) return false
@@ -94,23 +81,10 @@ export function mountBookModal(root){
     return true
   }
 
-  // The one place a book enters the shelf from this modal, whether it came from
-  // a search result or from the two text fields. Synchronous, and it stays that
-  // way: a search result already carries its genre and its series, so picking
-  // one waits on nothing.
-  //
-  // The series lookup is the one thing here that touches the network, and it is
-  // deliberately fired AFTER the book is already on the shelf and never awaited.
-  // Adding a book must not depend on a network — the answer arrives a moment
-  // later and patches the book in place, or it doesn't and nothing is different.
-  // Add time is the right moment for it precisely because nobody is waiting:
-  // it's what makes finishing a volume later instant and entirely local.
   function commit(book){
     if(blockedAsDuplicate(book)) return
     const next = { ...book }
     if(dest === 'current') addCurrent(next)
-    // A book read before the app existed. It lands undated on purpose — see
-    // addAlreadyRead().
     else if(dest === 'finished') addAlreadyRead(next)
     else addToTbr(next)
     enrich(next)
@@ -128,9 +102,6 @@ export function mountBookModal(root){
 
   form && form.addEventListener('submit', (e) => {
     e.preventDefault()
-    // Submitting while the manual fields are still hidden means Enter in the
-    // search box with nothing highlighted — that is not an instruction to add
-    // an empty book.
     if(manualFields && manualFields.hidden) return
     const title = titleInput.value.trim()
     if(!title){ titleInput.focus(); return }
@@ -148,8 +119,6 @@ export function mountBookModal(root){
       : dest === 'finished' ? 'Add a book you’ve read'
       : 'Add to TBR Pile'
 
-    // Always the search-first state now: the fields underneath are the fallback
-    // for a book the catalogue doesn't have, not a second way in.
     if(searchField) searchField.hidden = false
     if(manualToggle) manualToggle.hidden = false
     if(manualFields) manualFields.hidden = true
@@ -157,9 +126,6 @@ export function mountBookModal(root){
     titleInput.value = ''
     authorInput.value = ''
 
-    // Nothing is refused at three. Say what adding a fourth will actually do,
-    // and name the book it will do it to, so the alternative — finishing one,
-    // or setting one down — is a choice rather than an error message.
     const state = getState()
     if(capNote){
       const displaced = dest === 'current' && state.currentReads.length >= CURRENT_CAP

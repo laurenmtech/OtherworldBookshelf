@@ -1,14 +1,4 @@
-// The vibe registry: id, display name, the webfonts it needs, and the colour
-// the installed PWA paints its status bar.
-//
-// Adding a sixth vibe is a file in styles/vibes/, one entry here, and one line
-// in the <link> list in index.html. Nothing else knows vibes exist —
-// components reference tokens and never ask which one is active.
-//
-// KEEP IN SYNC with the inline boot script in index.html, which needs the same
-// fonts and theme colours before any module can load. tests assert they match,
-// so drift is caught rather than discovered.
-
+// The five vibes: id, name, blurb, fonts, status-bar colour.
 export const VIBES = [
   {
     id: 'otherworld',

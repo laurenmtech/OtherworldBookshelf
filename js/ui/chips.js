@@ -1,8 +1,4 @@
-// The selectable-chip control. Single-select and multi-select share one look
-// and one option format.
-
-// options: [{ key, label }] or ['Label', …]
-// Returns { getValue, setValue, clear } — single-select value is a key or null.
+// The selectable-chip control, single- and multi-select.
 export function singleSelect(container, options, { onChange } = {}){
   const opts = options.map(o => (typeof o === 'string' ? { key: o, label: o } : o))
   let value = null
@@ -32,7 +28,6 @@ export function singleSelect(container, options, { onChange } = {}){
   }
 }
 
-// Returns { getValue, setValue, clear } — multi-select value is an array of keys.
 export function multiSelect(container, options, { onChange } = {}){
   const opts = options.map(o => (typeof o === 'string' ? { key: o, label: o } : o))
   const chosen = new Set()
@@ -57,8 +52,6 @@ export function multiSelect(container, options, { onChange } = {}){
 
   return {
     getValue: () => Array.from(chosen),
-    // Used when the option set is rebuilt from data and a selection has to
-    // survive the rebuild. Keys no longer on offer are simply dropped.
     setValue(keys){
       chosen.clear()
       for(const k of keys || []) if(opts.some(o => o.key === k)) chosen.add(k)

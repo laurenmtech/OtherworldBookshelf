@@ -1,9 +1,5 @@
-// "Find me something…" — describe a mood, get books back, triage in one tap.
-//
-// The headline feature, and the only part of the app with a backend behind it.
-// Everything here degrades to nothing: signed out it never appears, offline it
-// says so, and any failure is one plain sentence and a Retry inside the sheet —
-// the rest of the app is untouched by all of it.
+// "Find me something…" Everything here degrades to nothing: hidden when signed out,
+// and any failure is one plain sentence and a Retry inside the sheet.
 import { createModal } from '../../ui/modal.js'
 import { multiSelect } from '../../ui/chips.js'
 import { el, escapeHtml } from '../../ui/dom.js'
@@ -27,8 +23,6 @@ export function mountRecommendModal(root){
   const results = root.querySelector('#recommend-results')
   const remainingEl = root.querySelector('#recommend-remaining')
 
-  // The same vocabulary as the finish form. A mood you've used to describe a
-  // book you read is exactly the mood worth asking for more of.
   const moods = multiSelect(moodBox, MOODS)
 
   let asking = false
@@ -47,8 +41,6 @@ export function mountRecommendModal(root){
     if(results) results.innerHTML = ''
   }
 
-  // Only ever one of these on screen. Anything else and a stale result list can
-  // sit under a spinner, or an error under a result.
   function show(which){
     if(askView) askView.hidden = which !== 'ask'
     if(busy) busy.hidden = which !== 'busy'
@@ -59,8 +51,6 @@ export function mountRecommendModal(root){
     if(!errorBox) return
     errorBox.innerHTML = ''
     errorBox.appendChild(el('p', {}, message || messageFor(type)))
-    // Over quota isn't a failure to retry — it's an answer. Offering a Retry
-    // that can only fail again would be pretending otherwise.
     if(type !== 'over_quota' && type !== 'signed_out'){
       errorBox.appendChild(el('button', {
         type: 'button', className: 'btn', onClick: () => ask(lastAsk)
@@ -97,8 +87,6 @@ export function mountRecommendModal(root){
     ask({ moods: moods.getValue(), freeText: (freeInput && freeInput.value.trim()) || '' })
   })
 
-  // One tap, and the card goes away — the point of triage is that it's fast and
-  // you don't have to think about the same book twice.
   function card(book){
     const li = el('li', { className: 'suggestion' })
     const art = coverImg(book, { size: 'S', className: 'row-cover' })
@@ -118,8 +106,6 @@ export function mountRecommendModal(root){
         results.appendChild(el('p', { className: 'muted' }, 'That’s all of them.'))
       }
     }
-    // Same as the book modal: the book lands first, the series lookup follows
-    // it and is never awaited. A suggestion accepted offline is still accepted.
     const take = (add) => () => {
       const clean = strip(book)
       add(clean)
@@ -139,8 +125,6 @@ export function mountRecommendModal(root){
     return li
   }
 
-  // `why` is the model's reason for offering it, not a fact about the book —
-  // it has no business being stored on the shelf.
   function strip(book){
     const { why, ...rest } = book
     return rest

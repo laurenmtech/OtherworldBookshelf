@@ -1,23 +1,100 @@
-My personal library
+# Otherworld Bookshelf
 
-What this is
-- Static single-page site that opens to your Current Reads.
-- It exists so you remember what you read. Reading a book a day on a Kindle means no cover ever sits on a shelf and the titles go — this gives them back, so there's an answer when someone asks what you've read lately.
-- Search for a book and add it in one tap, keep up to three on the go at once, and finish or set one down whenever you like.
-- Keep a TBR pile of what's next, and a record of everything you've read.
-- Ask "What should I read?" for suggestions built from your own taste, checked against Open Library so nothing invented gets through.
-- See what your library has, and link straight to your own bookshop.
-- Data is stored in a database so you never lose your list
-- Nothing is shared. No feed, no followers, no ratings anyone else sees — and the recommender sends a short summary of your taste, never your shelf.
+A private reading shelf, so you remember what you read.
 
-Files
-- `index.html` — main page
-- `styles/` — visual styles, and a vibe you can change
-- `js/` — interaction and persistence
-- `ARCHITECTURE.md` — where things live and how state flows
+If you read on a Kindle, no cover ever sits on a shelf and the titles go. This
+gives them back — so there's an answer when someone asks what you've read
+lately.
 
-How to run
-- Serve the folder with a static server: `python3 -m http.server 8000`, then open http://localhost:8000. Opening `index.html` directly won't work — the app needs a real origin.
-- Go to laurenmtech.github.io/OtherworldBookshelf and tap to add to homescreen on your phone for the ideal experience
+**Live app:** [laurenmtech.github.io/OtherworldBookshelf](https://laurenmtech.github.io/OtherworldBookshelf)
+— open it on a phone and add it to your home screen; it works offline and looks
+like an app rather than a page.
 
+## What it does
 
+- **Search and add in one tap.** Type a title, pick it, done — cover, author,
+  year, genre and series all arrive filled in.
+- **Up to three books at once**, because reading three things at a time is
+  normal.
+- **Finish one, or set it down.** Setting a book down isn't failure — it's
+  either "not right now" (back on the pile, no mark against it) or "not for
+  me" (into the record, and never suggested again).
+- **Series travel together.** Finish a volume and the next one is already
+  there, announced rather than silently substituted, taking one slot however
+  long the series runs.
+- **A TBR pile with somewhere to go.** Each book carries a checkout link to
+  your library or your bookshop — and, where Libby can tell us, whether it's
+  available and how long the wait is.
+- **A record you can search and filter** by how a book felt and the words you
+  used about it.
+- **"What should I read?"** — suggestions built from your own taste, every one
+  checked against a real catalogue so nothing invented gets through.
+- **Five looks**, switchable any time, each one a complete theme.
+
+## Your data
+
+Nothing is shared. No feed, no followers, no ratings anyone else sees.
+
+Your shelf lives in your browser and works fully offline. Sign in and it also
+syncs to your own Firestore document, so it follows you between devices — that
+is the only thing signing in does.
+
+The recommender is the one feature that talks to a server, and it sends a short
+summary of your taste — a handful of loved titles and the words you reach for —
+never your shelf. Series lookups send one book's title and author and nothing
+else. The backend keeps no record of any of it: no logs, no prompts, no titles,
+just a per-day request counter that expires after 48 hours.
+
+You can export the whole shelf as JSON at any time, import one back (it merges,
+and never overwrites what's already there), or delete everything.
+
+## Running it yourself
+
+No build step and no dependencies — it's ES modules and plain CSS.
+
+```sh
+git clone https://github.com/laurenmtech/OtherworldBookshelf.git
+cd OtherworldBookshelf
+python3 -m http.server 8000
+```
+
+Then open <http://localhost:8000>. Opening `index.html` as a file won't work:
+ES modules, the service worker and sign-in all need a real origin. `localhost`
+counts as secure, so everything behaves exactly as it does in production.
+
+**It runs with no setup at all** — search, the shelf, offline, and all five
+vibes work out of the box. The optional pieces:
+
+| Want | Needs | Where |
+|---|---|---|
+| Sync between devices | A free Firebase project | `firebase-config.js` |
+| Newly published books in search | A Google Books API key | `search-config.js` |
+| "What should I read?", and series | The Worker deployed | `api/README.md` |
+
+Both config files are committed on purpose and hold no secrets — the comments
+in each explain why that's safe. Without them the app simply does less; nothing
+breaks.
+
+## Deploying
+
+Push to `main`. GitHub Pages serves the repo root as-is.
+
+One rule, and a git hook enforces it: **if you change a file listed in `ASSETS`
+in `sw.js`, raise `BUILD` in the same commit.** The service worker serves the
+app shell cache-first, and that counter is the only thing that invalidates it —
+forget it and every installed phone keeps running the old code silently, with
+nothing on screen to say so.
+
+The backend is separate and deploys on its own; see `api/README.md`.
+
+## The code
+
+- `index.html` — all the markup
+- `styles/` — `tokens.css` is the vibe contract; `vibes/` are the five themes
+- `js/` — ES modules: `state/` (the store), `services/` (search, Libby, the
+  recommender, series), `components/`, `ui/`
+- `api/` — the Cloudflare Worker, the only backend
+- `ARCHITECTURE.md` — where things live, how state flows, and why the
+  non-obvious decisions are the way they are
+
+`ARCHITECTURE.md` is the one worth reading before changing anything.

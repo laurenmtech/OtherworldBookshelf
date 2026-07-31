@@ -1,4 +1,9 @@
 // Boot: load state, mount the shell, wire the routes, register the SW.
+//
+// APP_VERSION is the human-facing stamp in the footer, bumped every release.
+// sw.js BUILD is the cache key and is what the footer actually reads back.
+// 1.0 is "ready to share" — phase 8, the point of which was that you could send
+// this to someone without explaining it first.
 import {
   init as initStore, getState, addLibrary, editLibrary, addBookstore, editBookstore
 } from './state/store.js'
@@ -9,6 +14,7 @@ import { mountRecommendModal } from './components/modals/recommend-modal.js'
 import { mountPlaceModal } from './components/modals/place-modal.js'
 import { mountHiddenShelf } from './components/hidden-shelf.js'
 import { mountVibePicker } from './components/vibe-picker.js'
+import { runFirstRun } from './components/welcome.js'
 import { mountVibe } from './vibes/apply.js'
 import { isEmptyState } from './state/migrate.js'
 import { mountTabBar } from './components/tab-bar.js'
@@ -18,27 +24,13 @@ import { mountFinished } from './routes/finished.js'
 import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 import { onAuthChange } from './state/auth.js'
 
-// Shown in the footer, and bumped on EVERY release so you can tell at a glance
-// whether your phone has the newest one.
-//
-// It started as 0.<phase><release> — phase 2 shipped as 0.2, its next release
-// as 0.21 — and phase 6 outgrew that when its release count passed 9 and 0.69
-// rolled into 0.70. So it is now simply a counter that goes up every release,
-// and the phase it belongs to is a thing the commit message says rather than
-// something the number encodes. 0.73–0.75 is phase 7: series travel together.
-//
-// 1.0 is the "ready to share" milestone — phase 8 in the plan — and is the one
-// number here that still means something.
-export const APP_VERSION = '0.75'
+export const APP_VERSION = '1.0'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
   const bookModal = mountBookModal(document.getElementById('book-modal'))
   const setDownModal = mountSetDownModal(document.getElementById('set-down-modal'))
 
-  // The recommender is the one feature that needs a verified identity, so it is
-  // hidden outright when signed out rather than shown and then rejected. The
-  // button lives in the TBR panel head; auth.js tells us when to reveal it.
   const recommendModal = mountRecommendModal(document.getElementById('recommend-modal'))
   const findBtn = document.getElementById('find-something-btn')
   findBtn && findBtn.addEventListener('click', () => recommendModal.open())
@@ -59,14 +51,9 @@ function mountAll(){
   const readingEl = document.getElementById('route-reading')
   const finishedEl = document.getElementById('route-finished')
 
-  // Both routes mount once, at boot, and stay mounted. They re-render from the
-  // store whether or not they're the visible tab, which costs nothing at this
-  // size and means switching tabs never waits on a render.
   mountReading(readingEl, { finishModal, bookModal, setDownModal })
   mountFinished(finishedEl, { bookModal })
 
-  // Keeps the document wearing whatever the store says, which is how a vibe
-  // follows you to a second device after signing in.
   mountVibe()
   const vibePicker = mountVibePicker(document.getElementById('vibe-picker'))
 
@@ -75,17 +62,11 @@ function mountAll(){
     bookstoreModal,
     vibePicker,
     openButton: document.getElementById('shelf-btn'),
-    // Picking a vibe from the shelf ends the errand: the sheet closes and you
-    // land on the reader, which is the only place the new look means anything.
-    // Reads `router` from below — this only ever runs on a tap, long after.
     onVibePicked: () => router.navigate('/')
   })
 
-  // A brand-new reader chooses before seeing the shelf. Someone who already has
-  // books has an established look and is never interrupted to confirm it — they
-  // stay on Otherworld until they go looking for the picker themselves.
   const state = getState()
-  if(!state.vibe && isEmptyState(state)) vibePicker.open({ firstRun: true })
+  if(!state.vibe && isEmptyState(state)) runFirstRun({ vibePicker, bookModal })
 
   const tabs = mountTabBar(document.getElementById('tab-bar'))
 
@@ -98,17 +79,9 @@ function mountAll(){
     onChange: (path) => tabs.setActive(path)
   })
 
-
-  // The running version, as a plain label — there is nothing to tap. Updates
-  // arrive on their own (see registerServiceWorker below).
   showVersion()
 }
 
-// The footer also shows the build, read from the cache the service worker
-// actually installed rather than from a constant over here — which could only
-// ever tell you what this file believes, not what your phone is running. It's
-// the one number that can't be stale or forgotten: the pre-push hook enforces
-// it, and it comes from the cache itself.
 async function showVersion(){
   const el = document.getElementById('app-version')
   if(!el) return
@@ -122,8 +95,6 @@ async function showVersion(){
   }catch(e){ /* no cache API, or blocked — the version alone is fine */ }
 }
 
-// Updates apply themselves, but never on top of someone mid-sentence: if a
-// modal is open or a field has text in it, hold the reload until it's safe.
 function reloadWhenSafe(){
   const attempt = () => {
     if(isAnyModalOpen() || hasDirtyInput()){
@@ -147,10 +118,8 @@ function registerServiceWorker(){
   })
 
   window.addEventListener('load', () => {
-    // updateViaCache:'none' -> always fetch sw.js fresh so new versions are detected.
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
       const check = () => reg.update().catch(() => {})
-      // Re-check whenever the app comes back to the foreground (e.g. reopened from home screen).
       document.addEventListener('visibilitychange', () => { if(!document.hidden) check() })
       check()
     }).catch((err) => console.warn('SW registration failed', err))

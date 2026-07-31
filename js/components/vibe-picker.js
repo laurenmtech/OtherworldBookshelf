@@ -1,18 +1,7 @@
-// The vibe picker: a grid of cards, each one wearing the vibe it offers.
+// The vibe grid. Cards are LIVE — each wears the real token set it offers, so a
+// card can never drift out of date with its stylesheet.
 //
-// The cards are live rather than screenshots — every swatch, hairline and
-// button below is the real token set for that vibe, which is why a card can
-// never drift out of date with the stylesheet it advertises.
-//
-// Tapping one applies it to the whole app immediately. Nothing re-renders, so
-// you can open this mid-scroll with a half-typed form behind it and lose
-// neither. There's no Cancel because there's nothing to undo — pick another.
-//
-// Whether picking also LEAVES is the caller's call, because the two ways in
-// want opposite things. On first run you're comparing, so tapping through all
-// five has to be free. Coming from the shelf you've already decided — the cards
-// wear their own vibes, so the choosing happened before the tap — and being
-// held in a settings sheet afterwards just means two more taps to see it.
+// Whether picking also leaves is the caller's call: on first run you're comparing.
 import { el } from '../ui/dom.js'
 import { createModal } from '../ui/modal.js'
 import { VIBES, DEFAULT_VIBE } from '../vibes/registry.js'
@@ -45,12 +34,18 @@ export function mountVibePicker(root){
   const doneBtn = root.querySelector('#vibe-done')
   const note = root.querySelector('#vibe-picker-note')
 
-  const modal = createModal(root)
-  doneBtn && doneBtn.addEventListener('click', () => modal.close())
-
-  // Set per-open, because it differs between the two ways in. Cleared on close
-  // so a first-run open can never inherit the shelf's behaviour.
   let onPick = null
+  let onDone = null
+
+  const modal = createModal(root, {
+    onClose(){
+      const done = onDone
+      onPick = null
+      onDone = null
+      if(done) done()
+    }
+  })
+  doneBtn && doneBtn.addEventListener('click', () => modal.close())
 
   const cards = VIBES.map(vibe => {
     const card = el('button', {
@@ -85,10 +80,9 @@ export function mountVibePicker(root){
   subscribe(paint)
 
   return {
-    open({ firstRun = false, onPicked = null } = {}){
+    open({ firstRun = false, onPicked = null, onClosed = null } = {}){
       onPick = onPicked
-      // You're comparing all five now, so all five need their real faces. The
-      // rest of the time only the worn vibe's font is ever fetched.
+      onDone = onClosed
       preloadAllFonts()
       if(note){
         note.textContent = firstRun

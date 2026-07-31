@@ -1,13 +1,8 @@
-// Add / edit a saved place — a library, or a bookshop. One implementation,
-// two instances; the titles, the store actions and whether it asks about Libby
-// are all that differ.
-//
-// Fields are found by data attribute rather than id so the same code can drive
-// two dialogs that must still have unique ids in the document.
+// Add or edit a library or a bookshop. A library confirms its name back from the
+// key you gave — `austin` resolves to Austin ISD, not Austin Public Library.
 import { createModal } from '../../ui/modal.js'
 import { lookupLibrary, parseLibraryKey, learnSearchUrl } from '../../services/libby.js'
 
-// library:true adds the Libby lookup — the key field and the confirmation.
 export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, library = false, shop = false } = {}){
   if(!root) return { open(){} }
   const form = root.querySelector('form')
@@ -22,11 +17,7 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
   const searchStatus = root.querySelector('[data-place-search-status]')
 
   let editIndex = null
-  // The entry being edited, so an unchanged key survives a rename untouched.
   let current = null
-  // The confirmed library, if one has been looked up this time round. Holding
-  // it separately from the field is what makes "typed something, didn't check
-  // it" distinguishable from "confirmed this library".
   let confirmed = null
   let checking = false
 
@@ -42,10 +33,6 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
     keyStatus.className = 'muted place-key-status' + (kind ? ' ' + kind : '')
   }
 
-  // Confirming is the whole point of this field: it turns a silent wrong guess
-  // into a visible one. Type "austin" and it says Austin ISD, which is not the
-  // library you meant. See lookupLibrary() for why searching by name isn't an
-  // option.
   async function check(){
     if(!keyInput || checking) return
     const raw = keyInput.value.trim()
@@ -67,18 +54,14 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
     }
     confirmed = found
     setStatus(`Found ${found.name}`, 'good')
-    // Prefill the label with the official name, then get out of the way — it's
-    // yours to rename to "Mom's card" or "the good one".
     if(nameInput && !nameInput.value.trim()) nameInput.value = found.name
   }
 
   checkBtn && checkBtn.addEventListener('click', check)
   keyInput && keyInput.addEventListener('keydown', (e) => {
-    // Enter here means "check this", not "save the place".
     if(e.key === 'Enter'){ e.preventDefault(); check() }
   })
   keyInput && keyInput.addEventListener('input', () => {
-    // Editing the field invalidates whatever was confirmed for the old value.
     if(confirmed && parseLibraryKey(keyInput.value) !== confirmed.key){
       confirmed = null
       setStatus('')
@@ -91,19 +74,11 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
     if(!name){ nameInput.focus(); return }
     const entry = { name, url: urlInput.value.trim() }
 
-    // Optional: a shop that teaches us its search URL gets deep links to every
-    // book on the pile. See learnSearchUrl().
     if(shop && searchInput){
       const learned = learnSearchUrl(searchInput.value)
       if(learned) entry.searchUrl = learned
     }
 
-    // A library keeps its key and its official name; a plain bookmark keeps
-    // neither, and that absence is what "this one gets no availability" means.
-    //
-    // Renaming must never touch the key, which is why the saved one is carried
-    // forward whenever the field still holds it — you can retitle "King County
-    // Library System" to "the good one" without re-confirming anything.
     if(library && keyInput){
       const typed = parseLibraryKey(keyInput.value)
       if(confirmed){
@@ -113,8 +88,6 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
         entry.libraryKey = current.libraryKey
         if(current.officialName) entry.officialName = current.officialName
       }
-      // Anything else — cleared, or typed and never confirmed — saves as a
-      // plain bookmark rather than as a library we can't actually reach.
     }
 
     if(editIndex !== null) onEdit(editIndex, entry)

@@ -23,8 +23,6 @@ export async function mountHeader(root){
 
   const ready = await initAuth()
   if(!ready){
-    // Configured, but the SDK couldn't be fetched (offline, blocked CDN).
-    // The shelf still works; it just isn't syncing.
     if(signinBtn) signinBtn.classList.add('hidden')
     setStatus('Offline — showing local copy')
     return
@@ -55,8 +53,6 @@ export async function mountHeader(root){
       userAvatar.style.display = user.photoURL ? '' : 'none'
     }
 
-    // Show whatever we have locally right away so the app is usable even if the
-    // cloud handshake is slow or unreachable — "Connecting" never blocks the UI.
     reloadLocal()
     attachCloud(user.uid, setStatus)
   })

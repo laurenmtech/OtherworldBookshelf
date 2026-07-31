@@ -452,6 +452,90 @@ lifecycle calls `init`, `reloadLocal`, `applyRemote` and `setCloudSave`.
 `applyRemote` and `reloadLocal` commit **without** persisting — state that came
 *from* storage must not be written straight back.
 
+## Invariants
+
+These used to live as long comments in the code. Phase 8 moved them here to get
+the shipped JavaScript under budget; the rules did not change, and breaking any
+of them fails quietly rather than loudly.
+
+> **Why the code is lightly commented, and where the prose went.** There is no
+> build step, so every byte of comment is a byte shipped to a phone. The spec
+> budget is 150 KB of JavaScript uncompressed; the fully-commented source was
+> 232 KB, and 101 KB of that was prose. Phase 8 cut the commentary to a short
+> header per module and moved the reasoning here, which is served but never
+> precached and never parsed by the app.
+>
+> So: **if you find yourself writing more than a few lines of comment, it
+> probably belongs in this file.** Keep in the code only what someone editing
+> that specific line needs to not break it.
+
+### The index invariant
+
+Almost every action identifies a book by its **position** in a list —
+`removeFinished(index)`, `readAgain(index)`, `removeTbr(index)`,
+`finishCurrent(index)`. Those positions are captured in render closures, and
+they are only ever correct because of one rule:
+
+> **`commit()` notifies synchronously, and every listener re-renders in place.**
+
+That is what guarantees a button can't outlive the list it was drawn from. A
+remote snapshot arriving mid-session re-renders too, so a handler holding a
+stale index is destroyed before anyone can tap it.
+
+Break that — batch renders into a `requestAnimationFrame`, debounce a listener,
+put a diffing layer in front of the DOM — and every action starts removing the
+wrong book, silently. `bookKey()` is the real identity and is already stamped on
+every row as `data-book-key`; that is where to go if this ever needs to stop
+being positional.
+
+**A promise across a confirmation is the same hazard.** `confirm()` blocked, so
+the code after it could still hold an index. `ui/dialog.js` does not — anything
+can change while it is open. A caller must re-resolve the target by `bookKey`
+after the answer arrives; `current-reads.js` does exactly this, and is the
+worked example.
+
+### Books
+
+- **Absent fields are omitted, never `null` or `''`.** A book the search knew
+  nothing about must be indistinguishable from a hand-typed one, so "no cover"
+  is a missing key everywhere rather than an empty frame to render.
+- **`bookKey()` is the Open Library work id, or `title|author`.** Google Books
+  results deliberately carry no `workKey` — their volume ids are a different
+  namespace, and setting one would mean the same book from the two sources never
+  recognising itself.
+- **Clean objects are built where books are created**, not in `migrate()`.
+  Entries pass through migration untouched on purpose: the record still holds
+  legacy `notes` and `rating` fields, and a normaliser that only knew the current
+  shape would quietly eat them.
+
+### Deliberate non-destruction
+
+- Anything displaced from Current Reads goes back on the **TBR pile** rather than
+  vanishing. Quietly deleting a part-read book is the most destructive thing this
+  app could do.
+- `removeCurrent` writes nothing to the record — it is for a mis-add or a wrong
+  edition, and is deliberately *not* the same as finishing or setting down.
+- `readAgain` strips the finish metadata on the way to the pile, so the TBR entry
+  is a book again rather than a half-erased memory of finishing it.
+- **Import can only add.** See `state/merge.js`; the merge is additive precisely
+  because it syncs, and a merge that could delete would delete everywhere.
+
+### Rendering state that outlives its own render
+
+`finished-list.js` holds two module-level sets — `flashing` (rows whose "Read
+again" was just tapped) and `expanded` (open series rows). They live outside the
+render because the action that sets them commits to the store, which re-renders
+the list and destroys the button that was tapped about a millisecond later.
+Holding that state in the render is the only version that survives its own side
+effect. `flashing` is keyed per *entry* (`bookKey|finishedAt`), not per book,
+because the same title legitimately appears in the record more than once.
+
+### Escape closes one layer
+
+Every open modal registers its own document-level `keydown`. Without the
+topmost-layer check in `ui/modal.js`, a modal opened from the settings sheet
+would take the sheet down with it.
+
 ## Data shape
 
 ```js

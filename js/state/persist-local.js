@@ -1,5 +1,4 @@
-// localStorage adapter. The shelf when signed out, and the instant-render copy
-// when signed in.
+// localStorage adapter.
 import { migrate, toStorage, emptyState } from './migrate.js'
 
 const LS_KEY = 'otherworld_reads_v1'

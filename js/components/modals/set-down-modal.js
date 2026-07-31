@@ -1,16 +1,5 @@
-// "Set it down" — the third thing that can happen to a book you started.
-//
-// Finishing is not the only honest ending, and neither is deleting. This asks
-// the one question that matters — is this a pause or a parting — and treats the
-// two answers as genuinely different: a pause changes nothing except where the
-// book sits, and a parting goes into the record as something you read part of
-// and chose to stop.
-//
-// It asks that and nothing else. How a book felt and what its vibes were are
-// questions for finishing — a book you set down is one you didn't get through,
-// so there's often no answer to give, and being asked for one anyway makes
-// stopping feel like it needs justifying. Setting a book down should cost less
-// than finishing one, not more.
+// "Set it down" — a pause or a parting. It asks that and nothing else: how a book
+// felt belongs to finishing one. NEITHER outcome advances a series.
 import { createModal } from '../../ui/modal.js'
 import { singleSelect } from '../../ui/chips.js'
 import { setDownCurrent, getState } from '../../state/store.js'
@@ -37,9 +26,6 @@ export function mountSetDownModal(root){
   const outcomes = singleSelect(root.querySelector('[data-outcome-chips]'), OUTCOMES, {
     onChange: paintOutcome
   })
-  // The consequence of each answer, in words, before it happens. "Not for me"
-  // writes to the record and excludes the book from suggestions; that is worth
-  // knowing in advance rather than discovering afterwards.
   function paintOutcome(value){
     if(outcomeNote) outcomeNote.textContent = value ? OUTCOME_NOTE[value] : ''
     if(submitBtn) submitBtn.disabled = !value

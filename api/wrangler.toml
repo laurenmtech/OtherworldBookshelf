@@ -16,7 +16,7 @@ FIREBASE_PROJECT_ID = "books-7a105"
 # served from while it's being worked on. A wildcard here would let any website
 # spend a signed-in reader's daily quota — so a new dev port has to be added
 # here, and the Worker redeployed, before the browser will let the app call it.
-ALLOWED_ORIGINS = "https://laurenmtech.github.io,http://localhost:8000,http://localhost:8123"
+ALLOWED_ORIGINS = "https://laurenmtech.github.io,http://localhost:8000,http://localhost:8123,http://localhost:8127"
 
 # Asks per reader per UTC day. Lowering this is the other cost lever, alongside
 # the model in src/recommend.js.
