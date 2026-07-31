@@ -8,7 +8,7 @@
 // re-renders the list and destroys the button that was tapped.
 import { el, escapeHtml, iconButton } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
-import { bookKey, inSeries, byVolume } from '../services/books.js'
+import { bookKey, inSeries, byVolume } from '../services/book-shape.js'
 import { tagRow, volumeLabel } from '../ui/book-meta.js'
 import { askConfirm, showMessage } from '../ui/dialog.js'
 import {
@@ -164,7 +164,9 @@ function seriesRow(group){
   return li
 }
 
-function toRows(entries){
+// Exported so the grouping rules can be tested without a DOM. Pure by design:
+// flat entries in, rows out.
+export function toRows(entries){
   const rows = []
   const groups = new Map()
   for(const entry of entries){
@@ -193,7 +195,7 @@ function rowTime(row){
   return best
 }
 
-function byRowNewest(a, b){
+export function byRowNewest(a, b){
   const ta = rowTime(a), tb = rowTime(b)
   if(Number.isNaN(ta) && Number.isNaN(tb)) return 0
   if(Number.isNaN(ta)) return 1

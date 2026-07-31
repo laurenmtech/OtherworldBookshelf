@@ -22,10 +22,6 @@ export function libbyTitleUrl(id){
   return id ? `https://share.libbyapp.com/title/${encodeURIComponent(id)}` : null
 }
 
-export function libbyLibraryUrl(libraryKey){
-  return libraryKey ? `https://libbyapp.com/library/${encodeURIComponent(libraryKey)}` : null
-}
-
 export function bookshopUrl(title, author){
   const q = [title, author].filter(Boolean).join(' ')
   if(!q) return null
@@ -178,12 +174,6 @@ export function requestAvailability(libraryKey, book, formats = ['ebook']){
 
   inFlight.set(key, p)
   return p
-}
-
-export function clearAvailabilityCache(){ cache.clear(); inFlight.clear() }
-
-function norm(s){
-  return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 }
 
 function sameBook(item, book){

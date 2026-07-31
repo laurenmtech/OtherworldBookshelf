@@ -1,7 +1,7 @@
 // The two tabs: bottom bar on a phone, header links when there's room.
 import { el } from '../ui/dom.js'
 
-export const TABS = [
+const TABS = [
   { path: '/', label: 'Reading', icon: '📖' },
   { path: '/finished', label: 'Finished', icon: '✓' }
 ]

@@ -7,6 +7,7 @@ ES modules and plain CSS, served straight from GitHub Pages.
 
 ```sh
 python3 -m http.server 8000   # from the repo root → http://localhost:8000
+node tests/run.mjs            # the test suite — no install, no config
 ```
 
 The app can't be opened as a `file://` path: ES modules, the service worker and
@@ -144,7 +145,8 @@ view preference.
 
 Everything in the second category sits behind the `AVAILABILITY` flag. Turn it
 off and every borrow row disappears; the links, names and prompts carry on
-unchanged. Both failure paths are tested.
+unchanged. `tests/libby.test.mjs` covers both: the links are asserted
+independently of the flag, and the flag itself is asserted to exist.
 
 **You cannot search for a library.** `?query=seattle` is ignored — it returns
 all 13,050 libraries, unfiltered. Verified against `query`, `search`, `q`,
@@ -194,7 +196,7 @@ stylesheet, not a screenshot of it.
 An inline script in `<head>` stamps `data-vibe` before the first paint —
 otherwise a light vibe opens with a frame of black. It necessarily duplicates
 the font URLs and theme colours from `registry.js` (no module has loaded yet);
-a test asserts the two agree.
+`tests/contract.test.mjs` asserts the two agree.
 
 Webfonts are fetched only for the vibe being worn, except while the picker is
 open, when all five load so the cards show their real faces.
@@ -651,7 +653,8 @@ charged only on a cache miss — which is what makes "the second reader to add
 this book costs nothing" true rather than merely cheap.
 
 `api/README.md` is the operational doc — deploy, key rotation, cost levers.
-Three decisions there are load-bearing and are each guarded by a test:
+Three decisions there are load-bearing and are each guarded by a test in
+`tests/worker.test.mjs`:
 
 - **The user id comes from the verified Firebase token, never the request body.**
   A caller can put any uid in the JSON they post; it changes nothing.

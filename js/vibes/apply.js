@@ -3,7 +3,7 @@
 import { VIBES, DEFAULT_VIBE, getVibe } from './registry.js'
 import { subscribe, getState } from '../state/store.js'
 
-export const VIBE_KEY = 'otherworld_vibe'
+const VIBE_KEY = 'otherworld_vibe'
 
 function fontLink(){
   let link = document.getElementById('vibe-fonts')

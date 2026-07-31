@@ -6,7 +6,7 @@
 // ARCHITECTURE.md.
 import { el, escapeHtml, iconButton } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
-import { bookKey, inSeries } from '../services/books.js'
+import { bookKey, inSeries } from '../services/book-shape.js'
 import { subtitle, tagRow, volumeLabel } from '../ui/book-meta.js'
 import { askConfirm } from '../ui/dialog.js'
 import { subscribe, getState, reorderCurrent, removeCurrent, detachSeries } from '../state/store.js'

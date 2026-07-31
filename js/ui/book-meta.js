@@ -2,9 +2,9 @@
 // format tags, and "Book 2 of 7". Shared so a book doesn't look like three
 // different things depending on the panel.
 import { escapeHtml } from './dom.js'
-import { FORMATS } from '../services/books.js'
+import { FORMATS } from '../services/book-shape.js'
 
-export const formatLabel = (k) => (FORMATS.find(f => f.key === k) || {}).label
+const formatLabel = (k) => (FORMATS.find(f => f.key === k) || {}).label
 
 export function volumeLabel(book){
   if(!book || !Number.isFinite(book.seriesPosition)) return ''

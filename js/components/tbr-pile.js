@@ -2,7 +2,7 @@
 // fact about the world that expires, so it's cached for the session only.
 import { el, iconButton, escapeHtml } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
-import { bookKey } from '../services/books.js'
+import { bookKey } from '../services/book-shape.js'
 import {
   libbySearchUrl, libbyTitleUrl, bookshopUrl, shopSearchUrl,
   cachedAvailability, requestAvailability, AVAILABILITY
