@@ -35,6 +35,16 @@ const FORMAT_WORD = { ebook: 'ebook', audiobook: 'audiobook' }
 
 // What your library has, said plainly. Absent entirely when we don't know —
 // no spinner, no error, no empty row holding space for a fact we never got.
+// The exact Libby URL for a book we found at the library, when we have one.
+// More precise than a search: it opens the title itself rather than a results
+// page the reader has to pick from again.
+function exactLibbyUrl(book, library, formats){
+  if(!AVAILABILITY || !library || !formats.length) return null
+  const result = cachedAvailability(library.libraryKey, book, formats)
+  if(!result || result.status === 'none' || !result.copies || !result.copies.length) return null
+  return libbyTitleUrl(result.copies[0].id) || null
+}
+
 function borrowRow(book, library, formats){
   if(!AVAILABILITY || !library || !formats.length) return ''
   const result = cachedAvailability(library.libraryKey, book, formats)
@@ -45,7 +55,6 @@ function borrowRow(book, library, formats){
   }
 
   const best = result.copies[0]
-  const url = libbyTitleUrl(best.id)
   const fmt = FORMAT_WORD[best.format] || best.format
   const label = best.isAvailable
     ? `Available now · ${fmt}`
@@ -56,25 +65,30 @@ function borrowRow(book, library, formats){
   const matched = best.title && best.title.toLowerCase() !== String(book.title).toLowerCase()
     ? `<span class="borrow-matched muted">matched “${escapeHtml(best.title)}”</span>`
     : ''
-  const inner = url
-    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`
-    : escapeHtml(label)
-  return `<div class="${cls}">${inner}${matched}</div>`
+  // Not a link. "About three weeks wait" is something to know, not something to
+  // do — and a row with two links in it makes you read both to work out which
+  // one is the action. The exact-title URL isn't lost: it's handed to the row
+  // below, which is the row that actually takes you somewhere.
+  return `<div class="${cls}">${escapeHtml(label)}${matched}</div>`
 }
 
 // Where else this book might come from. Ordinary links, built by string
 // concatenation, independent of any availability lookup — they work whether or
 // not the catalogue API is reachable, or enabled, or still exists.
-function findRow(book, library, shop, want){
+// Named findRow because `findLinks` is the stored preference key and renaming
+// that would be a migration for nothing. What it renders is the checkout link.
+function findRow(book, library, shop, want, formats){
   const links = []
   if(want.includes('library') && library){
-    const url = libbySearchUrl(library.libraryKey, book.title)
-    if(url) links.push({ url, label: `Find at ${library.name}` })
+    // Prefer the exact title we already matched; fall back to a search when
+    // availability is off, unasked, or found nothing.
+    const url = exactLibbyUrl(book, library, formats) || libbySearchUrl(library.libraryKey, book.title)
+    if(url) links.push({ url, label: `Checkout at ${library.name}` })
   }
   if(want.includes('shop')){
     const url = shop ? shopSearchUrl(shop, book.title, book.author)
                      : bookshopUrl(book.title, book.author)
-    if(url) links.push({ url, label: shop ? `Find at ${shop.name}` : 'Bookshop.org' })
+    if(url) links.push({ url, label: `Checkout at ${shop ? shop.name : 'Bookshop.org'}` })
   }
   if(!links.length) return ''
   return `<div class="find-row">${links.map(l =>
@@ -113,7 +127,7 @@ export function mountTbrPile(root, { bookModal }){
       className: 'small-meta',
       html: `<span class="wishlist-title">${escapeHtml(book.title)}</span>` +
             `<div class=muted>${bits}</div>${tagRow(book)}${moodTags}` +
-            `${borrowRow(book, library, formats)}${findRow(book, library, shop, want)}`
+            `${borrowRow(book, library, formats)}${findRow(book, library, shop, want, formats)}`
     }))
 
     const actions = el('div', { className: 'list-actions' },

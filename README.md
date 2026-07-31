@@ -18,6 +18,6 @@ Files
 
 How to run
 - Serve the folder with a static server: `python3 -m http.server 8000`, then open http://localhost:8000. Opening `index.html` directly won't work — the app needs a real origin.
-- Go to laurenmtech.github.io/books and tap to add to homescreen on your phone for the ideal experience
+- Go to laurenmtech.github.io/OtherworldBookshelf and tap to add to homescreen on your phone for the ideal experience
 
 
