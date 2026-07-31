@@ -17,6 +17,7 @@ import { coverImg } from '../ui/cover.js'
 import { bookKey } from '../services/books.js'
 import { tagRow } from '../ui/book-meta.js'
 import { removeFinished, readAgain } from '../state/store.js'
+import { toast } from '../ui/toast.js'
 import { feelingLabel, SET_DOWN_LABEL } from '../state/moods.js'
 
 // Newest first, whatever order the stored array happens to be in. Anything
@@ -66,7 +67,12 @@ function row({ item, index }){
   // Puts a clean copy on the pile and leaves this entry untouched — a re-read
   // is a book you've read AND a book that's next, and the record shouldn't
   // quietly lose a year of reading to make the sentence simpler.
-  actions.appendChild(iconButton('bookmark', 'Read again', () => readAgain(index)))
+  // The book lands on a pile you can't see from here, so say so — otherwise
+  // the tap reads as having done nothing.
+  actions.appendChild(iconButton('bookmark', 'Read again', () => {
+    readAgain(index)
+    toast(`“${item.title}” added to your TBR pile`)
+  }))
   actions.appendChild(iconButton('trash', 'Remove', () => removeFinished(index)))
 
   li.appendChild(left)
