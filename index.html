@@ -304,6 +304,13 @@
           <button id="add-vibe" type="button" class="btn btn-add" data-add-vibe>Add</button>
         </div>
       </div>
+      <!-- Announced, never silent: if finishing this book advances a series,
+           the next volume is named here before it happens, with one tap to
+           refuse it. See js/components/modals/finish-modal.js. -->
+      <div class="series-next" data-series-next hidden>
+        <p data-series-next-line></p>
+        <button type="button" class="btn series-detach" data-series-stop>Stop here</button>
+      </div>
       <div class="actions">
         <button type="submit" class="btn primary">Save</button>
         <button id="cancel-finish" type="button" class="btn">Cancel</button>

@@ -64,6 +64,9 @@ js/
     open-library.js   primary source — no key, stable work ids
     google-books.js   secondary source — needs a key, knows new releases
     libby.js          library links (unbreakable) + availability (optional)
+    recommend.js      "find me something" — the ask, and the anti-invention pass
+    series.js         asks the Worker what series a book is in, and the rules
+                      for what finishing a volume does next
 
   components/
     tab-bar.js        the two tabs; bottom bar on a phone, header links wide
@@ -262,9 +265,10 @@ Four things about the search are load-bearing:
 
 ## Genre and series
 
-Series comes only from Open Library; genre comes from either. Both arrive with
-the search response, so a book is complete when you pick it and picking one
-waits on nothing.
+Genre comes from either source and arrives with the search response, so a book
+is complete when you pick it and picking one waits on nothing. Series *used* to
+come only from Open Library, and still falls back to it — but the real answer
+now comes from the Worker. See **Series** below for why.
 
 Open Library's `subject` list is why the search asks for a field that triples
 the payload (~3KB → ~8KB for six results). It earns it:
@@ -274,8 +278,9 @@ the payload (~3KB → ~8KB for six results). It earns it:
   for every doc, including Stormlight, Mistborn, Wheel of Time, Harry Potter and
   Dune. (Series does exist on individual *edition* records, but they disagree
   with each other — one Mistborn work names four different series across its
-  editions — and reading them costs a second request per book.) Nothing displays
-  series yet beyond the line under a title; Phases 6 and 8 are what need it.
+  editions — and reading them costs a second request per book.) `parseSeries()`
+  reads these and is right about a third of the time, which is why it survives
+  as a free fallback and why it is not the source of truth — see **Series**.
 - **Genre** is matched onto the fixed vocabulary in `GENRES` (in
   `book-shape.js`), at most two per book, ranked by how many strings vote for
   each. The structured `genre:` tag exists on only a small minority of works,
@@ -291,6 +296,101 @@ is also tagged Science, because "hard science fiction" contains "science"), and
 `Historical` and `History` are deliberately separate (Pride and Prejudice is
 tagged "Fiction, Romance, Historical, Regency" many times over and would
 otherwise out-vote its way into being filed as History).
+
+## Series
+
+A series is one thing you are reading, not seven separate things.
+
+**Why the catalogue can't do this.** Seventeen fantasy series titles were
+queried against Open Library search on 2026-07-30. **6 of 17** carried a
+`series:` subject tag at all; **0 of 17** carried a position number. Worse than
+sparse, it is inconsistent *within* a series — *The Way of Kings* is tagged
+Stormlight Archive, *Words of Radiance* is not — and the names disagree with
+themselves ("The Mistborn Saga", "Red Rising Trilogy",
+`A_Court_of_Thorns_and_Roses`). Open Library cannot answer *is this in a
+series*, *where in it*, or *what comes next*.
+
+So it is asked of the Worker (`POST /series`, Haiku) **once, at add time**, for
+the **whole series** — every volume in publication order, each checked against
+Open Library — and cached on the book. Add time because there is already a round
+trip and a moment of waiting there. `parseSeries()` stays as the free fallback
+for when the Worker can't be reached.
+
+**Ask for the series, never for "the next book".** The first version asked what
+came after each volume, one at a time. Getting a reader from book 1 to book 7
+then needed six consecutive correct answers, each an independent guess, and one
+wrong answer anywhere ended the series three books in with nothing on screen to
+say why. It failed exactly that way on Throne of Glass: asked about *Heir of
+Fire*, the model answered *Crescent City* — Sarah J. Maas wrote both.
+
+Holding the list instead means `nextVolume()` is array indexing over data the
+book already carries: no chain to break, no per-volume guess, no network when a
+volume is finished, and a wrong answer visible at book 1 instead of book 3.
+
+It also makes the answer **checkable**. The model is not asked where the book
+sits — the position is derived by finding the queried title in the list it
+returned, so a list that doesn't contain the book we asked about is
+self-evidently about a different series and is thrown away. That single check
+catches the Crescent City class of error without knowing anything about either
+series.
+
+Every volume travels on every volume, which is redundant on purpose: it is what
+makes advancing local, offline and instant, and it costs a few KB on a long
+series.
+
+**Nothing new is stored.** A series entry is a normal book carrying series
+fields. The grouping — in Current Reads and in the record alike — happens at
+paint time off `seriesKey`, so sync, export, migration, search, the filters and
+the recommender's exclusion list all keep operating on individual books and
+never learn that series exist. If the grouping is wrong it is wrong on screen
+for one render, not wrong in the reader's data.
+
+**On Current Reads there is no grouping at all, and none is needed.** Finishing
+a volume *advances the entry in place* (`finishCurrent(index, { next })`) rather
+than adding a second one, so a series holds exactly one slot at every volume and
+the cap of three never has to know series exist.
+
+**In the record, grouping is real** — seven volumes render as one row — but each
+volume keeps its own date and feeling inside it, and anything that *counts* what
+you've read counts volumes. "Seven books this year" is the true answer and it is
+the whole promise of the app.
+
+**Filtering ungroups.** The moment a filter or a search is on, the record drops
+back to one row per volume. Grouping is a browsing convenience; asking a
+question deserves a literal answer, and it keeps the count honest with no
+special case.
+
+Rules in `nextVolume()` (`services/series.js`) that are not negotiable:
+
+- **"Not for me" never advances a series.** Being handed book 2 of something you
+  just gave up on is the app arguing with you. `setDownCurrent()` simply never
+  advances, which covers both outcomes — a pause is a pause, and the book goes
+  back on the pile at the volume it was on.
+- **A re-read re-triggers nothing.** Finishing a volume already in the record
+  advances nothing.
+- **Nothing is added that the reader already has.** A next volume already in the
+  record is skipped and the one after it offered; one already on the TBR pile is
+  promoted rather than duplicated.
+- **An unverified volume is never offered.** Open Library couldn't confirm it
+  exists, so the series stops there rather than handing over a possible
+  invention. Unverified volumes stay *in* the list — positions have to be
+  stable — they just aren't advanced onto.
+- **Failure is silence.** No series data, no answer, Worker down, offline — the
+  app behaves exactly as it did before this existed. A reader who finishes a
+  standalone must never see "couldn't find a next book".
+
+**Announced, never silent.** The finish modal names the next volume before it
+happens, with one tap to refuse it. That announcement is the correction point,
+and it is what makes an occasionally-wrong answer survivable. `seriesDetached`
+is the reader saying stop: it marks the copies still *ahead* of them, on Current
+Reads and the pile, and deliberately leaves the record alone — detaching says
+"this isn't a series to me going forward", not "un-group the seven books I
+already read".
+
+`SERIES` in `book-shape.js` is the feature flag for all of it. It lives there
+rather than beside the network code because the store, the record and Current
+Reads all have to ask "is this on?" and none of them should have to import a
+module that can make a request to find out.
 
 ## Duplicates
 
@@ -374,7 +474,12 @@ lifecycle calls `init`, `reloadLocal`, `applyRemote` and `setCloudSave`.
   workKey, coverId,                          // Open Library only
   googleId, coverSrc,                        // Google Books only (coverSrc is a URL)
   year,
-  seriesKey, seriesName, seriesPosition,     // when a `series:` subject says so
+  seriesKey, seriesName, seriesPosition,     // from POST /series, or parsed off
+  seriesTotal,                               //   a `series:` subject as fallback
+  seriesVolumes,                             // [{ title, verified, author?,
+                                             //   workKey?, coverId?, year? }]
+                                             //   every volume, publication order
+  seriesDetached,                            // the reader said stop. See below
   genres,                                    // at most two, from GENRES
   format }                                   // 'print' | 'ebook' | 'audio'
 ```
@@ -449,9 +554,17 @@ Override for a single push with `git push --no-verify`.
 
 ## The backend (`api/`)
 
-One Cloudflare Worker, one route, deployed independently of the site. It exists
-because the Anthropic API key must never reach a browser and a static site has
-nowhere else to put it. Everything else in this app still has no backend.
+One Cloudflare Worker, two routes (`POST /recommend`, `POST /series`), deployed
+independently of the site. It exists because the Anthropic API key must never
+reach a browser and a static site has nowhere else to put it. Everything else in
+this app still has no backend.
+
+The two routes are metered differently on purpose. A recommendation is *asked
+for*, so it spends a credit from a cap the reader is told about. A series lookup
+happens because someone added a book, so its counter is an abuse ceiling: never
+surfaced, its own generous cap, its own key prefix (`s:` rather than `q:`), and
+charged only on a cache miss — which is what makes "the second reader to add
+this book costs nothing" true rather than merely cheap.
 
 `api/README.md` is the operational doc — deploy, key rotation, cost levers.
 Three decisions there are load-bearing and are each guarded by a test:
@@ -461,14 +574,19 @@ Three decisions there are load-bearing and are each guarded by a test:
 - **The quota credit is claimed *before* the model call.** KV has no
   transactions, so check-then-call-then-increment lets two concurrent requests
   both pass a check only one should — and what's protected is a real bill.
-- **`effort` is pinned to `low`.** Opus 5 thinks by default and thinking bills
-  as output; unpinned costs several times pinned. Even pinned, a measured call
-  cost 10¢ — mostly thinking. `api/README.md` carries the real number; if you
-  change the model or the effort, **measure again rather than estimating**. The
+- **`effort` is pinned to `low` on `/recommend`, and absent on `/series`.**
+  Opus 5 thinks by default and thinking bills as output; unpinned costs several
+  times pinned. Even pinned, a measured call cost 10¢ — mostly thinking.
+  `/series` runs on Haiku 4.5, which does not think and **rejects
+  `output_config.effort` with a 400** — adding it there to "match" `/recommend`
+  would break every request. `api/README.md` carries the real numbers; if you
+  change a model or an effort, **measure again rather than estimating**. The
   first estimate there was wrong by 3–4× and estimates of this are not reliable.
 
-The Worker writes no logs. One integer per reader per UTC day in KV, expiring
-after 48 hours, is the entire record it keeps of anyone.
+The Worker writes no logs. Two integers per reader per UTC day in KV, expiring
+after 48 hours, are the entire record it keeps of anyone. The series cache
+alongside them holds no reader in it at all — it is keyed by title and author
+and shared by everyone.
 
 ## Updates
 

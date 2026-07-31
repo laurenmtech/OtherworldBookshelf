@@ -16,7 +16,8 @@ import * as googleBooks from './google-books.js'
 import { bookKey, authorsToString } from './book-shape.js'
 
 export {
-  coverUrl, FORMATS, bookKey, findExisting, genresFrom, parseSeries
+  coverUrl, FORMATS, bookKey, findExisting, genresFrom, parseSeries,
+  SERIES, inSeries, sameSeries, byVolume
 } from './book-shape.js'
 export { isEnabled as googleBooksEnabled } from './google-books.js'
 

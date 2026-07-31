@@ -10,6 +10,17 @@ import { FORMATS } from '../services/books.js'
 
 export const formatLabel = (k) => (FORMATS.find(f => f.key === k) || {}).label
 
+// "Book 2 of 7", or "Book 2" where the total isn't known, or nothing at all —
+// which is most books. Said in words rather than as "#2/7" because it's the
+// line that tells you where you are in something long, and that's worth reading
+// rather than decoding.
+export function volumeLabel(book){
+  if(!book || !Number.isFinite(book.seriesPosition)) return ''
+  return Number.isFinite(book.seriesTotal)
+    ? `Book ${book.seriesPosition} of ${book.seriesTotal}`
+    : `Book ${book.seriesPosition}`
+}
+
 // Author, year, series — whatever this book actually knows about itself. A
 // hand-typed book knows only its author, and shows only that. Returned as
 // parts so each caller can join them into its own layout.

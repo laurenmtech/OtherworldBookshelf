@@ -10,6 +10,14 @@
 
 export const DAILY_CAP = 10
 
+// Series lookups get their OWN counter, under a different prefix, and it is not
+// a user-facing allowance — it is an abuse ceiling. Adding a book fires a
+// lookup on its own, without anyone asking for one, so spending a
+// recommendation credit on it would mean a reader who adds ten books quietly
+// loses their recommendations for the day. Nothing ever tells anyone this
+// number; it exists so a stolen token can't run up a bill.
+export const SERIES_DAILY_CAP = 60
+
 // UTC rather than local time, deliberately: "your day" is ambiguous across
 // devices and time zones, and a reset that moves when you travel is worse than
 // one that's occasionally at an odd hour.
@@ -17,14 +25,17 @@ function today(){
   return new Date().toISOString().slice(0, 10)
 }
 
-const keyFor = (uid) => `q:${uid}:${today()}`
+// `prefix` keeps the two counters apart in one namespace. 'q' is the
+// recommendation counter and predates the parameter, so it stays the default —
+// changing it would strand every counter written before this build.
+const keyFor = (uid, prefix) => `${prefix}:${uid}:${today()}`
 
 // Two days, so yesterday's counter disappears on its own rather than
 // accumulating a row per user per day forever.
 const TTL_SECONDS = 60 * 60 * 48
 
-export async function readUsed(kv, uid){
-  const raw = await kv.get(keyFor(uid))
+export async function readUsed(kv, uid, prefix = 'q'){
+  const raw = await kv.get(keyFor(uid, prefix))
   const n = raw == null ? 0 : parseInt(raw, 10)
   return Number.isFinite(n) && n > 0 ? n : 0
 }
@@ -47,11 +58,11 @@ export async function readUsed(kv, uid){
 // That is an accepted trade for a personal app: the failure costs pennies, and
 // the fix is a Durable Object, which is the thing to reach for the moment this
 // needs to be exact. refund() below covers the honest failure case.
-export async function claim(kv, uid, cap = DAILY_CAP){
-  const used = await readUsed(kv, uid)
+export async function claim(kv, uid, cap = DAILY_CAP, prefix = 'q'){
+  const used = await readUsed(kv, uid, prefix)
   if(used >= cap) return { ok: false, used, remaining: 0 }
   const next = used + 1
-  await kv.put(keyFor(uid), String(next), { expirationTtl: TTL_SECONDS })
+  await kv.put(keyFor(uid, prefix), String(next), { expirationTtl: TTL_SECONDS })
   return { ok: true, used: next, remaining: Math.max(0, cap - next) }
 }
 
@@ -60,12 +71,12 @@ export async function claim(kv, uid, cap = DAILY_CAP){
 // word — if the Worker dies between claiming and refunding, that ask is spent.
 // Losing one credit to a crash is a better failure than double-spending a
 // credit to a race.
-export async function refund(kv, uid, cap = DAILY_CAP){
+export async function refund(kv, uid, cap = DAILY_CAP, prefix = 'q'){
   try{
-    const used = await readUsed(kv, uid)
+    const used = await readUsed(kv, uid, prefix)
     if(used <= 0) return
     const next = used - 1
-    await kv.put(keyFor(uid), String(next), { expirationTtl: TTL_SECONDS })
+    await kv.put(keyFor(uid, prefix), String(next), { expirationTtl: TTL_SECONDS })
     return Math.max(0, cap - next)
   }catch(e){ /* the ask is spent; not worth failing the response over */ }
 }

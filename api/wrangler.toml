@@ -12,20 +12,44 @@ compatibility_flags = ["nodejs_compat"]
 # verifiable — a token minted for any other project fails the `aud` check.
 FIREBASE_PROJECT_ID = "books-7a105"
 
-# Comma-separated. The Pages origin, plus localhost for working on the app.
-# A wildcard here would let any website spend a signed-in reader's daily quota.
-ALLOWED_ORIGINS = "https://laurenmtech.github.io,http://localhost:8000"
+# Comma-separated. The Pages origin, plus the localhost ports the app gets
+# served from while it's being worked on. A wildcard here would let any website
+# spend a signed-in reader's daily quota — so a new dev port has to be added
+# here, and the Worker redeployed, before the browser will let the app call it.
+ALLOWED_ORIGINS = "https://laurenmtech.github.io,http://localhost:8000,http://localhost:8123"
 
 # Asks per reader per UTC day. Lowering this is the other cost lever, alongside
 # the model in src/recommend.js.
 DAILY_CAP = "10"
 
-# One integer per reader per day, nothing else. Create it with:
+# Series lookups per reader per UTC day. NOT an allowance — nothing ever shows
+# this number to anyone. Adding a book fires a lookup on its own, so this is an
+# abuse ceiling, and cached answers don't count against it. See quota.js.
+SERIES_DAILY_CAP = "60"
+
+# Two things live here, under different key prefixes:
+#   q:<uid>:<date>  one integer per reader per day  (recommendations, 48h TTL)
+#   s:<uid>:<date>  the same for series lookups     (48h TTL)
+#   series:v<n>:…   the series cache — public facts, shared by every reader.
+#                   <n> is CACHE_VERSION in src/series.js; bumping it abandons
+#                   every cached answer, which is how a wrong one gets fixed.
+#
+# Create it with:
 #   npx wrangler kv namespace create QUOTA
 # then paste the printed id below (and the preview_id if you use `wrangler dev`).
 [[kv_namespaces]]
 binding = "QUOTA"
 id = "9bbc8b5bd166476e9b5c67a5d02678e0"
+
+# OPTIONAL. Bind a namespace called SERIES and the cache moves into it, leaving
+# QUOTA holding nothing but counters again. src/series.js prefers SERIES and
+# falls back to QUOTA, so this is a pure upgrade with no code change:
+#   npx wrangler kv namespace create SERIES
+# then uncomment and paste the printed id.
+#
+# [[kv_namespaces]]
+# binding = "SERIES"
+# id = "…"
 
 # ANTHROPIC_API_KEY is NOT here. It is a secret:
 #   npx wrangler secret put ANTHROPIC_API_KEY

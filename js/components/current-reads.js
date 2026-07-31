@@ -10,9 +10,9 @@
 // and not only a drag.
 import { el, escapeHtml, iconButton } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
-import { bookKey } from '../services/books.js'
-import { subtitle, tagRow } from '../ui/book-meta.js'
-import { subscribe, getState, reorderCurrent, removeCurrent } from '../state/store.js'
+import { bookKey, inSeries } from '../services/books.js'
+import { subtitle, tagRow, volumeLabel } from '../ui/book-meta.js'
+import { subscribe, getState, reorderCurrent, removeCurrent, detachSeries } from '../state/store.js'
 
 export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }){
   const list = root.querySelector('#current-list')
@@ -42,13 +42,31 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
     const art = coverImg(book, { size: headline ? 'M' : 'S', className: 'current-cover' })
     if(art) li.appendChild(art)
 
-    const bits = subtitle(book).map(escapeHtml).join(' · ')
-    const meta = el('div', {
-      className: 'current-meta',
-      html: `<h3>${escapeHtml(book.title)}</h3>` +
-            (bits ? `<div class="muted">${bits}</div>` : '') +
-            tagRow(book)
-    })
+    // A series reads as one thing being read, so the series is the heading and
+    // the volume sits under it. A standalone is unchanged — the title is the
+    // heading, as it always was.
+    //
+    // Note there is no grouping here, and none is needed: finishing a volume
+    // ADVANCES this entry rather than adding a second one (see finishCurrent),
+    // so a series holds exactly one slot at every volume. If someone
+    // deliberately starts two volumes of the same series at once they get two
+    // rows, which is honest — collapsing them would hide a book they own.
+    const series = inSeries(book)
+    const meta = el('div', { className: 'current-meta' })
+    if(series){
+      const line = [book.author, volumeLabel(book)].filter(Boolean).map(escapeHtml).join(' · ')
+      meta.innerHTML =
+        `<h3>${escapeHtml(book.seriesName)}</h3>` +
+        `<div class="series-volume">${escapeHtml(book.title)}</div>` +
+        (line ? `<div class="muted">${line}</div>` : '') +
+        tagRow(book)
+    } else {
+      const bits = subtitle(book).map(escapeHtml).join(' · ')
+      meta.innerHTML =
+        `<h3>${escapeHtml(book.title)}</h3>` +
+        (bits ? `<div class="muted">${bits}</div>` : '') +
+        tagRow(book)
+    }
 
     const actions = el('div', { className: 'list-actions' },
       iconButton('finish', 'Finish', () => finishModal.open(idx, book)),
@@ -64,6 +82,26 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
         if(ok) removeCurrent(idx)
       })
     )
+
+    // The manual override, always reachable rather than only at the moment of
+    // finishing. Someone who wants to stop at book 3 shouldn't have to finish
+    // book 3 to say so — and the alternatives without it are both lies: setting
+    // it down as "not for me" marks a book they're enjoying as abandoned, and
+    // removing it leaves no record at all.
+    if(series){
+      actions.appendChild(el('button', {
+        type: 'button',
+        className: 'btn series-detach',
+        onClick: () => {
+          const ok = confirm(
+            `Stop treating “${book.seriesName}” as a series?\n\n` +
+            `You keep “${book.title}” and everything in your record. ` +
+            'Finishing it just won’t hand you the next volume.'
+          )
+          if(ok) detachSeries(book.seriesKey)
+        }
+      }, 'Stop series'))
+    }
 
     // The keyboard path for reordering, and the touch one: dragging is a mouse
     // idiom, and neither a screen reader nor a phone should be shut out of

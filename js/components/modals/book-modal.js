@@ -16,6 +16,7 @@ import { escapeHtml } from '../../ui/dom.js'
 import { revealBook } from '../../ui/reveal.js'
 import { mountTypeahead } from '../typeahead.js'
 import { findExisting, bookKey } from '../../services/books.js'
+import { enrich } from '../../services/series.js'
 import {
   addToTbr, addCurrent, addAlreadyRead, getState, CURRENT_CAP
 } from '../../state/store.js'
@@ -97,6 +98,13 @@ export function mountBookModal(root){
   // a search result or from the two text fields. Synchronous, and it stays that
   // way: a search result already carries its genre and its series, so picking
   // one waits on nothing.
+  //
+  // The series lookup is the one thing here that touches the network, and it is
+  // deliberately fired AFTER the book is already on the shelf and never awaited.
+  // Adding a book must not depend on a network — the answer arrives a moment
+  // later and patches the book in place, or it doesn't and nothing is different.
+  // Add time is the right moment for it precisely because nobody is waiting:
+  // it's what makes finishing a volume later instant and entirely local.
   function commit(book){
     if(blockedAsDuplicate(book)) return
     const next = { ...book }
@@ -105,6 +113,7 @@ export function mountBookModal(root){
     // addAlreadyRead().
     else if(dest === 'finished') addAlreadyRead(next)
     else addToTbr(next)
+    enrich(next)
     modal.close()
   }
 

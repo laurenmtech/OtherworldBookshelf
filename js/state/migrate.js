@@ -64,6 +64,14 @@ function toCurrentReads(data){
 // way to add one. Entries pass through untouched — deliberately, since the
 // record also holds legacy `notes` and `rating` fields that the Finished list
 // still renders.
+//
+// v8 → v9: Phase 7 adds three more optional fields to a book — seriesTotal,
+// seriesVolumes and seriesDetached — and again there is nothing to convert. That
+// is the whole design: a series is a normal book carrying series fields, and
+// the one-row-per-series rendering happens at paint time off seriesKey. No
+// array of books is ever persisted, so a document written before series existed
+// is understood by this build, and a document written by this build is
+// understood by a build that predates it — it just won't group.
 
 // Normalise any stored or remote payload into the shape the store guarantees.
 // Unknown keys are dropped; missing keys get empty defaults.
