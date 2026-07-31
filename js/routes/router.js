@@ -1,16 +1,5 @@
-// Hash routing.
-//
-// Hash fragments rather than the History API: they need no server rewrite
-// rules, which is what keeps this deployable to GitHub Pages unchanged. The
-// matcher understands `:param` segments even though nothing uses them yet —
-// Phase 11's `#/club/<code>` is the reason, and supporting it now costs a
-// dozen lines rather than a rewrite later.
-//
-// The router owns the three things every route change must do — swap which
-// section is visible, restore that route's scroll position, and move focus to
-// its heading — so no individual route has to remember them.
-
-// '' | '#' | '#/' -> '/'   ·   '#/finished/' -> '/finished'
+// Hash routing. Owns the three things every route change must do: swap the visible
+// section, restore that route's scroll, move focus to its heading.
 function normalize(hash){
   let path = String(hash || '').replace(/^#/, '')
   if(!path.startsWith('/')) path = '/' + path
@@ -18,8 +7,6 @@ function normalize(hash){
   return path || '/'
 }
 
-// Exact matches win; `:param` patterns are only tried if nothing matched
-// literally, so a future '/club/new' can coexist with '/club/:code'.
 function match(path, paths){
   if(paths.includes(path)) return { path, params: {} }
   const segs = path.split('/')
@@ -38,8 +25,6 @@ function match(path, paths){
   return null
 }
 
-// routes: [{ path, el, enter?(params), leave?() }]
-// onChange(path) fires after every successful navigation — the tab bar's cue.
 export function createRouter({ routes, fallback = '/', onChange } = {}){
   const paths = routes.map(r => r.path)
   if(!paths.includes(fallback)) throw new Error(`router: fallback "${fallback}" is not a route`)
@@ -52,8 +37,6 @@ export function createRouter({ routes, fallback = '/', onChange } = {}){
     const path = normalize(location.hash)
     const found = match(path, paths)
 
-    // Unknown route -> Reading. replaceState so the bad URL doesn't become a
-    // history entry the back button can land on again.
     if(!found){
       history.replaceState(null, '', '#' + fallback)
       return apply()
@@ -75,11 +58,8 @@ export function createRouter({ routes, fallback = '/', onChange } = {}){
     if(next.enter) next.enter(found.params)
     current = next
 
-    // Restore where this tab was left, defaulting to the top. After the
-    // section is visible, so the document is tall enough to scroll into.
     window.scrollTo(0, scrollTops.get(next.path) || 0)
 
-    // Announce the new view — but never steal focus on the initial paint.
     if(!firstRender){
       const heading = next.el.querySelector('[data-route-heading]')
       if(heading && typeof heading.focus === 'function') heading.focus()
@@ -89,9 +69,6 @@ export function createRouter({ routes, fallback = '/', onChange } = {}){
     if(onChange) onChange(found.path, found.params)
   }
 
-  // Start from a known state: without this, a cold start on #/finished would
-  // reveal the Finished section while leaving Reading — which is not hidden in
-  // the markup — showing underneath it.
   routes.forEach(r => { r.el.hidden = true })
 
   window.addEventListener('hashchange', apply)

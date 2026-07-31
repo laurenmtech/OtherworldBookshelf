@@ -1,33 +1,21 @@
-// "Find me something."
+// "Find me something." What leaves this device is a compressed summary of your
+// taste and a list of things not to suggest — never the shelf.
 //
-// Everything about what you read stays on this device. What leaves is a
-// compressed summary — a handful of loved titles, the moods you reach for most,
-// and a list of things not to suggest. Not the shelf.
-//
-// The backend is a Cloudflare Worker holding the Anthropic key; see api/README.md.
-// Its URL is deployment config, not a credential — the endpoint is useless
-// without a Firebase token signed for this project.
+// EFFORT IS PINNED in the Worker: Opus 5 thinks by default and thinking bills as
+// output. verify() below is the anti-invention pass — structured output removes
+// the parsing failure, not the making-things-up one.
 import { idToken } from '../state/auth.js'
 import { searchBooks } from './books.js'
 import { bookKey } from './book-shape.js'
 
-// One base, two routes. services/series.js builds /series off this, so the
-// deployment only has to be written down once.
 export const API_BASE = 'https://otherworld-reads-api.laurenmtech-aef.workers.dev'
 export const API_URL = `${API_BASE}/recommend`
 
 const TIMEOUT_MS = 45000
 
-// How much of the shelf gets compressed into the summary. Small on purpose:
-// the acceptance criterion is that a short summary works well enough in
-// practice before anyone considers sending the whole finished list.
 const RECENT_LOVED = 8
 const TOP_MOODS = 6
 
-// ── What the model is told about you ────────────────────────────────────────
-
-// Loved books first, then merely liked, newest first. A book you loved says
-// far more about what to offer next than one you finished and shrugged at.
 export function tasteSummary(state){
   const finished = (state.finished || []).filter(b => !b.setDown)
   const rank = { loved: 0, liked: 1 }
@@ -43,7 +31,6 @@ export function tasteSummary(state){
     return `- ${r === 0 ? 'Loved' : 'Liked'}: ${b.title}${bits ? ` (${bits})` : ''}`
   })
 
-  // The vocabulary someone actually reaches for, counted rather than guessed.
   const tally = new Map()
   for(const b of finished) for(const m of b.moods || []) tally.set(m, (tally.get(m) || 0) + 1)
   const moods = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, TOP_MOODS).map(e => e[0])
@@ -52,13 +39,6 @@ export function tasteSummary(state){
   return lines.join('\n')
 }
 
-// ── What not to offer ───────────────────────────────────────────────────────
-
-// A series you bounced off is a series, not a book. If the earliest entry you
-// read from it was set down as "not for me", book two is not a fresh start —
-// so the whole series is excluded. Uses the seriesKey captured in Phase 4;
-// where a book has no series data the rule simply doesn't apply, which is most
-// books and is fine.
 export function abandonedSeries(state){
   const out = new Set()
   const bySeries = new Map()
@@ -68,8 +48,6 @@ export function abandonedSeries(state){
     bySeries.get(b.seriesKey).push(b)
   }
   for(const [key, books] of bySeries){
-    // Earliest by series position where known, else by how long it's been in
-    // the record — "the first one they read", as closely as we can tell.
     const sorted = [...books].sort((a, b) =>
       ((a.seriesPosition ?? 1e9) - (b.seriesPosition ?? 1e9)) ||
       (Date.parse(a.finishedAt || 0) - Date.parse(b.finishedAt || 0)))
@@ -79,8 +57,6 @@ export function abandonedSeries(state){
   return out
 }
 
-// Everything they own, have read, set down, or already said no to — as plain
-// "Title — Author" lines, which is all the model needs to avoid them.
 export function exclusions(state){
   const lists = [state.currentReads, state.wishlist, state.finished, state.passed]
   const seen = new Set()
@@ -96,8 +72,6 @@ export function exclusions(state){
   }
   return out
 }
-
-// ── Asking ──────────────────────────────────────────────────────────────────
 
 export class RecommendError extends Error {
   constructor(type, message){ super(message); this.type = type }
@@ -115,8 +89,6 @@ const MESSAGES = {
 
 export const messageFor = (type) => MESSAGES[type] || MESSAGES.upstream_failure
 
-// Returns { suggestions, remaining }. Throws RecommendError with a type the
-// sheet can render as one plain sentence.
 export async function askForBooks({ moods = [], freeText = '' } = {}, state){
   if(navigator.onLine === false) throw new RecommendError('offline', MESSAGES.offline)
   const token = await idToken()
@@ -148,8 +120,6 @@ export async function askForBooks({ moods = [], freeText = '' } = {}, state){
 
   if(!res.ok){
     const type = (data && data.error && data.error.type) || 'upstream_failure'
-    // The Worker's message is written for a reader, so show it rather than
-    // second-guessing it — it knows the actual daily cap, for one thing.
     throw new RecommendError(type, (data && data.error && data.error.message) || messageFor(type))
   }
 
@@ -160,12 +130,6 @@ export async function askForBooks({ moods = [], freeText = '' } = {}, state){
   return { suggestions: verified, remaining: data.remaining }
 }
 
-// ── Verification: the anti-invention pass ───────────────────────────────────
-
-// Punctuation and case removed, and "&" spelled out — Open Library files
-// Susanna Clarke's second novel as "Jonathan Strange & Mr. Norrell" while the
-// model writes "Mr Norrell". An exact-match check drops that as an invention,
-// which is the anti-hallucination guard failing in the direction nobody notices.
 function norm(s){
   return String(s || '').toLowerCase()
     .replace(/&/g, ' and ')
@@ -179,10 +143,6 @@ function sameTitle(a, b){
   return x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')
 }
 
-// A suggestion survives only if a real book with that title comes back from the
-// search. Anything unresolvable is dropped silently — a short list of real
-// books beats five with one invention, and explaining the drop would only
-// advertise that the model sometimes makes things up.
 export async function verify(suggestions, state, abandoned = new Set()){
   const have = new Set()
   for(const list of [state.currentReads, state.wishlist, state.finished, state.passed]){
@@ -197,13 +157,9 @@ export async function verify(suggestions, state, abandoned = new Set()){
     const match = results.find(b => sameTitle(b.title, s.title))
     if(!match) return null
 
-    // Belt and braces: the model was told not to suggest these, but a title it
-    // phrased differently could still slip past the exclusion list it was given.
     if(have.has(bookKey(match))) return null
     if(match.seriesKey && abandoned.has(match.seriesKey)) return null
 
-    // The real record wins on everything except the reason, which is the one
-    // thing only the model knows.
     return { ...match, why: s.why || '' }
   }))
 

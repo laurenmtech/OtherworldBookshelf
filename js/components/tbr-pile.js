@@ -1,4 +1,5 @@
-// The TBR pile: what's next, sorted by title.
+// The TBR pile: what's next, sorted by title. Availability is never state — it's a
+// fact about the world that expires, so it's cached for the session only.
 import { el, iconButton, escapeHtml } from '../ui/dom.js'
 import { coverImg } from '../ui/cover.js'
 import { bookKey } from '../services/books.js'
@@ -9,19 +10,14 @@ import {
 import { subtitle, tagRow } from '../ui/book-meta.js'
 import { subscribe, getState, removeTbr, makeTbrCurrent } from '../state/store.js'
 
-// The first library with a Libby key is the primary one. A library entry with
-// no key is a bookmark — a link you keep — and gets no borrow links.
 export function primaryLibrary(state){
   return (state.library || []).find(l => l && l.libraryKey) || null
 }
 
-// The first saved bookshop, if there is one.
 export function primaryShop(state){
   return (state.bookstores || [])[0] || null
 }
 
-// "about 3 weeks" beats "estimated wait: 19 days". Nobody plans a reading life
-// in days, and the number is an estimate anyway — precision would be a lie.
 function waitText(days){
   if(days == null) return 'on hold'
   if(days <= 1) return 'about a day'
@@ -33,11 +29,6 @@ function waitText(days){
 
 const FORMAT_WORD = { ebook: 'ebook', audiobook: 'audiobook' }
 
-// What your library has, said plainly. Absent entirely when we don't know —
-// no spinner, no error, no empty row holding space for a fact we never got.
-// The exact Libby URL for a book we found at the library, when we have one.
-// More precise than a search: it opens the title itself rather than a results
-// page the reader has to pick from again.
 function exactLibbyUrl(book, library, formats){
   if(!AVAILABILITY || !library || !formats.length) return null
   const result = cachedAvailability(library.libraryKey, book, formats)
@@ -60,28 +51,15 @@ function borrowRow(book, library, formats){
     ? `Available now · ${fmt}`
     : `${waitText(best.waitDays)} wait · ${fmt}`
   const cls = best.isAvailable ? 'borrow-row available' : 'borrow-row waiting'
-  // The matched title is shown when it isn't what you asked for, so a wrong
-  // edition is visible rather than silently wrong.
   const matched = best.title && best.title.toLowerCase() !== String(book.title).toLowerCase()
     ? `<span class="borrow-matched muted">matched “${escapeHtml(best.title)}”</span>`
     : ''
-  // Not a link. "About three weeks wait" is something to know, not something to
-  // do — and a row with two links in it makes you read both to work out which
-  // one is the action. The exact-title URL isn't lost: it's handed to the row
-  // below, which is the row that actually takes you somewhere.
   return `<div class="${cls}">${escapeHtml(label)}${matched}</div>`
 }
 
-// Where else this book might come from. Ordinary links, built by string
-// concatenation, independent of any availability lookup — they work whether or
-// not the catalogue API is reachable, or enabled, or still exists.
-// Named findRow because `findLinks` is the stored preference key and renaming
-// that would be a migration for nothing. What it renders is the checkout link.
 function findRow(book, library, shop, want, formats){
   const links = []
   if(want.includes('library') && library){
-    // Prefer the exact title we already matched; fall back to a search when
-    // availability is off, unasked, or found nothing.
     const url = exactLibbyUrl(book, library, formats) || libbySearchUrl(library.libraryKey, book.title)
     if(url) links.push({ url, label: `Checkout at ${library.name}` })
   }
@@ -104,18 +82,16 @@ export function mountTbrPile(root, { bookModal }){
   const openShelf = root.querySelector('#tbr-open-shelf')
 
   addBtn && addBtn.addEventListener('click', () => bookModal.open({ dest: 'tbr' }))
-  // The prompt names where to go, so it may as well take you there.
+  const emptyAction = empty && empty.querySelector('[data-empty-action]')
+  emptyAction && emptyAction.addEventListener('click', () => bookModal.open({ dest: 'tbr' }))
   openShelf && openShelf.addEventListener('click', () => {
     const btn = document.getElementById('shelf-btn')
     if(btn) btn.click()
   })
 
   function row(book, idx, library, formats, shop, want){
-    // data-book-key is what "you already have this — go to it" finds.
     const li = el('li', { 'data-book-key': bookKey(book) })
 
-    // Nothing puts vibes on a TBR entry any more, but a book set down by an
-    // older build may still carry them. Rendered rather than dropped.
     const moodTags = (book.moods && book.moods.length)
       ? `<div class="mood-row">${book.moods.map(m => `<span class="mood-tag">${escapeHtml(m)}</span>`).join('')}</div>`
       : ''
@@ -139,9 +115,6 @@ export function mountTbrPile(root, { bookModal }){
     return li
   }
 
-  // Availability isn't state — it's a fact about the world that expires — so it
-  // never enters the store. It arrives late, is cached for the session, and
-  // triggers a plain re-render of this list and nothing else.
   let latest = null
   let pending = false
 
@@ -150,8 +123,6 @@ export function mountTbrPile(root, { bookModal }){
     for(const book of state.wishlist){
       if(cachedAvailability(library.libraryKey, book, formats) !== undefined) continue
       requestAvailability(library.libraryKey, book, formats).then(() => {
-        // Coalesce: thirty answers landing individually would be thirty
-        // re-renders of the same list.
         if(pending) return
         pending = true
         setTimeout(() => { pending = false; if(latest) render(latest) }, 60)
@@ -168,7 +139,6 @@ export function mountTbrPile(root, { bookModal }){
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', state.wishlist.length > 0)
     state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats, shop, want)))
-    // Never nudge about a library unless borrowing is something they asked to see.
     if(prompt) prompt.classList.toggle('hidden',
       !!library || state.wishlist.length === 0 || !want.includes('library'))
     fetchAvailability(state, library, formats)

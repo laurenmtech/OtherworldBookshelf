@@ -136,8 +136,16 @@
   0%, 100%{ box-shadow:none }
   15%, 60%{ box-shadow:0 0 0 2px var(--accent) }
 }
+/* Someone who has asked their system for less motion has asked ALL of it to
+   stop, not just the showy bit. The flash still needs to mark the row, so it
+   becomes a static outline rather than disappearing — losing the signal
+   entirely would be a worse answer than animating it. */
 @media (prefers-reduced-motion: reduce){
   .reveal-flash{ animation:none; box-shadow:0 0 0 2px var(--accent) }
+  .list-actions{ animation:none }
+  .btn{ transition:none }
+  .btn:hover{ transform:none; box-shadow:none }
+  .btn:active{ transform:none }
 }
 
 /* A book that was set down for good, marked in the record rather than hidden
@@ -182,6 +190,18 @@
 }
 .series-volume-row .list-actions{ margin-top:0; align-self:center; animation:none }
 .series-volume-row strong{ font-weight:600; overflow-wrap:anywhere }
+
+/* ── Empty states ───────────────────────────────────────────────────────────
+   A panel with nothing in it is the first thing a new reader sees, so it says
+   what the panel is for and then offers the action that fills it. The action is
+   the same one in the panel head — having read the explanation, nobody should
+   have to go looking. */
+.empty-state{
+  padding:16px; border-radius:10px;
+  background:var(--sunken); border:1px dashed var(--line-2);
+  display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+}
+.empty-state p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5 }
 
 /* saved-place link styling (libraries, bookstores) */
 .place-panel .list a{ color:var(--accent-2); text-decoration:underline; word-break:break-all }

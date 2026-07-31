@@ -1,21 +1,14 @@
-// The Finished route: the full record, and the things it could never afford at
-// the bottom of a single scroll — grouped by year, filterable by feeling and
-// mood, searchable by title or author.
+// The Finished route. Filter options are derived from the entries themselves, so
+// you can never filter to an empty result by picking something no book has.
 //
-// The filter options are derived from the entries themselves rather than from a
-// fixed list. That is what makes them an open set, and it means you can never
-// filter to an empty result by picking an option that no book has. Phase 4's
-// "set down" joins the feeling facet the first time a book carries it — it
-// isn't a feeling anyone picks, so it's read off the flag rather than the
-// field, which is the only line here that had to know about it.
+// Filtering passes group:false — a question deserves literal answers, and it keeps
+// the count honest with no special case.
 import { el } from '../ui/dom.js'
 import { subscribe, getState } from '../state/store.js'
 import { multiSelect } from '../ui/chips.js'
 import { renderFinished } from '../components/finished-list.js'
 import { FEELINGS, MOODS, SET_DOWN, feelingLabel } from '../state/moods.js'
 
-// Known values keep their canonical order; anything unrecognised follows,
-// alphabetically, so a new state never jumps the queue.
 function ordered(present, known){
   const inKnown = known.filter(k => present.has(k))
   const extra = Array.from(present).filter(k => !known.includes(k)).sort()
@@ -62,8 +55,6 @@ export function mountFinished(root, { bookModal } = {}){
     if(searchInput) searchInput.focus()
   })
 
-  // Rebuild a chip group only when the available options actually change —
-  // rebuilding on every keystroke would drop focus mid-interaction.
   function syncChips(finished){
     const presentFeelings = new Set()
     const presentMoods = new Set()
@@ -95,7 +86,6 @@ export function mountFinished(root, { bookModal } = {}){
       moods = moodChips.getValue()
     }
 
-    // A filter with nothing to filter by is noise, not a control.
     if(feelingWrap) feelingWrap.hidden = fOpts.length === 0
     if(moodWrap) moodWrap.hidden = mOpts.length === 0
   }
@@ -105,14 +95,10 @@ export function mountFinished(root, { bookModal } = {}){
       const hay = `${item.title || ''} ${item.author || ''}`.toLowerCase()
       if(!hay.includes(query)) return false
     }
-    // "Set down" sits in this facet but lives on its own flag, so a book that
-    // was set down without saying how it felt still answers to that chip.
     if(feelings.length){
       const bySetDown = feelings.includes(SET_DOWN) && item.setDown
       if(!bySetDown && !(item.feeling && feelings.includes(item.feeling))) return false
     }
-    // Within a facet, selecting two options widens the result rather than
-    // narrowing it to books carrying both.
     if(moods.length){
       const has = item.moods || []
       if(!moods.some(m => has.includes(m))) return false
@@ -130,17 +116,10 @@ export function mountFinished(root, { bookModal } = {}){
 
     const filtering = !!query || feelings.length > 0 || moods.length > 0
 
-    // Filtering ungroups. A series is one entry while you're browsing, but the
-    // moment you ask a question — "which of these did I love?" — you want the
-    // books that answer it, not a seven-volume row containing one of them.
-    // It also keeps the count below honest without a special case: filtered or
-    // not, it counts volumes, because volumes are what you read.
     renderFinished(listRoot, entries, { group: !filtering })
 
     if(clearBtn) clearBtn.hidden = !filtering
 
-    // A count, and only a count. It says how much is here, not how well you're
-    // doing — there is nothing to keep up with.
     if(countEl){
       const noun = `book${finished.length === 1 ? '' : 's'}`
       countEl.textContent = filtering
@@ -150,11 +129,20 @@ export function mountFinished(root, { bookModal } = {}){
     }
 
     if(emptyEl){
+      emptyEl.innerHTML = ''
       if(finished.length === 0){
-        emptyEl.textContent = 'Nothing here yet — books you finish will collect here.'
+        emptyEl.appendChild(el('p', {}, 'Everything you finish collects here, with the date and how it felt. ' +
+          'Books you set down are kept too — reading part of something is still reading it.'))
+        emptyEl.appendChild(el('button', {
+          type: 'button', className: 'btn primary',
+          onClick: () => bookModal && bookModal.open({ dest: 'finished' })
+        }, 'Add a book you’ve read'))
         emptyEl.hidden = false
       } else if(entries.length === 0){
-        emptyEl.textContent = 'No books match those filters.'
+        emptyEl.appendChild(el('p', {}, `No books match those filters, out of ${finished.length} in your record.`))
+        emptyEl.appendChild(el('button', {
+          type: 'button', className: 'btn', onClick: () => clearBtn && clearBtn.click()
+        }, 'Clear filters'))
         emptyEl.hidden = false
       } else {
         emptyEl.hidden = true

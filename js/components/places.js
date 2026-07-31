@@ -1,20 +1,9 @@
-// A saved list of places — libraries, and the bookshops you like.
-//
-// Both are the same thing: a name, a link, and add/edit/remove. This replaces
-// the library-only component rather than sitting beside a copy of it, which is
-// the same call modal.js made in Phase 1 and for the same reason.
-//
-// The container supplies its own hooks so one implementation can serve both
-// sections of the settings sheet:
-//   [data-place-add]    the "+ Add" button
-//   [data-place-list]   the <ul> to fill
-//   [data-place-empty]  the message shown when there's nothing yet
+// Saved places: libraries AND bookstores, one implementation. A library entry with
+// a libraryKey is a real library and gets borrow links; one without is a bookmark.
+// That key is the whole type system — there is deliberately no `kind` field.
 import { el, iconButton, escapeHtml } from '../ui/dom.js'
 import { subscribe, getState } from '../state/store.js'
 
-// select(state) -> the array to render · remove(index) -> a store action
-// extraAction(entry, index) -> an optional leading button, or null
-// reorder(from, to) -> an optional store action; enables the move controls
 export function mountPlaceList(root, { modal, select, remove, extraAction, reorder } = {}){
   if(!root) return
   const list = root.querySelector('[data-place-list]')
@@ -22,8 +11,9 @@ export function mountPlaceList(root, { modal, select, remove, extraAction, reord
   const addBtn = root.querySelector('[data-place-add]')
 
   addBtn && addBtn.addEventListener('click', () => modal.open())
+  const emptyAction = empty && empty.querySelector('[data-empty-action]')
+  emptyAction && emptyAction.addEventListener('click', () => modal.open())
 
-  // Same focus-carrying fix as the current reads list — see the note there.
   let refocus = null
 
   function row(entry, idx, total){
@@ -32,14 +22,9 @@ export function mountPlaceList(root, { modal, select, remove, extraAction, reord
     const link = url
       ? `<div class=muted><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></div>`
       : ''
-    // The official name only appears when it isn't what you called it. Showing
-    // "King County Library System" under a label that already says exactly that
-    // is noise; showing it under "Mom's card" is the whole point — it's how two
-    // similarly-named entries stay tellable apart.
     const official = entry.officialName && entry.officialName !== entry.name
       ? `<div class="muted place-official">${escapeHtml(entry.officialName)}</div>`
       : ''
-    // Said rather than left to be inferred from position.
     const primary = reorder && idx === 0 && total > 1 && entry.libraryKey
       ? '<span class="place-badge">Primary</span>'
       : ''

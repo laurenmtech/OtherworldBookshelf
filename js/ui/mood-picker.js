@@ -1,25 +1,14 @@
-// The grouped vibe chips, plus the field for typing one of your own.
-//
-// Extracted from finish-modal.js when Phase 4's "set it down" needed the same
-// control: both moments ask the same optional question, and a second copy of
-// this would be a second place for the vocabulary to drift.
-//
-// The words themselves live in state/moods.js — this is only the control that
-// offers them.
+// The grouped vibe chips plus "new vibe", shared by finishing and setting down.
 import { el } from './dom.js'
 import { multiSelect } from './chips.js'
 import { MOOD_GROUPS, MOODS, customMoods } from '../state/moods.js'
 import { getState } from '../state/store.js'
 
-// root gets the groups; the "+ New vibe…" input and its button are optional.
-// Returns { reset, getValue, setValue }.
 export function mountMoodPicker(root, { input, addButton } = {}){
   let controls = []   // one multiSelect per group
   let session = []    // vibes typed during this open, not yet saved anywhere
 
   const getValue = () => controls.flatMap(c => c.getValue())
-  // setValue keeps only the keys a group actually owns, so handing every group
-  // the full selection is the whole restore.
   const setValue = (values) => controls.forEach(c => c.setValue(values || []))
 
   function build(){
@@ -48,8 +37,6 @@ export function mountMoodPicker(root, { input, addButton } = {}){
     const name = input.value.trim()
     if(!name) return
     const keep = getValue()
-    // Typing a word that already exists just selects it rather than making a
-    // near-duplicate sitting in a different group.
     const match = [...MOODS, ...session].find(m => m.toLowerCase() === name.toLowerCase())
     const value = match || name
     if(!match) session.push(value)
@@ -60,13 +47,11 @@ export function mountMoodPicker(root, { input, addButton } = {}){
   }
 
   addButton && addButton.addEventListener('click', addVibe)
-  // Enter in this field means "add this vibe", not "submit the form".
   input && input.addEventListener('keydown', (e) => {
     if(e.key === 'Enter'){ e.preventDefault(); addVibe() }
   })
 
   return {
-    // Called on every open: rebuild from current data, forget last time.
     reset(){ session = []; build(); setValue([]) },
     getValue,
     setValue

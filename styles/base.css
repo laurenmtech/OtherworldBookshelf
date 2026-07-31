@@ -13,6 +13,23 @@ body{
   -moz-osx-font-smoothing:grayscale;
 }
 
+/* ── Focus ──────────────────────────────────────────────────────────────────
+   Every vibe defines --accent and the contrast audit already holds it to AA
+   against every surface, so one rule gives a visible ring in all five without
+   a per-vibe token to keep in step.
+
+   :focus-visible, not :focus — a ring that appears on every mouse click reads
+   as a bug and is the reason people reach for outline:none, which is how apps
+   end up unusable from a keyboard. This way it shows for keyboard and
+   assistive-tech users and stays out of the way of everyone else.
+
+   Nothing in this file sets outline:none. If you are about to, don't. */
+:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  border-radius:4px;
+}
+
 /* Off-screen but still read aloud and still focusable — how the route headings
    announce a tab change without putting a redundant title on the screen. */
 .visually-hidden{

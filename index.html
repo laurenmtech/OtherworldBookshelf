@@ -134,7 +134,12 @@
             <button id="add-current-btn" type="button" class="btn btn-add">+ Add</button>
           </div>
           <ul id="current-list" class="current-list"></ul>
-          <div id="current-empty" class="muted hidden">Nothing in progress — tap “+ Add”.</div>
+          <!-- Empty states teach: what the panel is for, then the action that
+               fills it. A bare "nothing here" makes someone work out the rest. -->
+          <div id="current-empty" class="empty-state hidden">
+            <p>Up to three books at a time — a novel, an audiobook, whatever’s on the bedside table.</p>
+            <button type="button" class="btn primary" data-empty-action>Start a book</button>
+          </div>
         </section>
 
         <section class="panel wishlist-panel">
@@ -150,7 +155,10 @@
             <button id="add-wish-btn" type="button" class="btn btn-add">+ Add</button>
           </div>
           <ul id="wishlist" class="list"></ul>
-          <div id="wishlist-empty" class="muted hidden">Nothing on the pile yet — tap “+ Add”.</div>
+          <div id="wishlist-empty" class="empty-state hidden">
+            <p>What’s next. Books you mean to get to, with a link to borrow or buy each one.</p>
+            <button type="button" class="btn primary" data-empty-action>Add a book</button>
+          </div>
           <!-- One quiet prompt for the whole pile, never a warning per book. -->
           <p id="tbr-library-prompt" class="muted tbr-prompt hidden">
             Add your library in <button type="button" class="linkish" id="tbr-open-shelf">The Hidden Shelf</button>
@@ -193,7 +201,7 @@
 
           <div id="finished-count" class="finished-count muted" hidden></div>
           <div id="finished-list"></div>
-          <div id="finished-empty" class="muted" hidden></div>
+          <div id="finished-empty" class="empty-state" hidden></div>
         </section>
       </div>
     </section>
@@ -203,7 +211,7 @@
   <!-- ───────────── The Hidden Shelf ─────────────
        "sheet" throughout the CSS and the ui/ layer is the interaction pattern,
        not the product name. See components/hidden-shelf.js. -->
-  <div id="hidden-shelf" class="sheet" hidden aria-labelledby="hidden-shelf-title">
+  <div id="hidden-shelf" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="hidden-shelf-title">
     <div class="sheet-inner">
       <div class="sheet-head">
         <h2 id="hidden-shelf-title">The Hidden Shelf</h2>
@@ -219,7 +227,7 @@
             <span id="user-name" class="muted"></span>
             <button id="signout-btn" class="btn" type="button">Sign out</button>
           </div>
-          <div id="sync-status" class="sync-status muted"></div>
+          <div id="sync-status" class="sync-status muted" role="status" aria-live="polite"></div>
         </div>
       </section>
 
@@ -237,7 +245,11 @@
           <button data-place-add type="button" class="btn btn-add">+ Add</button>
         </div>
         <ul data-place-list class="list"></ul>
-        <div data-place-empty class="muted hidden">No libraries yet — tap “+ Add”.</div>
+        <div data-place-empty class="empty-state hidden">
+          <p>Add your library and every book on your pile gets a checkout link — and, where Libby can tell us,
+             whether it’s available or how long the wait is.</p>
+          <button type="button" class="btn primary" data-empty-action>Add your library</button>
+        </div>
         <!-- Only what you'd actually borrow — see availability() in libby.js. -->
         <div class="field borrow-formats">
           <label>Which formats do you borrow?</label>
@@ -251,7 +263,11 @@
           <button data-place-add type="button" class="btn btn-add">+ Add</button>
         </div>
         <ul data-place-list class="list"></ul>
-        <div data-place-empty class="muted hidden">No bookstores yet — tap “+ Add”.</div>
+        <div data-place-empty class="empty-state hidden">
+          <p>Add a bookshop you like and it replaces the default checkout link, so buying a book sends money
+             where you want it to go.</p>
+          <button type="button" class="btn primary" data-empty-action>Add a bookshop</button>
+        </div>
         <!-- Some readers always borrow, some always buy. Both by default; one
              tap to drop the half you never use. -->
         <div class="field borrow-formats">
@@ -262,17 +278,23 @@
 
       <section class="sheet-section">
         <h3>Your record</h3>
-        <p class="muted">Your shelf as a JSON file — everything the app stores, in the shape it stores it.</p>
+        <p class="muted">Your shelf as a JSON file — everything the app stores, in the shape it stores it.
+          Importing adds what’s missing and never changes what’s already here.</p>
         <div class="actions">
           <button id="export-data" type="button" class="btn">Export</button>
+          <button id="import-data" type="button" class="btn">Import</button>
           <button id="delete-data" type="button" class="btn danger">Delete everything</button>
         </div>
+        <!-- The real control is the button above; this is the file picker it
+             drives. Hidden rather than styled, because no amount of CSS makes
+             an <input type=file> look like it belongs. -->
+        <input id="import-file" type="file" accept="application/json,.json" class="visually-hidden">
       </section>
     </div>
   </div>
 
   <!-- ───────────── Vibe picker ───────────── -->
-  <div id="vibe-picker" class="modal vibe-picker hidden" hidden aria-labelledby="vibe-picker-title">
+  <div id="vibe-picker" class="modal vibe-picker hidden" hidden role="dialog" aria-modal="true" aria-labelledby="vibe-picker-title">
     <div class="vibe-picker-inner">
       <div class="sheet-head">
         <h2 id="vibe-picker-title">Choose a vibe</h2>
@@ -287,9 +309,9 @@
   <!-- Finishing and setting down ask the same optional questions, so both use
        the shared mood picker (ui/mood-picker.js) and find their parts by data
        attribute rather than by id. -->
-  <div id="finish-form" class="modal hidden" hidden>
+  <div id="finish-form" class="modal hidden" hidden role="dialog" aria-modal="true" aria-labelledby="finish-modal-title">
     <form id="finish-form-inner" class="finish-inner">
-      <h3>Finish</h3>
+      <h3 id="finish-modal-title">Finish</h3>
       <p class="muted book-line" data-finish-book></p>
       <div class="field">
         <label>How was it?</label>
@@ -320,7 +342,7 @@
 
   <!-- Find me something: mood chips, your own words, then five books to triage.
        The only part of the app with a backend behind it (see api/README.md). -->
-  <div id="recommend-modal" class="modal hidden" hidden aria-labelledby="recommend-title">
+  <div id="recommend-modal" class="modal hidden" hidden role="dialog" aria-modal="true" aria-labelledby="recommend-title">
     <div class="finish-inner">
       <h3 id="recommend-title">Find me something</h3>
 
@@ -353,7 +375,7 @@
   </div>
 
   <!-- Set it down: a pause or a parting, and optionally how it felt. -->
-  <div id="set-down-modal" class="modal hidden" hidden aria-labelledby="set-down-title">
+  <div id="set-down-modal" class="modal hidden" hidden role="dialog" aria-modal="true" aria-labelledby="set-down-title">
     <form class="finish-inner">
       <h3 id="set-down-title">Set it down</h3>
       <p class="muted book-line" data-set-down-book></p>
@@ -375,7 +397,7 @@
        attributes: the title field is hidden during a search, and a hidden
        required field blocks submission with a validation bubble nobody can
        see. book-modal.js validates instead. -->
-  <div id="book-modal" class="modal hidden" hidden aria-labelledby="book-modal-title">
+  <div id="book-modal" class="modal hidden" hidden role="dialog" aria-modal="true" aria-labelledby="book-modal-title">
     <form id="book-form" class="finish-inner">
       <h3 id="book-modal-title">Add to TBR Pile</h3>
       <p class="muted cap-note" id="book-cap-note" hidden></p>
@@ -416,9 +438,9 @@
        the fields are found by data attribute so the ids can stay unique. -->
   <!-- The library dialog asks one extra thing: which library on Libby. You give
        the key and it gives the name back to confirm — see lookupLibrary(). -->
-  <div id="library-modal" class="modal hidden" hidden>
+  <div id="library-modal" class="modal hidden" hidden role="dialog" aria-modal="true" aria-labelledby="library-modal-title">
     <form class="finish-inner">
-      <h3 data-place-title>Add to Library</h3>
+      <h3 id="library-modal-title" data-place-title>Add to Library</h3>
       <div class="field">
         <label for="lib-key">Your library on Libby <span class="muted">(optional)</span></label>
         <div class="key-row">
@@ -442,9 +464,9 @@
     </form>
   </div>
 
-  <div id="bookstore-modal" class="modal hidden" hidden>
+  <div id="bookstore-modal" class="modal hidden" hidden role="dialog" aria-modal="true" aria-labelledby="bookstore-modal-title">
     <form class="finish-inner">
-      <h3 data-place-title>Add a Bookstore</h3>
+      <h3 id="bookstore-modal-title" data-place-title>Add a Bookstore</h3>
       <div class="field">
         <label for="store-name">Bookstore name</label>
         <input id="store-name" data-place-name placeholder="Bookstore name">
