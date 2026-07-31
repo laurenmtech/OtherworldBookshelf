@@ -79,8 +79,9 @@ breaks.
 
 Push to `main`. GitHub Pages serves the repo root as-is.
 
-One rule, and a git hook enforces it: **if you change a file listed in `ASSETS`
-in `sw.js`, raise `BUILD` in the same commit.** The service worker serves the
+A git hook (`.githooks/pre-push`) runs the tests and the contrast audit, and
+enforces one rule: **if you change a file listed in `ASSETS` in `sw.js`, raise
+`BUILD` in the same commit.** The service worker serves the
 app shell cache-first, and that counter is the only thing that invalidates it —
 forget it and every installed phone keeps running the old code silently, with
 nothing on screen to say so.

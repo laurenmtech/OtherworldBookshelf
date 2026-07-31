@@ -616,27 +616,30 @@ a v1 document is still understood — it just isn't written back.
 
 ## The pre-push hook
 
-`.githooks/pre-push` blocks any push that changes a file listed in `sw.js`'s
-`ASSETS` without raising `BUILD`. Forgetting that bump ships an app that never
-updates itself, and nothing on screen reveals it — hence a hook rather than a
-habit. Docs-only pushes (this file, `README.md`) are unaffected, since they
-aren't precached.
+`.githooks/pre-push` refuses a push unless three things hold. There is no CI and
+no build step here, so this is the whole safety net — and a guard that has to be
+remembered is a guard that eventually isn't.
 
-Cover art (from `covers.openlibrary.org` and `books.google.com`) is the one
-thing cached **outside** the build cache, in `otherworld-reads-covers`, and it
-survives `activate` on purpose: a cover id is immutable, so re-downloading every
-one of them on each deploy would be the most expensive thing this app does for
-no gain. The responses are opaque — an `<img>` is a no-cors request, so
-`res.ok` is false and `res.status` is 0 — which is why that handler stores a
-response it cannot read.
+1. **The test suite passes** — `node tests/run.mjs`.
+2. **Every vibe meets the contrast contract** — `node styles/vibes/audit.mjs`.
+3. **A change to a precached file moved `BUILD` in `sw.js`.**
 
-Hooks are not installed by cloning. In a fresh clone, run once:
+The third is the one unique to this project, and the one that fails most
+quietly. The service worker serves the app shell cache-first and `BUILD` is the
+only thing that invalidates it, so shipping a changed file without moving the
+counter leaves every installed phone running the old code with nothing on
+screen to say so. `APP_VERSION` is a human-facing stamp and cannot stand in for
+it. The hook also refuses a push whose `ASSETS` list names a file that doesn't
+exist, because `cache.addAll()` is all-or-nothing: one 404 and the new worker
+never activates, which is the same silent-stale failure by a different route.
 
-```sh
-git config core.hooksPath .githooks
-```
+The first two run against the working tree; the third reads the actual
+revisions, because it compares against the remote. All three have already
+earned their place — the suite caught a wrong contract on its first run, and
+the `BUILD` check blocked a push whose eleven changed modules would have been
+served stale.
 
-Override for a single push with `git push --no-verify`.
+Bypass with `git push --no-verify`, and mean it.
 
 ## The backend (`api/`)
 
