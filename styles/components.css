@@ -401,6 +401,11 @@ body.sheet-open{ overflow:hidden }
 .sheet-section h3{ margin:0 0 10px; font-size:14px; color:var(--accent) }
 .sheet-section > .muted{ margin:0 0 10px }
 
+/* Two steps, one per platform — see components/install.js for why both are
+   always written out rather than picked by sniffing the user agent. */
+.install-step{ margin:0 0 6px }
+.install-step strong{ color:var(--ink); font-weight:600 }
+
 @media (min-width:761px){
   .sheet{ align-items:center }
   .sheet-inner{ border-radius:16px; max-height:82vh; padding-bottom:18px }

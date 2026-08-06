@@ -4,6 +4,7 @@ import { el } from '../ui/dom.js'
 import { createSheet } from '../ui/sheet.js'
 import { mountPlaceList } from './places.js'
 import { mountHeader } from './header.js'
+import { mountInstall } from './install.js'
 import { multiSelect } from '../ui/chips.js'
 import { askConfirm, showMessage } from '../ui/dialog.js'
 import {
@@ -99,6 +100,8 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     select: s => s.bookstores,
     remove: removeBookstore
   })
+
+  mountInstall(root.querySelector('#install-section'))
 
   const exportBtn = root.querySelector('#export-data')
   exportBtn && exportBtn.addEventListener('click', exportShelf)

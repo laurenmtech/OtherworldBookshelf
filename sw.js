@@ -8,7 +8,7 @@
 // stamp (0.<phase><release>) and this is the cache key. The footer shows this
 // number, read back from the installed cache — so it answers "what is my phone
 // actually running?" rather than what a constant somewhere claims.
-const BUILD = 45;
+const BUILD = 46;
 const CACHE = 'otherworld-reads-build-' + BUILD;
 // Cover art lives in its own cache, deliberately NOT keyed by BUILD: a cover is
 // immutable (the id IS the image) and re-downloading every one of them on each
@@ -51,6 +51,7 @@ const ASSETS = [
   './js/components/header.js',
   './js/components/tab-bar.js',
   './js/components/hidden-shelf.js',
+  './js/components/install.js',
   './js/components/current-reads.js',
   './js/components/tbr-pile.js',
   './js/components/finished-list.js',

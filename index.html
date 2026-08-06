@@ -280,6 +280,25 @@
         </div>
       </section>
 
+      <!-- Above "Your record" because it's about the app, not about your books.
+           components/install.js decides what shows: a real install button where
+           the browser offers one, the written steps everywhere else, and nothing
+           at all once the app is already on a home screen. -->
+      <section class="sheet-section" id="install-section" hidden>
+        <h3>Keep it on your phone</h3>
+        <p class="muted">Add it to your home screen and it opens like an app — its own icon, no address
+          bar, and your shelf still there with no signal.</p>
+        <div class="actions" data-install-actions hidden>
+          <button type="button" class="btn primary" data-install-button>Add to Home Screen</button>
+        </div>
+        <div data-install-steps hidden>
+          <p class="muted install-step"><strong>On an iPhone</strong> — tap Share, then Add to Home Screen.</p>
+          <p class="muted install-step"><strong>On Android</strong> — open the ⋮ menu, then Add to Home screen.</p>
+        </div>
+        <!-- The name it lands under: short on purpose, because iOS truncates. -->
+        <p class="muted">It arrives as <strong>TBR</strong>.</p>
+      </section>
+
       <section class="sheet-section">
         <h3>Your record</h3>
         <p class="muted">Your shelf as a JSON file — everything the app stores, in the shape it stores it.
