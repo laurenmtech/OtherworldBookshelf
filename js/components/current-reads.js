@@ -9,6 +9,7 @@ import { coverImg } from '../ui/cover.js'
 import { bookKey, inSeries } from '../services/book-shape.js'
 import { subtitle, tagRow, volumeLabel } from '../ui/book-meta.js'
 import { askConfirm } from '../ui/dialog.js'
+import { entranceGuard } from '../ui/entrance.js'
 import { subscribe, getState, reorderCurrent, removeCurrent, detachSeries } from '../state/store.js'
 
 export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }){
@@ -133,8 +134,11 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
     return li
   }
 
+  const isNews = entranceGuard()
+
   function render(state){
     const books = state.currentReads
+    list.classList.toggle('no-entrance', !isNews(books.map(bookKey)))
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', books.length > 0)
     books.forEach((book, idx) => list.appendChild(entry(book, idx, books.length)))

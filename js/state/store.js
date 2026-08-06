@@ -4,7 +4,7 @@
 // READ THE INDEX INVARIANT in ARCHITECTURE.md before changing how commit()
 // notifies. Actions identify books by POSITION, and that is only safe because
 // commit() notifies synchronously and every listener re-renders in place.
-import { migrate, emptyState } from './migrate.js'
+import { migrate, emptyState, toStorage } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
 import { mergeShelf } from './merge.js'
 import { bookKey, byVolume, inSeries } from '../services/book-shape.js'
@@ -61,9 +61,20 @@ export function reloadLocal(){
   commit({ ...local, wishlist: sortedWishlist(local.wishlist) }, { persist: false })
 }
 
+// A snapshot that says what state already says is not news. Firestore delivers
+// several of those per load — the cached copy, then the server's, then
+// metadata-only fires (persist-cloud subscribes with includeMetadataChanges) —
+// and every one of them used to rebuild every list in the app, which is what a
+// hard refresh looked like: the same rows thrown away and re-created two or
+// three times over.
+//
+// Compared through toStorage() so the two sides are normalised the same way and
+// key order can't make identical shelves look different.
 export function applyRemote(data){
   const next = migrate(data)
-  commit({ ...next, wishlist: sortedWishlist(next.wishlist) }, { persist: false })
+  const sorted = { ...next, wishlist: sortedWishlist(next.wishlist) }
+  if(JSON.stringify(toStorage(sorted)) === JSON.stringify(toStorage(state))) return
+  commit(sorted, { persist: false })
 }
 
 export function setCloudSave(fn){ cloudSave = fn || null }

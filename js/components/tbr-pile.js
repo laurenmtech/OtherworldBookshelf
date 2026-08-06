@@ -8,6 +8,7 @@ import {
   cachedAvailability, requestAvailability, AVAILABILITY
 } from '../services/libby.js'
 import { subtitle, tagRow } from '../ui/book-meta.js'
+import { entranceGuard } from '../ui/entrance.js'
 import { subscribe, getState, removeTbr, makeTbrCurrent } from '../state/store.js'
 
 export function primaryLibrary(state){
@@ -117,6 +118,9 @@ export function mountTbrPile(root, { bookModal }){
 
   let latest = null
   let pending = false
+  // Availability answers redraw the whole pile (see fetchAvailability) and none
+  // of those redraws add a book, so none of them should replay the entrance.
+  const isNews = entranceGuard()
 
   function fetchAvailability(state, library, formats){
     if(!AVAILABILITY || !library || !formats.length) return
@@ -136,6 +140,7 @@ export function mountTbrPile(root, { bookModal }){
     const formats = state.borrowFormats || []
     const shop = primaryShop(state)
     const want = state.findLinks || []
+    list.classList.toggle('no-entrance', !isNews(state.wishlist.map(bookKey)))
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', state.wishlist.length > 0)
     state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats, shop, want)))
