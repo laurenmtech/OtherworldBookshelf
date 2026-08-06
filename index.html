@@ -159,9 +159,13 @@
             <p>What’s next. Books you mean to get to, with a link to borrow or buy each one.</p>
             <button type="button" class="btn primary" data-empty-action>Add a book</button>
           </div>
-          <!-- One quiet prompt for the whole pile, never a warning per book. -->
+          <!-- One quiet prompt for the whole pile, never a warning per book.
+               The lead is set in tbr-pile.js: a saved library with no Libby key
+               can't answer for anything, but telling someone to add the library
+               they just added is how you conclude the app is broken. -->
           <p id="tbr-library-prompt" class="muted tbr-prompt hidden">
-            Add your library in <button type="button" class="linkish" id="tbr-open-shelf">The Hidden Shelf</button>
+            <span data-prompt-lead>Add your library in</span>
+            <button type="button" class="linkish" id="tbr-open-shelf">The Hidden Shelf</button>
             to see what you can borrow.
           </p>
         </section>

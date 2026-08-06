@@ -58,6 +58,12 @@ function borrowRow(book, library, formats){
   return `<div class="${cls}">${escapeHtml(label)}${matched}</div>`
 }
 
+// The two lines an availability answer can change, and the only part of a row
+// that is ever patched in place — see fetchAvailability().
+function linksHtml(book, library, shop, want, formats){
+  return borrowRow(book, library, formats) + findRow(book, library, shop, want, formats)
+}
+
 function findRow(book, library, shop, want, formats){
   const links = []
   if(want.includes('library') && library){
@@ -104,7 +110,7 @@ export function mountTbrPile(root, { bookModal }){
       className: 'small-meta',
       html: `<span class="wishlist-title">${escapeHtml(book.title)}</span>` +
             `<div class=muted>${bits}</div>${tagRow(book)}${moodTags}` +
-            `${borrowRow(book, library, formats)}${findRow(book, library, shop, want, formats)}`
+            `<div data-row-links>${linksHtml(book, library, shop, want, formats)}</div>`
     }))
 
     const actions = el('div', { className: 'list-actions' },
@@ -117,20 +123,37 @@ export function mountTbrPile(root, { bookModal }){
   }
 
   let latest = null
-  let pending = false
-  // Availability answers redraw the whole pile (see fetchAvailability) and none
-  // of those redraws add a book, so none of them should replay the entrance.
+  // Redraws that don't change which books are on the pile don't replay the
+  // entrance animation — see js/ui/entrance.js.
   const isNews = entranceGuard()
+
+  // An availability answer changes two lines of one row. It used to re-render
+  // the whole pile — every row thrown away and rebuilt, roughly every 60ms as
+  // the answers landed — which is most of what the flickering was.
+  //
+  // Patching in place is safe HERE and nowhere else: these lines hold no click
+  // handler and no index, so nothing about the index invariant (ARCHITECTURE.md)
+  // depends on them being rebuilt. Rows themselves must still be.
+  function patchLinks(book){
+    const state = latest
+    if(!state) return
+    const key = bookKey(book)
+    // Re-read the book from current state: the answer may have been in flight
+    // while the pile changed underneath it.
+    const now = state.wishlist.find(b => bookKey(b) === key)
+    if(!now) return
+    const li = Array.from(list.children).find(n => n.getAttribute('data-book-key') === key)
+    const slot = li && li.querySelector('[data-row-links]')
+    if(!slot) return
+    slot.innerHTML = linksHtml(now, primaryLibrary(state), primaryShop(state),
+                               state.findLinks || [], state.borrowFormats || [])
+  }
 
   function fetchAvailability(state, library, formats){
     if(!AVAILABILITY || !library || !formats.length) return
     for(const book of state.wishlist){
       if(cachedAvailability(library.libraryKey, book, formats) !== undefined) continue
-      requestAvailability(library.libraryKey, book, formats).then(() => {
-        if(pending) return
-        pending = true
-        setTimeout(() => { pending = false; if(latest) render(latest) }, 60)
-      })
+      requestAvailability(library.libraryKey, book, formats).then(() => patchLinks(book))
     }
   }
 
@@ -144,8 +167,16 @@ export function mountTbrPile(root, { bookModal }){
     list.innerHTML = ''
     if(empty) empty.classList.toggle('hidden', state.wishlist.length > 0)
     state.wishlist.forEach((book, idx) => list.appendChild(row(book, idx, library, formats, shop, want)))
-    if(prompt) prompt.classList.toggle('hidden',
-      !!library || state.wishlist.length === 0 || !want.includes('library'))
+    if(prompt){
+      // primaryLibrary() only counts an entry with a Libby key, so a saved
+      // library without one lands here too — and it needs the other sentence.
+      const lead = prompt.querySelector('[data-prompt-lead]')
+      if(lead) lead.textContent = (state.library || []).length
+        ? 'Add your library’s Libby key in'
+        : 'Add your library in'
+      prompt.classList.toggle('hidden',
+        !!library || state.wishlist.length === 0 || !want.includes('library'))
+    }
     fetchAvailability(state, library, formats)
   }
 

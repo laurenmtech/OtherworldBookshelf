@@ -7,13 +7,12 @@ import { mountHeader } from './header.js'
 import { multiSelect } from '../ui/chips.js'
 import { askConfirm, showMessage } from '../ui/dialog.js'
 import {
-  getState, subscribe, resetAll, removeLibrary, removeBookstore, makeLibraryCurrent,
+  getState, subscribe, resetAll, removeLibrary, removeBookstore,
   reorderLibrary, setBorrowFormats, setFindLinks, importShelf
 } from '../state/store.js'
 import { BORROW_FORMATS, FIND_LINKS } from '../state/migrate.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
-import { iconButton } from '../ui/dom.js'
 
 function stamp(){
   const d = new Date()
@@ -63,8 +62,12 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
     modal: libraryModal,
     select: s => s.library,
     remove: removeLibrary,
-    reorder: reorderLibrary,
-    extraAction: (_entry, idx) => iconButton('finish', 'Set current', () => makeLibraryCurrent(idx))
+    // No "Set current" here. It called addCurrent() with the library's name as a
+    // title and its URL as the author, so tapping it put your library on the
+    // shelf as a book you were reading. Which library is the working one is
+    // decided by ORDER — first with a key wins, hence the reorder arrows and the
+    // Primary badge — and never by an action that means something else.
+    reorder: reorderLibrary
   })
 
   const FORMAT_LABELS = { ebook: 'Ebook', audiobook: 'Audiobook' }
