@@ -41,6 +41,32 @@ if(typeof window !== 'undefined'){
   })
 }
 
+// A phone or a tablet — asked as a capability, not by name. A coarse pointer is
+// a touchscreen, and what we actually want to know is whether there is a home
+// screen to add anything to; no user-agent string answers that more honestly.
+function isTouchPrimary(){
+  try{ return window.matchMedia('(pointer: coarse)').matches }catch(e){ return false }
+}
+
+// Whether the welcome flow should spend one of its steps on this. A desktop
+// with no installer on offer would only be reading an instruction it can't
+// follow, and the Hidden Shelf section is there for it either way.
+export function canOfferInstall(){
+  if(installed || isStandalone()) return false
+  return !!deferred || isTouchPrimary()
+}
+
+export function hasInstallPrompt(){ return !!deferred }
+
+export async function promptInstall(){
+  if(!deferred) return false
+  const event = deferred
+  deferred = null               // a prompt is good for exactly one use
+  try{ await event.prompt() }catch(e){ /* dismissed, or already spent */ }
+  notify()                      // the sheet section falls back to the written steps
+  return true
+}
+
 export function mountInstall(root){
   if(!root) return
   const actions = root.querySelector('[data-install-actions]')
@@ -54,13 +80,9 @@ export function mountInstall(root){
     if(steps) steps.hidden = !!deferred
   }
 
-  button && button.addEventListener('click', async () => {
-    if(!deferred) return
-    const event = deferred
-    deferred = null             // a prompt is good for exactly one use
-    try{ await event.prompt() }catch(e){ /* dismissed, or already spent */ }
-    render()                    // said no? the written steps come back
-  })
+  // promptInstall() clears the event and calls notify(), which is render() —
+  // so saying no brings the written steps back.
+  button && button.addEventListener('click', () => promptInstall())
 
   notify = render
   render()
