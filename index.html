@@ -47,15 +47,23 @@
 
        It duplicates the fonts and theme colours from js/vibes/registry.js
        because no module has loaded yet. A test asserts the two agree, so they
-       can't quietly drift; add a vibe in both places. -->
+       can't quietly drift; add a vibe in both places.
+
+       display=optional, not swap. `swap` promises the webfont will arrive even
+       if that means repainting every line of text when it does, and on any load
+       the font isn't cached for — a hard refresh, every time — that repaint is
+       the last of the cold-load flashes. `optional` gives the font a moment and
+       otherwise keeps the fallback for THAT page view only. The worker caches
+       fonts.gstatic.com, so from the second visit on the real fonts are there
+       at first paint and nothing ever moves. -->
   <script>
   (function(){
     var V = {
-      'otherworld':    { t:'#0b0710', f:'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@300;600&display=swap' },
-      'cottage':       { t:'#fbf7f0', f:'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=Nunito:wght@300;600&display=swap' },
-      'celestial':     { t:'#070a1a', f:'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Inter:wght@300;600&display=swap' },
-      'dark-academia': { t:'#15100c', f:'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:wght@400;600&display=swap' },
-      'seaglass':      { t:'#f5fbf9', f:'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Karla:wght@300;600&display=swap' }
+      'otherworld':    { t:'#0b0710', f:'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@300;600&display=optional' },
+      'cottage':       { t:'#fbf7f0', f:'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=Nunito:wght@300;600&display=optional' },
+      'celestial':     { t:'#070a1a', f:'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Inter:wght@300;600&display=optional' },
+      'dark-academia': { t:'#15100c', f:'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:wght@400;600&display=optional' },
+      'seaglass':      { t:'#f5fbf9', f:'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Karla:wght@300;600&display=optional' }
     };
     var id = null;
     try{ id = localStorage.getItem('otherworld_vibe'); }catch(e){}

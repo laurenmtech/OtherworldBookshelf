@@ -7,7 +7,7 @@
 // `flashing` and `expanded` live at module scope because the action that sets them
 // re-renders the list and destroys the button that was tapped.
 import { el, escapeHtml, iconButton } from '../ui/dom.js'
-import { coverImg } from '../ui/cover.js'
+import { coverCache } from '../ui/cover.js'
 import { bookKey, inSeries, byVolume } from '../services/book-shape.js'
 import { tagRow, volumeLabel } from '../ui/book-meta.js'
 import { askConfirm, showMessage } from '../ui/dialog.js'
@@ -22,6 +22,11 @@ const FLASH = 1500
 function flashKey(item){ return `${bookKey(item)}|${item.finishedAt || ''}` }
 
 const expanded = new Set()
+
+// At module scope for the same reason `expanded` and `flashing` are: there is
+// one record, drawn by one exported function. Anything mounted more than once
+// must own its cache instead — see coverCache().
+const cover = coverCache()
 
 let repaint = null
 
@@ -71,7 +76,7 @@ function row({ item, index }){
   const li = el('li', { 'data-book-key': bookKey(item) })
   const sub = [feelOf(item), dateOf(item)].filter(Boolean).map(escapeHtml).join(' · ')
   const left = el('div', { className: 'row-main' })
-  const art = coverImg(item, { size: 'S', className: 'row-cover' })
+  const art = cover(item, { size: 'S', className: 'row-cover' })
   if(art) left.appendChild(art)
   left.appendChild(el('div', {
     html: `<div><strong>${escapeHtml(item.title)}</strong> <span class=muted>by ${escapeHtml(item.author || '')}</span>${setDownTag(item)}` +
@@ -120,7 +125,7 @@ function seriesRow(group){
   const li = el('li', { className: 'series-row', 'data-series-key': key })
 
   const left = el('div', { className: 'row-main' })
-  const art = coverImg(newest, { size: 'S', className: 'row-cover' })
+  const art = cover(newest, { size: 'S', className: 'row-cover' })
   if(art) left.appendChild(art)
   const sub = [`${count} book${count === 1 ? '' : 's'}`, newest.title, dateOf(newest)]
     .filter(Boolean).map(escapeHtml).join(' · ')
