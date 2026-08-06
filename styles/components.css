@@ -443,6 +443,9 @@ body.sheet-open{ overflow:hidden }
 .btn.read-again{ min-width:calc(44px + 10ch) }
 .btn.flashed{ color:var(--accent-2); border-color:var(--accent-soft) }
 
-/* A redraw that isn't news — see renderFinished(). The entrance animation is
-   for rows arriving, not for rows that were already sitting there. */
-.list.no-entrance .list-actions{ animation:none }
+/* A redraw that isn't news — see js/ui/entrance.js. The entrance animation is
+   for rows arriving, not for rows that were already sitting there.
+
+   Not scoped to .list: Current Reads is a .current-list, and all three lists
+   answer to the same guard. */
+.no-entrance .list-actions{ animation:none }

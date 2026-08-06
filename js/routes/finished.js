@@ -7,6 +7,8 @@ import { el } from '../ui/dom.js'
 import { subscribe, getState } from '../state/store.js'
 import { multiSelect } from '../ui/chips.js'
 import { renderFinished } from '../components/finished-list.js'
+import { entranceGuard } from '../ui/entrance.js'
+import { bookKey } from '../services/book-shape.js'
 import { FEELINGS, MOODS, SET_DOWN, feelingLabel } from '../state/moods.js'
 
 function ordered(present, known){
@@ -38,6 +40,7 @@ export function mountFinished(root, { bookModal } = {}){
   let moodChips = null
   let feelingKeys = ''
   let moodKeys = ''
+  const isNews = entranceGuard()
 
   searchInput && searchInput.addEventListener('input', () => {
     query = searchInput.value.trim().toLowerCase()
@@ -116,7 +119,11 @@ export function mountFinished(root, { bookModal } = {}){
 
     const filtering = !!query || feelings.length > 0 || moods.length > 0
 
-    renderFinished(listRoot, entries, { group: !filtering })
+    // Grouping is part of the shape: flipping it turns series rows into book
+    // rows, which is a different list even when the same books are in it.
+    const news = isNews([filtering ? 'flat' : 'grouped', ...entries.map(e => bookKey(e.item))])
+
+    renderFinished(listRoot, entries, { animate: news, group: !filtering })
 
     if(clearBtn) clearBtn.hidden = !filtering
 
