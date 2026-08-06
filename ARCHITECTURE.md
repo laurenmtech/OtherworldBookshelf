@@ -490,6 +490,23 @@ wrong book, silently. `bookKey()` is the real identity and is already stamped on
 every row as `data-book-key`; that is where to go if this ever needs to stop
 being positional.
 
+**Two things skip a redraw, and both are narrower than they look.** They are
+listed here because each one has the shape of the mistake above:
+
+- **`applyRemote()` returns early when the snapshot says what state already
+  says.** Firestore sends several per load and used to commit every one. Skipping
+  a no-op can't strand an index: if the shelf didn't change, the positions
+  captured in the current rows are still the right ones. A snapshot that *does*
+  change anything still commits and still re-renders everything.
+- **The TBR pile patches one row's borrow/checkout lines in place** when a Libby
+  answer lands, rather than re-rendering the pile. Those two lines hold no
+  handler and no index. The rows around them are still thrown away and rebuilt on
+  every commit.
+None of these is a diffing layer, and none of them should grow into one. The
+entrance animation is gated the same way — `ui/entrance.js` decides whether a
+redraw is news — but that only changes whether a row *animates*, never whether it
+is rebuilt.
+
 **A promise across a confirmation is the same hazard.** `confirm()` blocked, so
 the code after it could still hold an index. `ui/dialog.js` does not — anything
 can change while it is open. A caller must re-resolve the target by `bookKey`

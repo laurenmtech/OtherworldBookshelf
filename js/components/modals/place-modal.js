@@ -79,14 +79,24 @@ export function mountPlaceModal(root, { addTitle, editTitle, onAdd, onEdit, libr
       if(learned) entry.searchUrl = learned
     }
 
+    // A key you typed is kept whether or not Check confirmed it. Confirming is
+    // worth doing — `austin` is Austin ISD, not Austin Public Library — but the
+    // check goes through the catalogue API, which is the optional half of
+    // libby.js and is allowed to be unreachable. Dropping the key because the
+    // enhancement didn't answer threw away the part that always works: the
+    // borrow LINKS need nothing but the key. It also looked exactly like the
+    // edit hadn't saved, because the field came back empty.
     if(library && keyInput){
       const typed = parseLibraryKey(keyInput.value)
-      if(confirmed){
+      if(confirmed && confirmed.key === typed){
         entry.libraryKey = confirmed.key
         if(confirmed.name) entry.officialName = confirmed.name
-      } else if(current && current.libraryKey && typed === current.libraryKey){
-        entry.libraryKey = current.libraryKey
-        if(current.officialName) entry.officialName = current.officialName
+      } else if(typed){
+        entry.libraryKey = typed
+        // Only carry the official name over if it still describes this key.
+        if(current && current.libraryKey === typed && current.officialName){
+          entry.officialName = current.officialName
+        }
       }
     }
 

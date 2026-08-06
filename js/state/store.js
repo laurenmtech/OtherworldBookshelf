@@ -278,12 +278,6 @@ export function reorderLibrary(from, to){
   commit({ ...state, library: next })
 }
 
-export function makeLibraryCurrent(index){
-  const it = state.library[index]
-  if(!it) return
-  addCurrent({ title: it.name, author: it.url })
-}
-
 export function addBookstore(entry){
   commit({ ...state, bookstores: [...state.bookstores, entry] })
 }
