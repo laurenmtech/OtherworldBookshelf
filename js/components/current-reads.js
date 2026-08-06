@@ -5,7 +5,7 @@
 // The dialog is a promise where confirm() was a block — see the index invariant in
 // ARCHITECTURE.md.
 import { el, escapeHtml, iconButton } from '../ui/dom.js'
-import { coverImg } from '../ui/cover.js'
+import { coverCache } from '../ui/cover.js'
 import { bookKey, inSeries } from '../services/book-shape.js'
 import { subtitle, tagRow, volumeLabel } from '../ui/book-meta.js'
 import { askConfirm } from '../ui/dialog.js'
@@ -25,6 +25,10 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
 
   let refocus = null
 
+  // One per mounted list: the cache hands back the same element, and appending
+  // moves it. See coverCache().
+  const cover = coverCache()
+
   function entry(book, idx, total){
     const headline = idx === 0
     const li = el('li', {
@@ -33,7 +37,7 @@ export function mountCurrentReads(root, { finishModal, bookModal, setDownModal }
       draggable: 'true'
     })
 
-    const art = coverImg(book, { size: headline ? 'M' : 'S', className: 'current-cover' })
+    const art = cover(book, { size: headline ? 'M' : 'S', className: 'current-cover' })
     if(art) li.appendChild(art)
 
     const series = inSeries(book)

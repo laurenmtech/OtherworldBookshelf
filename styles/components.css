@@ -37,8 +37,18 @@
 /* A list row with cover art beside its text. The cover is optional everywhere —
    `.row-main` has to read correctly with it and without it. */
 .row-main{ display:flex; gap:10px; align-items:flex-start; width:100% }
+/* aspect-ratio reserves the cover's space BEFORE it arrives. Without it the
+   element is its width and no height at all, so every cover that loads grows its
+   row and shoves the rest of the list down — the staggered jumping you see on a
+   cold load. 2:3 is the shape of nearly every book cover; object-fit keeps the
+   handful that aren't from being stretched to fit.
+
+   This isn't the placeholder the app refuses to draw. A book with no cover still
+   gets no element at all — see coverImg(). This only holds the space that a
+   cover already on its way is going to need. */
 .row-cover{
-  width:34px; flex:0 0 34px; border-radius:3px; display:block;
+  width:34px; flex:0 0 34px; aspect-ratio:2/3; object-fit:cover;
+  border-radius:3px; display:block;
   box-shadow:0 2px 8px var(--shadow-1);
 }
 
@@ -58,7 +68,7 @@
   font-size:16px; overflow-wrap:anywhere;
 }
 .current-item.headline .current-meta h3{ font-size:20px }
-.current-cover{ width:44px; flex:0 0 44px; border-radius:4px; display:block; box-shadow:0 4px 14px var(--shadow-1) }
+.current-cover{ width:44px; flex:0 0 44px; aspect-ratio:2/3; object-fit:cover; border-radius:4px; display:block; box-shadow:0 4px 14px var(--shadow-1) }
 .current-item.headline .current-cover{ width:86px; flex-basis:86px }
 .current-item .list-actions{ align-self:flex-start; flex-wrap:wrap; margin-top:10px }
 
@@ -291,7 +301,7 @@
 /* aria-selected is the highlighted option, which arrow keys move and the mouse
    doesn't — so it needs to look different from :hover, not the same. */
 .typeahead-option[aria-selected="true"]{ background:var(--accent-soft) }
-.typeahead-cover{ width:30px; flex:0 0 30px; border-radius:3px; display:block }
+.typeahead-cover{ width:30px; flex:0 0 30px; aspect-ratio:2/3; object-fit:cover; border-radius:3px; display:block }
 .typeahead-text{ min-width:0 }
 .typeahead-title{ color:var(--ink); font-weight:600; overflow-wrap:anywhere }
 .typeahead-series{ font-size:12px }

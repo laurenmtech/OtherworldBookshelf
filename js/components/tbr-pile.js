@@ -1,7 +1,7 @@
 // The TBR pile: what's next, sorted by title. Availability is never state — it's a
 // fact about the world that expires, so it's cached for the session only.
 import { el, iconButton, escapeHtml } from '../ui/dom.js'
-import { coverImg } from '../ui/cover.js'
+import { coverCache } from '../ui/cover.js'
 import { bookKey } from '../services/book-shape.js'
 import {
   libbySearchUrl, libbyTitleUrl, bookshopUrl, shopSearchUrl,
@@ -96,6 +96,10 @@ export function mountTbrPile(root, { bookModal }){
     if(btn) btn.click()
   })
 
+  // One per mounted list: the cache hands back the same element, and appending
+  // moves it. See coverCache().
+  const cover = coverCache()
+
   function row(book, idx, library, formats, shop, want){
     const li = el('li', { 'data-book-key': bookKey(book) })
 
@@ -104,7 +108,7 @@ export function mountTbrPile(root, { bookModal }){
       : ''
     const bits = subtitle(book).map(escapeHtml).join(' · ')
     const left = el('div', { className: 'row-main' })
-    const art = coverImg(book, { size: 'S', className: 'row-cover' })
+    const art = cover(book, { size: 'S', className: 'row-cover' })
     if(art) left.appendChild(art)
     left.appendChild(el('div', {
       className: 'small-meta',

@@ -490,8 +490,8 @@ wrong book, silently. `bookKey()` is the real identity and is already stamped on
 every row as `data-book-key`; that is where to go if this ever needs to stop
 being positional.
 
-**Two things skip a redraw, and both are narrower than they look.** They are
-listed here because each one has the shape of the mistake above:
+**Three things skip a redraw, and all three are narrower than they look.** They
+are listed here because each one has the shape of the mistake above:
 
 - **`applyRemote()` returns early when the snapshot says what state already
   says.** Firestore sends several per load and used to commit every one. Skipping
@@ -502,6 +502,13 @@ listed here because each one has the shape of the mistake above:
   answer lands, rather than re-rendering the pile. Those two lines hold no
   handler and no index. The rows around them are still thrown away and rebuilt on
   every commit.
+- **Cover `<img>` nodes outlive their rows** (`ui/cover.js`). An image has no
+  handler and nothing positional to go stale, so it is the only part of a row
+  that can be reused — and reusing it is why a redraw no longer makes the shelf
+  blink. A cache belongs to ONE list, and a "pass" ends on a microtask rather
+  than on a method someone has to remember to call; the same cover asked for
+  twice in one pass gets two nodes, because a re-read puts one cover in two rows.
+
 None of these is a diffing layer, and none of them should grow into one. The
 entrance animation is gated the same way — `ui/entrance.js` decides whether a
 redraw is news — but that only changes whether a row *animates*, never whether it

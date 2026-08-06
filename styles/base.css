@@ -58,7 +58,11 @@ body{
    One <nav>, two presentations. Wide screens get plain text links under the
    title; phones get a fixed bottom bar. Doing this in CSS rather than by moving
    the node means there is only ever one set of links to keep in sync. */
-.tab-bar{ display:flex; justify-content:center; gap:10px; margin-top:16px }
+/* min-height holds the row open before tab-bar.js fills it. main.js is a
+   deferred module, so the page paints with this nav empty; without the reserve
+   the whole page drops 33px the moment the links appear. Matches a .tab-link:
+   14px text + 6px padding either side + its border. */
+.tab-bar{ display:flex; justify-content:center; gap:10px; margin-top:16px; min-height:33px }
 .tab-link{
   display:inline-flex; align-items:center; gap:7px;
   text-decoration:none; color:var(--muted); font-size:14px;
