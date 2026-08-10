@@ -5,7 +5,7 @@
 // verifyIdToken() rejects on shape before it would ever fetch a signing key.
 import { readFileSync, readdirSync } from 'node:fs'
 import { suite, test, is, ok } from './harness.mjs'
-import { shape, slug, sameTitle } from '../api/src/series.js'
+import { shape, slug, sameTitle, fanOut, cacheKey } from '../api/src/series.js'
 import { claim, refund, readUsed, DAILY_CAP } from '../api/src/quota.js'
 import worker from '../api/src/index.js'
 
@@ -45,6 +45,77 @@ test('an empty series name is null', () =>
 test('a very long series is capped', () =>
   is(shape({ inSeries: true, seriesName: 'Discworld',
     volumes: Array.from({ length: 41 }, (_, i) => `Disc ${i + 1}`) }, 'Disc 5').total, 30))
+
+// ── One answer, cached for every volume it names ────────────────────────────
+//
+// Without this, seven books in one series cost seven Haiku calls and gave the
+// model seven independent chances to be wrong. Three of them were, on a real
+// shelf.
+
+suite('worker: one lookup fills the series')
+
+const vol = (title, { verified = true, author = 'Sarah J. Maas' } = {}) =>
+  verified ? { title, author, verified: true } : { title, verified: false }
+
+const resolved = (volumes) => ({
+  key: 'throne-of-glass', name: 'Throne of Glass',
+  position: 1, total: volumes.length, volumes
+})
+
+const asked = { key: cacheKey('Throne of Glass', 'Sarah J. Maas'), author: 'Sarah J. Maas' }
+const spread = fanOut(resolved(TOG.map(t => vol(t))), asked)
+
+test('every other volume gets an entry', () => is(spread.length, 6))
+
+test('the queried book is not written twice', () =>
+  ok(spread.every(w => w.key !== asked.key)))
+
+test('each entry carries its own position', () =>
+  is(spread.find(w => w.key.includes('heir-of-fire')).series.position, 3))
+
+test('the volume that was being dropped gets one too', () =>
+  is(spread.find(w => w.key.includes('tower-of-dawn')).series.position, 6))
+
+test('each entry carries the whole list, so it can advance', () =>
+  ok(spread.every(w => w.series.volumes.length === 7)))
+
+test('the series name and key are unchanged', () =>
+  ok(spread.every(w => w.series.key === 'throne-of-glass' && w.series.name === 'Throne of Glass')))
+
+// The whole point: the key written here is the key the NEXT request computes.
+test('a key matches what the client will ask with', () =>
+  ok(spread.some(w => w.key === cacheKey('Kingdom of Ash', 'Sarah J. Maas'))))
+
+test('every volume in the list is now a cache hit', () =>
+  ok(TOG.filter(t => t !== 'Throne of Glass').every(t =>
+    spread.some(w => w.key === cacheKey(t, 'Sarah J. Maas')))))
+
+// Rule 1: never assert that an unconfirmed book exists.
+test('an unverified volume is never cached under its own name', () => {
+  const mixed = fanOut(resolved([vol('Throne of Glass'), vol('Crown of Midnight'),
+    vol('The Unwritten One', { verified: false })]), asked)
+  return ok(mixed.every(w => !w.key.includes('the-unwritten-one')))
+})
+
+test('an unverified volume still holds its place in the list', () => {
+  const mixed = fanOut(resolved([vol('Throne of Glass'), vol('Crown of Midnight'),
+    vol('The Unwritten One', { verified: false })]), asked)
+  return is(mixed[0].series.volumes.length, 3)
+})
+
+// Rule 2: keyed by the catalogue's author, which is what search sends back.
+test('a volume with its own author is keyed by it', () => {
+  const co = fanOut(resolved([vol('One'), vol('Two', { author: 'Someone Else' })]), asked)
+  return ok(co.some(w => w.key === cacheKey('Two', 'Someone Else')))
+})
+
+test('a volume with no author falls back to the queried one', () => {
+  const bare = fanOut(resolved([vol('One'), { title: 'Two', verified: true }]), asked)
+  return ok(bare.some(w => w.key === cacheKey('Two', 'Sarah J. Maas')))
+})
+
+test('a series of nothing verified writes nothing', () =>
+  is(fanOut(resolved(TOG.map(t => vol(t, { verified: false }))), asked).length, 0))
 
 // ── The quota credit is claimed BEFORE the model is called ──────────────────
 

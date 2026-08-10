@@ -62,6 +62,22 @@ in KV with **no TTL**, keyed by normalised title + author and shared by every
 reader, so the first person to add *The Way of Kings* pays for everyone who ever
 adds it after. Hit rate approaches 100% for anything popular.
 
+**One lookup fills the whole series.** The key is per *title*, so a reader
+adding seven Throne of Glass books used to pay for seven Haiku calls and
+forty-nine Open Library checks — and gave the model seven independent chances to
+be wrong. Asking for the whole list removed the *chain*; it did not remove the
+per-book retry. But a verified list already answers for every title in it: the
+list is the same list and the position is the index. So `fanOut()` writes an
+entry for every verified volume, and the seven books cost **one call and seven
+checks**. The second volume anyone adds never reaches the model.
+
+Two limits on that, both deliberate: only **verified** volumes get an entry of
+their own — writing a permanent entry that asserts an unconfirmed book is real
+is the invention this route refuses everywhere else — and entries are keyed by
+the volume's **catalogue** author, which is what a client that found the book
+through search sends back. A book typed by hand with no author misses and pays
+for a lookup, exactly as before.
+
 `SERIES_DAILY_CAP` in `wrangler.toml` is the ceiling, and it is *not* an
 allowance — nothing ever shows it to anyone. Adding a book fires a lookup
 without anyone asking for one, so spending a recommendation credit on it would

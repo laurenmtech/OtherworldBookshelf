@@ -56,7 +56,12 @@ const MAX_TOKENS = 2048
 // Throne of Glass, and the answer named a real next volume which verified, so
 // it was cached under the no-TTL policy and would have been permanent.
 // v3 (2026-07-31): the shape changed from one-next-volume to the whole list.
-const CACHE_VERSION = 3
+// v4 (2026-08-10): "companion volumes do not belong in the list" was dropping
+// Tower of Dawn from Throne of Glass — a main numbered entry that runs parallel
+// to Empire of Storms and is widely described as a companion. The six-volume
+// answer verified cleanly and so was cached forever, leaving the dropped book
+// with no series at all and silently renumbering the one after it.
+const CACHE_VERSION = 4
 
 // A verified series with a verified volume list is a fact, and facts don't
 // expire. Everything else does — see cachePolicy().
@@ -91,7 +96,7 @@ Rules:
 - Only answer for series you are confident actually exist. A standalone book is the common case and the correct answer for most books.
 - MANY AUTHORS WRITE SEVERAL SERIES. Answer about the series THIS EXACT TITLE belongs to — never the author's best known, most recent, or largest series. Sarah J. Maas, Brandon Sanderson, Terry Pratchett and Robin Hobb all have multiple; getting the author right and the series wrong is the most damaging mistake you can make here.
 - "volumes" lists the titles of the main entries, in PUBLICATION ORDER, and MUST include the book you were asked about. If the book you were asked about does not belong in the list you are writing, you have the wrong series — answer inSeries false instead.
-- Count only the main numbered entries. Novellas, short stories, companion volumes, omnibus editions and boxed sets do not belong in the list.
+- Include every volume in the publisher's main numbered sequence — including one described as a "companion" novel, one that follows a different set of characters, or one that runs parallel to another book rather than after it. If it is numbered in the sequence, it belongs in the list. Leave out novellas, short stories, omnibus editions, boxed sets and anything published outside the numbering.
 - Use publication order, not chronological or internal-timeline order. Prequels published later come later.
 - List only volumes that have actually been published or have a confirmed title. Never invent a title to fill a gap or to round the series out.
 - If you cannot place this exact title in a specific series with confidence, answer inSeries false with an empty list. Saying nothing is always better than naming the wrong series.`
@@ -111,7 +116,10 @@ export function slug(s){
   return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-const cacheKey = (title, author) =>
+// Exported for tests/worker.test.mjs, so the fan-out's keys can be checked
+// against the key a later request will actually compute rather than a literal
+// string that a CACHE_VERSION bump would falsify.
+export const cacheKey = (title, author) =>
   `series:v${CACHE_VERSION}:${slug(title)}:${slug(author || '')}`
 
 // ── Verification ────────────────────────────────────────────────────────────
@@ -202,6 +210,42 @@ export function shape(parsed, title){
   return { key, name, position: index + 1, total: titles.length, titles }
 }
 
+// One answer, cached for every volume it names.
+//
+// The cache key is per TITLE, so seven books in one series meant seven Haiku
+// calls and seven independent chances to be wrong — the per-book retry that
+// asking for the whole series was supposed to remove. It removed the CHAIN, not
+// the retry: a reader who added all seven Throne of Glass books paid for seven
+// lookups, and three of them came back with nothing.
+//
+// But a verified list already answers for every title in it. The list is the
+// same list; only the position differs, and the position is the index. So one
+// call fills the cache for the whole series and the sixth book someone adds
+// never reaches the model at all.
+//
+// Two limits, both deliberate:
+//
+//   1. ONLY VERIFIED VOLUMES GET AN ENTRY. An unverified title is one the
+//      catalogue could not confirm, and writing a permanent entry asserting it
+//      is a real book in a real series is the invention this file refuses
+//      everywhere else. It stays in the list — positions must be stable — and
+//      is simply not cached under its own name.
+//   2. ENTRIES ARE KEYED BY THE VOLUME'S CATALOGUE AUTHOR, which is what a
+//      client that found the book through search will send back. A book typed
+//      by hand with no author misses and pays for a lookup, exactly as today.
+export function fanOut(series, queried){
+  const out = []
+  series.volumes.forEach((volume, i) => {
+    if(!volume || !volume.verified) return
+    const key = cacheKey(volume.title, volume.author || queried.author)
+    // The caller writes the queried key itself, under the title as it was
+    // ASKED, which the catalogue may spell differently.
+    if(key === queried.key) return
+    out.push({ key, series: { ...series, position: i + 1 } })
+  })
+  return out
+}
+
 // What to do with an answer once we have it.
 //
 //   'forever'  a self-consistent series whose volumes we were able to check —
@@ -284,11 +328,16 @@ export async function lookupSeries(env, { title, author }){
 
   const policy = cachePolicy(series, checkFailed)
   if(kv && policy !== 'never'){
-    const value = JSON.stringify({ series })
     const opts = policy === 'soft' ? { expirationTtl: SOFT_TTL_SECONDS } : undefined
+    // Only a 'forever' answer is worth spreading. A 'soft' one is a standalone,
+    // which names no other volumes to spread it to.
+    const writes = [{ key, series }]
+    if(policy === 'forever') writes.push(...fanOut(series, { key, author }))
     // Best-effort, like the quota refund: failing to cache an answer we already
-    // have is not worth failing the response over.
-    try{ await kv.put(key, value, opts) }catch(e){ /* answered anyway */ }
+    // have is not worth failing the response over. allSettled, so one rejected
+    // write cannot lose the others.
+    await Promise.allSettled(writes.map(w =>
+      kv.put(w.key, JSON.stringify({ series: w.series }), opts)))
   }
 
   return { series, cached: false }
