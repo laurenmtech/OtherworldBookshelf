@@ -2,7 +2,7 @@
 
 A private reading shelf, so you remember what you read.
 
-If you read on a Kindle, no cover ever sits on a shelf and the titles go. This
+If you read on an e-reader, or listen to audio books, no cover ever sits on a shelf and the titles go. This
 gives them back — so there's an answer when someone asks what you've read
 lately.
 
