@@ -99,6 +99,14 @@
 .borrow-row a:hover{ border-bottom-color:currentColor }
 .borrow-matched{ margin-left:8px; font-size:11px }
 
+/* A book added with no signal, still waiting on the catalogue. Deliberately quiet:
+   nothing has gone wrong, the book is on the pile, and the details are on their
+   way — so this is a note, not a warning, and it carries no colour that would
+   read as one. */
+.pending-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:6px }
+.pending-row .muted{ font-size:12px }
+.pending-find{ font-size:12px; padding:2px 8px }
+
 /* Two buttons in a panel head, which wrap rather than squash on a phone. */
 .panel-head-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end }
 

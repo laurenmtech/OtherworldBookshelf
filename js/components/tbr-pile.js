@@ -110,12 +110,29 @@ export function mountTbrPile(root, { bookModal }){
     const left = el('div', { className: 'row-main' })
     const art = cover(book, { size: 'S', className: 'row-cover' })
     if(art) left.appendChild(art)
-    left.appendChild(el('div', {
+    const meta = el('div', {
       className: 'small-meta',
       html: `<span class="wishlist-title">${escapeHtml(book.title)}</span>` +
             `<div class=muted>${bits}</div>${tagRow(book)}${moodTags}` +
             `<div data-row-links>${linksHtml(book, library, shop, want, formats)}</div>`
-    }))
+    })
+    left.appendChild(meta)
+
+    // Added with no signal and not yet confirmed by the catalogue. It says what
+    // happened rather than showing an error, because nothing is wrong: the book is
+    // on the pile, which is all that was asked for. The button is the way out when
+    // the lookup can't settle it — a misspelled title, or two books of that name.
+    if(book.needsDetails){
+      meta.appendChild(el('div', { className: 'pending-row' },
+        el('span', { className: 'muted' }, 'Added offline'),
+        el('button', {
+          className: 'btn pending-find', type: 'button',
+          onClick: () => bookModal.open({
+            resolve: { key: bookKey(book), title: book.title, author: book.author }
+          })
+        }, 'Find this book')
+      ))
+    }
 
     const actions = el('div', { className: 'list-actions' },
       iconButton('finish', 'Set current', () => makeTbrCurrent(idx)),
