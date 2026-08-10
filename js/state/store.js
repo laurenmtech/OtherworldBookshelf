@@ -8,6 +8,7 @@ import { migrate, emptyState, toStorage } from './migrate.js'
 import { loadLocal, saveLocal } from './persist-local.js'
 import { mergeShelf } from './merge.js'
 import { bookKey, byVolume, inSeries } from '../services/book-shape.js'
+import { reclaimSeries } from '../services/series-index.js'
 
 export const CURRENT_CAP = 3
 
@@ -51,14 +52,18 @@ function byTitle(a, b){
 
 function sortedWishlist(list){ return [...list].sort(byTitle) }
 
+// Every entry point that brings books in runs reclaimSeries() on the way past.
+// It is a pure transform that returns its argument untouched when there is
+// nothing to place, so this costs a walk of the shelf and no extra commit — see
+// services/series-index.js for what it is undoing.
 export function init(){
   const local = loadLocal()
-  commit({ ...local, wishlist: sortedWishlist(local.wishlist) }, { persist: false })
+  commit(reclaimSeries({ ...local, wishlist: sortedWishlist(local.wishlist) }), { persist: false })
 }
 
 export function reloadLocal(){
   const local = loadLocal()
-  commit({ ...local, wishlist: sortedWishlist(local.wishlist) }, { persist: false })
+  commit(reclaimSeries({ ...local, wishlist: sortedWishlist(local.wishlist) }), { persist: false })
 }
 
 // A snapshot that says what state already says is not news. Firestore delivers
@@ -72,7 +77,7 @@ export function reloadLocal(){
 // key order can't make identical shelves look different.
 export function applyRemote(data){
   const next = migrate(data)
-  const sorted = { ...next, wishlist: sortedWishlist(next.wishlist) }
+  const sorted = reclaimSeries({ ...next, wishlist: sortedWishlist(next.wishlist) })
   if(JSON.stringify(toStorage(sorted)) === JSON.stringify(toStorage(state))) return
   commit(sorted, { persist: false })
 }
@@ -85,7 +90,7 @@ export function resetAll(){
 
 export function importShelf(raw){
   const { next, added } = mergeShelf(state, raw)
-  commit({ ...next, wishlist: sortedWishlist(next.wishlist) })
+  commit(reclaimSeries({ ...next, wishlist: sortedWishlist(next.wishlist) }))
   return added
 }
 
@@ -160,7 +165,9 @@ export function applySeries(key, series){
     finished: state.finished.map(patch)
   }
   if(!changed) return
-  commit(nextState)
+  // A list arriving for one book is what lets the shelf place the siblings whose
+  // own lookup came back empty. Nothing else knows the list is new.
+  commit(reclaimSeries(nextState))
 }
 
 export function detachSeries(seriesKey){

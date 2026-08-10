@@ -6,7 +6,7 @@
 // the parsing failure, not the making-things-up one.
 import { idToken } from '../state/auth.js'
 import { searchBooks } from './books.js'
-import { bookKey } from './book-shape.js'
+import { bookKey, sameTitle } from './book-shape.js'
 
 export const API_BASE = 'https://otherworld-reads-api.laurenmtech-aef.workers.dev'
 export const API_URL = `${API_BASE}/recommend`
@@ -128,19 +128,6 @@ export async function askForBooks({ moods = [], freeText = '' } = {}, state){
   const verified = await verify(raw, state, abandoned)
   if(!verified.length) throw new RecommendError('none_found', MESSAGES.none_found)
   return { suggestions: verified, remaining: data.remaining }
-}
-
-function norm(s){
-  return String(s || '').toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim()
-}
-
-function sameTitle(a, b){
-  const x = norm(a), y = norm(b)
-  if(!x || !y) return false
-  return x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')
 }
 
 export async function verify(suggestions, state, abandoned = new Set()){

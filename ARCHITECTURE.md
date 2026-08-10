@@ -340,6 +340,30 @@ Every volume travels on every volume, which is redundant on purpose: it is what
 makes advancing local, offline and instant, and it costs a few KB on a long
 series.
 
+**One lookup fills the series, and a book that missed is placed from its
+siblings.** Asking for the whole list removed the *chain* of guesses; it did not
+remove the fact that every book still asked on its own behalf. Seven Throne of
+Glass books were seven Haiku calls and seven independent chances to be wrong,
+and on a real shelf three of them were: *Heir of Fire*, *Tower of Dawn* and
+*Kingdom of Ash* rendered as standalones beneath the group of four they belonged
+to. The prompt's own "companion volumes do not belong in the list" rule was
+enough to lose *Tower of Dawn*, which is the sixth numbered book and runs
+parallel to *Empire of Storms* — and the six-volume answer verified cleanly, so
+it cached forever and renumbered *Kingdom of Ash* to 6-of-6.
+
+Fixed at both ends. In the Worker, `fanOut()` caches a verified answer under
+every volume it names, so the second book of a series anyone adds is a cache hit
+and never reaches the model. On the client, `services/series-index.js` places a
+book that has no `seriesKey` using a list a sibling is already carrying — the
+answer is on the shelf already, so there is no reason to ask twice. It runs as a
+pure transform on every load and every arriving answer, and returns state
+untouched when there is nothing to place, so a quiet snapshot stays quiet.
+
+Two rules keep it from inventing: only a volume marked `verified` may claim a
+book, and the author must agree by whole word. *Heir of Fire* is unambiguous;
+*Babel* is not, and a series must never swallow a book that merely shares a
+title.
+
 **Nothing new is stored.** A series entry is a normal book carrying series
 fields. The grouping — in Current Reads and in the record alike — happens at
 paint time off `seriesKey`, so sync, export, migration, search, the filters and

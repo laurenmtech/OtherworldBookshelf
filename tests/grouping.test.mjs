@@ -4,6 +4,7 @@
 // wrong book.
 import { suite, test, is, ok } from './harness.mjs'
 import { toRows, byRowNewest } from '../js/components/finished-list.js'
+import { reclaimSeries } from '../js/services/series-index.js'
 
 suite('record: grouping')
 
@@ -48,4 +49,39 @@ test('undated entries sink to the bottom', () => {
   const rows = toRows(E([solo('Old', undefined), solo('New', '2026-03-12')]))
   rows.sort(byRowNewest)
   return is(rows[0].entry.item.title, 'New')
+})
+
+// The reported bug, at the layer it was seen: four Throne of Glass volumes in a
+// group and three drawn as standalones beneath it, because each book's own
+// lookup had to succeed for it to be grouped. reclaimSeries() places the three
+// from the list the other four are already holding; toRows() then sees one
+// series. See js/services/series-index.js.
+const TOG = ['Throne of Glass', 'Crown of Midnight', 'Heir of Fire', 'Queen of Shadows',
+             'Empire of Storms', 'Tower of Dawn', 'Kingdom of Ash']
+
+const knows = (title) => ({
+  title, author: 'Sarah J. Maas', finishedAt: '2026-02-01',
+  seriesKey: 'tog', seriesName: 'Throne of Glass',
+  seriesPosition: TOG.indexOf(title) + 1, seriesTotal: TOG.length,
+  seriesVolumes: TOG.map(t => ({ title: t, author: 'Sarah J. Maas', verified: true }))
+})
+const missed = (title) => ({ title, author: 'Sarah J. Maas', finishedAt: '2026-02-01' })
+
+const reported = [
+  knows('Throne of Glass'), knows('Crown of Midnight'),
+  knows('Queen of Shadows'), knows('Empire of Storms'),
+  missed('Heir of Fire'), missed('Tower of Dawn'), missed('Kingdom of Ash')
+]
+
+test('without reclaiming, three volumes draw as standalones', () =>
+  is(toRows(E(reported)).filter(r => r.kind === 'book').length, 3))
+
+test('after reclaiming, the shelf draws one series', () => {
+  const rows = toRows(E(reclaimSeries({ currentReads: [], wishlist: [], finished: reported }).finished))
+  return is(rows.length, 1) && is(rows[0].kind, 'series') && is(rows[0].entries.length, 7)
+})
+
+test('the reclaimed volumes sort into publication order', () => {
+  const rows = toRows(E(reclaimSeries({ currentReads: [], wishlist: [], finished: reported }).finished))
+  return is(rows[0].entries.map(e => e.item.seriesPosition).sort((a, b) => a - b).join(), '1,2,3,4,5,6,7')
 })

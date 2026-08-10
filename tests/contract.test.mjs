@@ -6,7 +6,9 @@
 // before any module loads — so they are enforced here instead.
 import { readFileSync } from 'node:fs'
 import { suite, test, is, ok } from './harness.mjs'
-import { slug as clientSlug } from '../js/services/book-shape.js'
+import {
+  slug as clientSlug, norm as clientNorm, sameTitle as clientSameTitle
+} from '../js/services/book-shape.js'
 import { slug as workerSlug, norm, sameTitle } from '../api/src/series.js'
 
 // ── slug(), client vs Worker ────────────────────────────────────────────────
@@ -84,9 +86,12 @@ for(const id of Object.keys(reg).sort()){
 }
 
 // ── norm()/sameTitle() ──────────────────────────────────────────────────────
-// Duplicated between the Worker and js/services/recommend.js. Both decide
-// whether a model's title matches a real catalogue record, and a mismatch means
-// the anti-invention guard failing in the direction nobody notices.
+// Duplicated between the Worker and js/services/book-shape.js, which is now the
+// client's only copy — recommend.js and series-index.js both import it there.
+// Both sides decide whether a model's title matches a real catalogue record, and
+// a mismatch means the anti-invention guard failing in the direction nobody
+// notices: on the client it strands a book beside its own series, in the Worker
+// it throws away a series that was right.
 
 suite('contract: title matching')
 
@@ -98,3 +103,22 @@ test('a different book does not match', () =>
   is(sameTitle('Crown of Midnight', 'Heir of Fire'), false))
 test('empty never matches', () => is(sameTitle('', 'Heir of Fire'), false))
 test('norm strips punctuation and case', () => is(norm('Dune: Messiah!'), 'dune messiah'))
+
+// The client's copy has to agree with the Worker's on every one of them, or a
+// book the Worker placed in a list is a book the shelf cannot find in it.
+const TITLES = [
+  ['Heir of Fire', 'Heir of Fire (Throne of Glass #3)'],
+  ['Tower of Dawn', 'Tower of Dawn'],
+  ['Jonathan Strange & Mr Norrell', 'Jonathan Strange and Mr. Norrell'],
+  ['Kingdom of Ash', 'Kingdom of Fire'],
+  ['Dune: Messiah', 'Dune'],
+  ['', ''],
+  ['A Court of Thorns and Roses', 'A Court of Thorns & Roses']
+]
+
+for(const [a, b] of TITLES){
+  test(`sameTitle(${JSON.stringify(a)}, ${JSON.stringify(b)}) agrees`, () =>
+    is(clientSameTitle(a, b), sameTitle(a, b), 'client vs worker'))
+  test(`norm(${JSON.stringify(a)}) agrees`, () =>
+    is(clientNorm(a), norm(a), 'client vs worker'))
+}

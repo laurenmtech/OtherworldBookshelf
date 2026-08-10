@@ -70,6 +70,26 @@ export function slug(s){
   return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
+// Title matching, held here a second time. The Worker's copy in api/src/series.js
+// decides whether the book it was asked about appears in the list it got back;
+// this one decides whether a book on the shelf appears in a list a sibling is
+// already holding (see services/series-index.js). Same question, two sides of a
+// boundary no import can cross — so tests/contract.test.mjs pins them together,
+// exactly as it does for slug() above. Drift here strands a book beside its own
+// series.
+export function norm(s){
+  return String(s || '').toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+}
+
+export function sameTitle(a, b){
+  const x = norm(a), y = norm(b)
+  if(!x || !y) return false
+  return x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')
+}
+
 export function parseSeries(raw){
   const text = String(raw || '').trim()
   if(!text) return null
