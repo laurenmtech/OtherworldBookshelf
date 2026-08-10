@@ -115,6 +115,13 @@ export function mountTypeahead(root, { onPick, onState } = {}){
 
   return {
     focus(){ input.focus() },
+    // Used when the modal opens to put a name to a book already on a shelf: the
+    // query is the book, so it searches straight away rather than waiting to be
+    // retyped.
+    setQuery(text){
+      input.value = String(text || '')
+      search.query(input.value)
+    },
     isOpen: () => results.length > 0,
     reset(){
       search.cancel()

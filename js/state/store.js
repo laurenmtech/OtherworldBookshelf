@@ -190,6 +190,111 @@ export function readAgainSeries(seriesKey){
   commit({ ...state, wishlist: sortedWishlist([...state.wishlist, book]) })
 }
 
+// ── Details that arrive late ───────────────────────────────────────────────────
+// A book added while the search was unreachable is a bare title and author wearing
+// `needsDetails`. services/backfill.js fills the rest in when the network returns.
+//
+// workKey is deliberately NOT a detail field. bookKey() prefers workKey over
+// title|author, so attaching one silently changes what the book IS — and
+// mergeShelf() matches purely on that key, so a phone that had backfilled would no
+// longer recognise its own book on a laptop that hadn't, and the merge would add a
+// second copy instead of reconciling the one. A book keeps the identity it was
+// created with.
+const DETAIL_FIELDS = [
+  'author', 'year', 'coverId', 'genres',
+  'seriesKey', 'seriesName', 'seriesPosition', 'seriesTotal'
+]
+
+// Legacy entries can hold '' where today's code would omit the key entirely.
+const blank = (v) => v === undefined || v === null || v === ''
+
+function patchByKey(key, patch){
+  if(!key) return false
+  let changed = false
+  const run = (book) => {
+    if(!book || bookKey(book) !== key) return book
+    const next = patch(book)
+    if(next === book) return book
+    changed = true
+    return next
+  }
+  const nextState = {
+    ...state,
+    currentReads: state.currentReads.map(run),
+    wishlist: state.wishlist.map(run),
+    finished: state.finished.map(run)
+  }
+  // The wishlist is not re-sorted: no detail field can change a title, so its
+  // order is untouched and every captured index stays valid.
+  if(changed) commit(nextState)
+  return changed
+}
+
+export function applyDetails(key, details){
+  if(!details) return false
+  return patchByKey(key, (book) => {
+    if(!book.needsDetails) return book          // already settled by someone else
+    const next = { ...book }
+    // The catalogue only fills blanks. What the reader typed is the record, and a
+    // search result does not get to correct it.
+    for(const f of DETAIL_FIELDS){
+      if(details[f] !== undefined && blank(next[f])) next[f] = details[f]
+    }
+    delete next.needsDetails
+    delete next.detailsTries
+    return next
+  })
+}
+
+// Returns true only on the try that gives up. After that the book is simply what
+// it always was — a hand-typed book, which this app treats as a first-class
+// citizen, indistinguishable from one the search never knew.
+export function noteDetailsMiss(key, max){
+  let gaveUp = false
+  patchByKey(key, (book) => {
+    if(!book.needsDetails) return book
+    const tries = (book.detailsTries || 0) + 1
+    if(tries < max) return { ...book, detailsTries: tries }
+    gaveUp = true
+    const { needsDetails, detailsTries, ...rest } = book
+    return rest
+  })
+  return gaveUp
+}
+
+// The reader named the book by hand, so the catalogue entry wins outright — the
+// title included, which is the entire point when the reason nothing matched was a
+// typo in it. Only what the SHELF knows, as opposed to what the catalogue knows,
+// survives: how it felt, when it was finished, what it was tagged.
+//
+// This DOES change the book's identity when the title changes, which is the thing
+// applyDetails() refuses to do. That's the trade: here it is a deliberate act by
+// the reader on one book, not something that happens to a shelf unattended.
+const READER_FIELDS = [
+  'moods', 'feeling', 'finishedAt', 'setDown', 'notes', 'rating', 'format', 'seriesDetached'
+]
+
+export function replaceBook(key, book){
+  if(!key || !book || !book.title) return false
+  let changed = false
+  const run = (entry) => {
+    if(!entry || bookKey(entry) !== key) return entry
+    changed = true
+    const { workKey, source, ...rest } = book
+    const next = { ...rest }
+    for(const f of READER_FIELDS) if(entry[f] !== undefined) next[f] = entry[f]
+    return next
+  }
+  const nextState = {
+    ...state,
+    currentReads: state.currentReads.map(run),
+    wishlist: sortedWishlist(state.wishlist.map(run)),
+    finished: state.finished.map(run)
+  }
+  if(changed) commit(nextState)
+  return changed
+}
+
 export function reorderCurrent(from, to){
   const list = state.currentReads
   if(from === to) return

@@ -10,7 +10,7 @@ import { mountTypeahead } from '../typeahead.js'
 import { findExisting, bookKey } from '../../services/book-shape.js'
 import { enrich } from '../../services/series.js'
 import {
-  addToTbr, addCurrent, addAlreadyRead, getState, CURRENT_CAP
+  addToTbr, addCurrent, addAlreadyRead, replaceBook, getState, CURRENT_CAP
 } from '../../state/store.js'
 
 const WHERE = {
@@ -34,15 +34,20 @@ export function mountBookModal(root){
 
   let dest = 'tbr'          // 'tbr' | 'current' | 'finished'
   let acknowledged = null   // a duplicate the user has been shown and may override
+  let resolving = null      // { key, title, author } — naming a book already on a shelf
 
   const typeahead = mountTypeahead(searchField, {
     onPick: (book) => commit(book),
-    onState: (s) => { if(s === 'offline' || s === 'error') showManual(false) }
+    onState: (s) => {
+      if(resolving) return                    // there is nothing to type in again
+      if(s === 'offline' || s === 'error') showManual(false)
+    }
   })
 
   const modal = createModal(root, {
     onClose(){
       acknowledged = null
+      resolving = null
       typeahead.reset()
       hideDuplicate()
     }
@@ -82,6 +87,17 @@ export function mountBookModal(root){
   }
 
   function commit(book){
+    // Resolving isn't adding: the book is already on a shelf, so the duplicate
+    // check would fire on the very book we're naming.
+    if(resolving){
+      replaceBook(resolving.key, book)
+      // enrich() finds the book by key, so it has to be asked about the book as it
+      // is now STORED — replaceBook() drops workKey, and the raw search result
+      // still carries one.
+      enrich({ title: book.title, author: book.author })
+      modal.close()
+      return
+    }
     if(blockedAsDuplicate(book)) return
     const next = { ...book }
     if(dest === 'current') addCurrent(next)
@@ -105,22 +121,34 @@ export function mountBookModal(root){
     if(manualFields && manualFields.hidden) return
     const title = titleInput.value.trim()
     if(!title){ titleInput.focus(); return }
-    commit({ title, author: authorInput.value.trim() })
+    // An absent author is an ABSENT KEY, never '' — a hand-typed book and one the
+    // search knew nothing about have to be the same thing (ARCHITECTURE.md >
+    // Search). backfill.js also reads a missing author as a blank it may fill,
+    // which '' would quietly block.
+    const manual = { title, needsDetails: true }
+    const author = authorInput.value.trim()
+    if(author) manual.author = author
+    commit(manual)
   })
 
-  function open({ dest: to = 'tbr' } = {}){
+  function open({ dest: to = 'tbr', resolve = null } = {}){
     dest = to
+    resolving = resolve
     acknowledged = null
     hideDuplicate()
     typeahead.reset()
 
     heading.textContent =
-      dest === 'current' ? 'Start a book'
+      resolving ? 'Find this book'
+      : dest === 'current' ? 'Start a book'
       : dest === 'finished' ? 'Add a book you’ve read'
       : 'Add to TBR Pile'
 
     if(searchField) searchField.hidden = false
-    if(manualToggle) manualToggle.hidden = false
+    // Typing it in again is what got us here, so the manual fields are no answer
+    // to a book that already exists — the search is the only thing that can add
+    // what's missing.
+    if(manualToggle) manualToggle.hidden = !!resolving
     if(manualFields) manualFields.hidden = true
     if(saveBtn) saveBtn.hidden = true
     titleInput.value = ''
@@ -141,6 +169,11 @@ export function mountBookModal(root){
 
     modal.open(null)
     typeahead.focus()
+    // The book IS the query. Searching it straight away means the common case —
+    // a title the catalogue knows but couldn't match unaided — is one tap.
+    if(resolving){
+      typeahead.setQuery([resolving.title, resolving.author].filter(Boolean).join(' '))
+    }
   }
 
   return { open }

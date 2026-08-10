@@ -23,6 +23,7 @@ import { mountReading } from './routes/reading.js'
 import { mountFinished } from './routes/finished.js'
 import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 import { onAuthChange } from './state/auth.js'
+import { watchForNetwork } from './services/backfill.js'
 
 export const APP_VERSION = '1.0'
 
@@ -129,3 +130,6 @@ function registerServiceWorker(){
 initStore()
 mountAll()
 registerServiceWorker()
+// Books added with no signal finish arriving. After mountAll(), so the lists are
+// already subscribed and a book that fills in repaints where it sits.
+watchForNetwork()
