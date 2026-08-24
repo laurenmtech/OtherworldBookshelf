@@ -1,4 +1,6 @@
-// Series travel together. Asked ONCE, at add time, for the WHOLE series.
+// Series travel together. Asked ONCE, for the WHOLE series, at add time — and,
+// for a book that was on the shelf before this existed or whose one lookup found
+// no network, once more by services/series-backfill.js.
 //
 // Asking per-book ("what comes next?") needed six consecutive correct answers to
 // cross a seven-book series and died three books in; see ARCHITECTURE.md > Series.
@@ -35,7 +37,11 @@ export async function lookup(book){
       headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ title: book.title, author: book.author || '' })
     })
-    if(!res.ok) return { answered: false }
+    // The STATUS travels with a refusal. 429 is the Worker saying "not today"
+    // and means something different from a blip: services/series-backfill.js
+    // has to stand down rather than keep sweeping into a closed door and
+    // spending the ceiling that adding a book needs.
+    if(!res.ok) return { answered: false, status: res.status }
     const data = await res.json()
     return { answered: true, series: fields(data && data.series) }
   }catch(err){
@@ -61,12 +67,16 @@ function fields(series){
   return out
 }
 
+// `asked: true` records that this book has now been put to the Worker, answer or
+// no answer — the mark services/series-backfill.js reads to know it does not
+// have to ask again. A "standalone" answer changes nothing else about the book,
+// so without the stamp there is no way to tell it apart from never having asked.
 export function enrich(book){
   if(!SERIES || !book || !book.title) return
   const key = bookKey(book)
   if(!key) return
   lookup(book)
-    .then(({ answered, series }) => { if(answered) applySeries(key, series) })
+    .then(({ answered, series }) => { if(answered) applySeries(key, series, { asked: true }) })
     .catch(() => {})
 }
 
@@ -123,6 +133,48 @@ export function nextVolume(book, state){
       }
     }
     return { book: volume, fromWishlist: null, forthcoming: soon }
+  }
+  return null                                       // end of the series
+}
+
+// The record's copy of the same walk, for a series someone finished before the
+// app knew it was one.
+//
+// nextVolume() is the finish modal's announcement, and it refuses a re-read —
+// a book already in the record advances nothing. That refusal is right at the
+// point of finishing and wrong afterwards: services/series-backfill.js can hand
+// a book its series days later, by which time the one moment the app had to say
+// "there is a book 2" has already passed. This is the second and last place it
+// can be said, so the re-read guard is the ONE rule that differs.
+//
+// It offers, and never promotes. A volume already on Current Reads or the pile
+// is nothing to announce — the reader has it — so this returns null rather than
+// moving anything, and the only action the record ever takes is adding to the
+// pile.
+export function unreadVolume(book, state){
+  if(!inSeries(book)) return null
+  // "Not for me" never advances a series — the same rule setDownCurrent() keeps
+  // by simply never calling nextVolume(). Here the entry is already in the
+  // record wearing its setDown flag, so the rule has to be said out loud.
+  if(book.setDown) return null
+  if(!Array.isArray(book.seriesVolumes) || !book.seriesVolumes.length) return null
+  if(!Number.isFinite(book.seriesPosition)) return null
+
+  const read = new Set()
+  for(const b of state.finished || []) read.add(bookKey(b))
+  const held = new Set()
+  for(const b of [...(state.currentReads || []), ...(state.wishlist || [])]) held.add(bookKey(b))
+
+  for(let position = book.seriesPosition + 1; position <= book.seriesVolumes.length; position++){
+    const record = book.seriesVolumes[position - 1]
+    if(!record) return null
+    if(!record.verified) return null               // never invent
+    if(forthcoming(record)) return null            // not out yet; nothing to add
+    const volume = volumeAt(book, position)
+    const key = bookKey(volume)
+    if(read.has(key)) continue                     // already read — try the one after
+    if(held.has(key)) return null                  // already waiting for them
+    return volume
   }
   return null                                       // end of the series
 }

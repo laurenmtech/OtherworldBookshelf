@@ -9,10 +9,11 @@
 import { el, escapeHtml, iconButton } from '../ui/dom.js'
 import { coverCache } from '../ui/cover.js'
 import { bookKey, inSeries, byVolume } from '../services/book-shape.js'
+import { unreadVolume } from '../services/series.js'
 import { tagRow, volumeLabel } from '../ui/book-meta.js'
 import { askConfirm, showMessage } from '../ui/dialog.js'
 import {
-  removeFinished, readAgain, removeFinishedSeries, readAgainSeries
+  removeFinished, readAgain, removeFinishedSeries, readAgainSeries, addToTbr, getState
 } from '../state/store.js'
 import { feelingLabel, SET_DOWN_LABEL } from '../state/moods.js'
 
@@ -54,11 +55,15 @@ const moodTags = (item) => (item.moods && item.moods.length)
 const setDownTag = (item) => item.setDown
   ? `<span class="set-down-tag">${escapeHtml(SET_DOWN_LABEL)}</span>` : ''
 
-function readAgainButton(key, act){
+// A button that says what it did for a moment and then goes back to itself. The
+// act() re-renders the row and destroys this very button, which is why `flashing`
+// is at module scope and why the flashed state is read from it rather than held
+// here.
+function flashButton(key, { icon, label, act, className }){
   const onPile = flashing.has(key)
   return iconButton(
-    onPile ? 'finish' : 'bookmark',
-    onPile ? 'On the pile!' : 'Read again',
+    onPile ? 'finish' : icon,
+    onPile ? 'On the pile!' : label,
     () => {
       if(flashing.has(key)) return        // already flashing — don't stack timers
       flashing.add(key)
@@ -68,22 +73,58 @@ function readAgainButton(key, act){
         repaint && repaint()
       }, FLASH)
     },
-    onPile ? 'btn read-again flashed' : 'btn read-again'
+    onPile ? `btn ${className} flashed` : `btn ${className}`
   )
 }
 
+const readAgainButton = (key, act) =>
+  flashButton(key, { icon: 'bookmark', label: 'Read again', act, className: 'read-again' })
+
+// The record's second and last chance at the announcement.
+//
+// A series normally announces itself in the finish modal, and that is where a
+// reader corrects it. A book that only learned its series afterwards — see
+// services/series-backfill.js — is past that moment with nothing ever said, so
+// the row says it instead: the next volume by name, and one tap to put it on
+// the pile. It is an offer and nothing more; nothing is added unasked.
+//
+// The flash key is the ROW's, not the volume's, because adding the volume is
+// exactly what makes unreadVolume() return null — the button has to survive its
+// own success long enough to say "On the pile!".
+function nextUpButton(rowKey, next){
+  return flashButton(`next|${rowKey}`, {
+    icon: 'bookmark',
+    label: 'Add to pile',
+    act: () => { if(next) addToTbr(next) },
+    className: 'next-up-btn'
+  })
+}
+
+function nextUpOf(item){
+  return inSeries(item) ? unreadVolume(item, getState()) : null
+}
+
+const nextUpLine = (next) => next
+  ? `<div class="muted next-up">Next: ${escapeHtml(next.title)}</div>` : ''
+
 function row({ item, index }){
   const li = el('li', { 'data-book-key': bookKey(item) })
-  const sub = [feelOf(item), dateOf(item)].filter(Boolean).map(escapeHtml).join(' · ')
+  // A lone volume of a series renders here rather than as a series row — see
+  // toRows() — so this is the only place it can say which volume it is.
+  const sub = [volumeLabel(item), feelOf(item), dateOf(item)]
+    .filter(Boolean).map(escapeHtml).join(' · ')
+  const next = nextUpOf(item)
   const left = el('div', { className: 'row-main' })
   const art = cover(item, { size: 'S', className: 'row-cover' })
   if(art) left.appendChild(art)
   left.appendChild(el('div', {
     html: `<div><strong>${escapeHtml(item.title)}</strong> <span class=muted>by ${escapeHtml(item.author || '')}</span>${setDownTag(item)}` +
-          `<div class=muted>${sub}</div>${tagRow(item)}${moodTags(item)}</div>`
+          `<div class=muted>${sub}</div>${nextUpLine(next)}${tagRow(item)}${moodTags(item)}</div>`
   }))
 
   const actions = el('div', { className: 'list-actions' })
+  const nextKey = bookKey(item)
+  if(next || flashing.has(`next|${nextKey}`)) actions.appendChild(nextUpButton(nextKey, next))
 
   if(item.notes){
     actions.appendChild(el('button', {
@@ -129,13 +170,18 @@ function seriesRow(group){
   if(art) left.appendChild(art)
   const sub = [`${count} book${count === 1 ? '' : 's'}`, newest.title, dateOf(newest)]
     .filter(Boolean).map(escapeHtml).join(' · ')
+  // Asked of the volume furthest ALONG the series rather than the most recently
+  // finished one: those are the same book for a reader going in order, and when
+  // they aren't, the one further on is the one that knows what is still unread.
+  const next = nextUpOf(volumes[volumes.length - 1].item)
   left.appendChild(el('div', {
     html: `<div><strong>${escapeHtml(name)}</strong> <span class=muted>by ${escapeHtml(newest.author || '')}</span>` +
-          `<div class=muted>${sub}</div></div>`
+          `<div class=muted>${sub}</div>${nextUpLine(next)}</div>`
   }))
   li.appendChild(left)
 
   const actions = el('div', { className: 'list-actions' })
+  if(next || flashing.has(`next|series|${key}`)) actions.appendChild(nextUpButton(`series|${key}`, next))
 
   const toggle = iconButton(open ? 'up' : 'down', open ? 'Hide' : `Show all ${count}`, () => {
     if(open) expanded.delete(key); else expanded.add(key)

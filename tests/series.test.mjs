@@ -3,7 +3,7 @@
 // nextVolume() is pure and local — everything it needs is already on the book —
 // so all of this runs with no network and no DOM.
 import { suite, test, is, ok } from './harness.mjs'
-import { nextVolume } from '../js/services/series.js'
+import { nextVolume, unreadVolume } from '../js/services/series.js'
 
 suite('series: advancing')
 
@@ -79,3 +79,51 @@ test('a published next volume does not', () =>
   is(nextVolume(at(1, { 1: { year: YEAR - 1 } }), S()).forthcoming, false))
 test('an unknown year counts as published', () =>
   is(nextVolume(at(1), S()).forthcoming, false))
+
+// ── The record's copy of the walk ────────────────────────────────────────────
+//
+// unreadVolume() exists because a book can learn its series days after it was
+// finished (services/series-backfill.js), long past the finish modal that would
+// have announced it. Same walk, one rule inverted: it answers ABOUT a book that
+// is already in the record.
+suite('series: what is still unread')
+
+test('book 1 in the record still points at book 2', () =>
+  is(unreadVolume(at(1), S({ finished: [at(1)] })).title, 'Crown of Midnight'))
+
+test('it carries the whole list forward', () =>
+  is(unreadVolume(at(1), S({ finished: [at(1)] })).seriesVolumes.length, 7))
+
+test('and the position it will sit at', () =>
+  is(unreadVolume(at(1), S({ finished: [at(1)] })).seriesPosition, 2))
+
+test('volumes already read are skipped', () =>
+  is(unreadVolume(at(1), S({ finished: [at(1), at(2), at(3)] })).title, 'Queen of Shadows'))
+
+test('the last volume leaves nothing to offer', () =>
+  is(unreadVolume(at(7), S({ finished: [at(7)] })), null))
+
+// The offer is only worth making for a book the reader doesn't have. These are
+// silence rather than a promotion: the record never moves anything.
+test('nothing is offered when the next volume is on the pile', () =>
+  is(unreadVolume(at(1), S({ finished: [at(1)], wishlist: [at(2)] })), null))
+
+test('nor when it is already being read', () =>
+  is(unreadVolume(at(1), S({ finished: [at(1)], currentReads: [at(2)] })), null))
+
+// The rules nextVolume() keeps, kept here too.
+test('never offers an unverified volume', () =>
+  is(unreadVolume(at(1, { 1: { verified: false } }), S({ finished: [at(1)] })), null))
+
+test('never offers a book that is not out yet', () =>
+  is(unreadVolume(at(1, { 1: { year: YEAR + 2 } }), S({ finished: [at(1)] })), null))
+
+test('a detached series offers nothing', () =>
+  is(unreadVolume({ ...at(1), seriesDetached: true }, S({ finished: [at(1)] })), null))
+
+// "Not for me" never advances a series — including afterwards, from the record.
+test('a book that was set down offers nothing', () =>
+  is(unreadVolume({ ...at(1), setDown: true }, S({ finished: [at(1)] })), null))
+
+test('a standalone offers nothing', () =>
+  is(unreadVolume({ title: 'Piranesi' }, S({ finished: [{ title: 'Piranesi' }] })), null))

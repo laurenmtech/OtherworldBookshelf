@@ -144,14 +144,24 @@ export function finishCurrent(index, { feeling = null, moods = [], next = null }
 
 const SERIES_FIELDS = ['seriesKey', 'seriesName', 'seriesPosition', 'seriesTotal', 'seriesVolumes']
 
-export function applySeries(key, series){
+// `asked` stamps `seriesAskedAt`, which is how services/series-backfill.js knows
+// it has already put this book to the Worker — including when the answer was
+// "standalone", which leaves no trace on the book at all and would otherwise be
+// asked again on every load forever. Stamped in the SAME commit as the answer,
+// so a series arriving redraws the shelf once rather than twice.
+export function applySeries(key, series, { asked = false } = {}){
   if(!key) return
   let changed = false
+  const askedAt = asked ? new Date().toISOString() : null
 
   const patch = (book) => {
     if(!book || bookKey(book) !== key) return book
     const { seriesKey, seriesName, seriesPosition, seriesTotal, seriesVolumes, ...rest } = book
-    const next = series ? { ...rest, ...series } : rest
+    const next = series ? { ...rest, ...series } : { ...rest }
+    if(askedAt){
+      if(book.seriesAskedAt !== askedAt) changed = true
+      next.seriesAskedAt = askedAt
+    }
     for(const f of SERIES_FIELDS){
       if(JSON.stringify(book[f]) !== JSON.stringify(next[f])){ changed = true; break }
     }
