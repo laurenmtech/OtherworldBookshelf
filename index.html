@@ -321,6 +321,19 @@
              an <input type=file> look like it belongs. -->
         <input id="import-file" type="file" accept="application/json,.json" class="visually-hidden">
       </section>
+
+      <!-- Last, because it is the thing you go looking for after something has
+           already gone wrong. The address is written out rather than hidden
+           behind a "Contact" button: a mailto is a promise about where a
+           message goes, and it should be readable before it's tapped.
+           components/hidden-shelf.js puts the version and build in the subject
+           line — see there for why. -->
+      <section class="sheet-section" id="contact-section">
+        <h3>Tell me something</h3>
+        <p class="muted">A bug, an idea, a book it got wrong, or just what you make of it. It comes
+          straight to me.</p>
+        <p><a class="contact-link" data-contact href="mailto:laurenmtech@gmail.com">laurenmtech@gmail.com</a></p>
+      </section>
     </div>
   </div>
 

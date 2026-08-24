@@ -424,6 +424,10 @@ body.sheet-open{ overflow:hidden }
 .sheet-section{ padding:16px 0; border-top:1px solid var(--line-2) }
 .sheet-section h3{ margin:0 0 10px; font-size:14px; color:var(--accent) }
 .sheet-section > .muted{ margin:0 0 10px }
+/* The only link in the sheet that isn't a saved place. Same treatment as those
+   (.place-panel .list a), because an unstyled <a> renders browser-blue and
+   every vibe would be wrong about it. */
+.contact-link{ color:var(--accent-2); text-decoration:underline; word-break:break-all }
 
 /* Two steps, one per platform — see components/install.js for why both are
    always written out rather than picked by sniffing the user agent. */
