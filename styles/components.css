@@ -70,7 +70,7 @@
 .current-item.headline .current-meta h3{ font-size:20px }
 .current-cover{ width:44px; flex:0 0 44px; aspect-ratio:2/3; object-fit:cover; border-radius:4px; display:block; box-shadow:0 4px 14px var(--shadow-1) }
 .current-item.headline .current-cover{ width:86px; flex-basis:86px }
-.current-item .list-actions{ align-self:flex-start; flex-wrap:wrap; margin-top:10px }
+.current-item .list-actions{ align-self:flex-start; margin-top:10px }
 
 /* Genre and format. Outlined, where the vibe tags are
    filled — the two rows sit next to each other and must not read as one list,
@@ -114,7 +114,6 @@
    room rather than being a muted footnote under the title. */
 .suggestions .suggestion{ gap:10px }
 .suggestion-why{ margin:6px 0 0; font-size:13px; color:var(--ink); opacity:.9 }
-.suggestion .list-actions{ flex-wrap:wrap }
 .recommend-remaining{ margin:12px 0 0; font-size:12px }
 #recommend-busy{ margin:16px 0; font-size:13px }
 #recommend-results{ max-height:60vh; overflow-y:auto }
@@ -224,7 +223,14 @@
 /* saved-place link styling (libraries, bookstores) */
 .place-panel .list a{ color:var(--accent-2); text-decoration:underline; word-break:break-all }
 
-.list-actions{ display:flex; gap:8px; margin-top:6px }
+/* WRAPS, because a row of actions is not allowed to decide how wide the page
+   is. The record's rows carry four of them once a series has something to
+   offer — Add to pile, Notes, Read again, Remove — which is wider than a phone,
+   and `.list li` aligns to flex-start, so the overflow pushes the whole page
+   sideways rather than clipping. Current Reads has wrapped since it existed;
+   this is the same rule, said once for every list. On a wide screen nothing
+   wraps and nothing moves. */
+.list-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; max-width:100% }
 .list-actions .btn{ padding:6px 10px; font-size:13px }
 
 /* Button icons */
