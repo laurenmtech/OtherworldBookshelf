@@ -5,8 +5,10 @@ import { createModal } from '../../ui/modal.js'
 import { singleSelect } from '../../ui/chips.js'
 import { mountMoodPicker } from '../../ui/mood-picker.js'
 import { FEELINGS } from '../../state/moods.js'
-import { finishCurrent, detachSeries, getState } from '../../state/store.js'
-import { nextVolume } from '../../services/series.js'
+import { finishCurrent, detachSeries, getState, subscribe } from '../../state/store.js'
+import { nextVolume, enrich } from '../../services/series.js'
+import { needsAsking } from '../../services/series-backfill.js'
+import { bookKey, SERIES } from '../../services/book-shape.js'
 
 export function mountFinishModal(root){
   const form = root.querySelector('#finish-form-inner')
@@ -26,10 +28,52 @@ export function mountFinishModal(root){
   let targetBook = null
   let next = null
   let stopped = false
+  let unwatch = null
 
   const modal = createModal(root, {
-    onClose(){ feelings.clear(); moods.setValue([]) }
+    onClose(){ feelings.clear(); moods.setValue([]); stopWatching() }
   })
+
+  function stopWatching(){
+    if(unwatch) unwatch()
+    unwatch = null
+  }
+
+  // The announcement used to depend on winning a race it had no way to win.
+  //
+  // A series is asked for at ADD time, and the answer takes a few seconds —
+  // Haiku, then every volume checked against Open Library. Add a book and press
+  // Finish before that lands, which is exactly what someone recording a book
+  // they read last week does, and the modal opens on a book that doesn't know
+  // it is in a series yet: silence, and the one moment the app had to announce
+  // book 2 is gone.
+  //
+  // So the modal asks on the way open if nobody has asked lately, and watches
+  // the store while it is up. The answer arrives into a modal the reader is
+  // still filling in, and the "Next up" line appears where it would have been.
+  // If they finish first, nothing is lost — the record row offers the volume
+  // instead (see components/finished-list.js).
+  function watchForAnswer(book){
+    stopWatching()
+    if(!SERIES || !book || next) return
+    const key = bookKey(book)
+    if(!key) return
+    unwatch = subscribe(() => {
+      if(next) return
+      const state = getState()
+      const fresh = (state.currentReads || []).find(b => bookKey(b) === key)
+      if(!fresh) return
+      const found = nextVolume(fresh, state)
+      if(!found) return
+      targetBook = fresh
+      next = found
+      paintNext()
+    })
+    // The book AS STORED, workKey and all: enrich() patches by bookKey(), and a
+    // book found through search is keyed by its work — asking about a bare
+    // { title, author } would answer about a key nothing on the shelf holds.
+    if(needsAsking(book)) enrich(book)
+  }
 
   cancelBtn && cancelBtn.addEventListener('click', () => modal.close())
 
@@ -76,6 +120,7 @@ export function mountFinishModal(root){
       stopped = false
       next = book ? nextVolume(book, getState()) : null
       paintNext()
+      watchForAnswer(book)
       if(bookLine) bookLine.textContent = (book && book.title) || ''
       feelings.clear()
       moods.reset()

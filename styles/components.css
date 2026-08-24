@@ -464,6 +464,10 @@ body.sheet-open{ overflow:hidden }
 /* 44px of chrome (14px icon + 8px gap + 20px padding + 2px border) and room
    for "On the pile!", the longer of the two labels. */
 .btn.read-again{ min-width:calc(44px + 10ch) }
+/* Same reason as read-again above: the label changes to "On the pile!" for a
+   moment and the row must not resize under the thumb that tapped it. */
+.btn.next-up-btn{ min-width:calc(44px + 11ch) }
+.next-up{ margin-top:2px }
 .btn.flashed{ color:var(--accent-2); border-color:var(--accent-soft) }
 
 /* A redraw that isn't news — see js/ui/entrance.js. The entrance animation is

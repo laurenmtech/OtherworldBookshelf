@@ -364,6 +364,41 @@ book, and the author must agree by whole word. *Heir of Fire* is unambiguous;
 *Babel* is not, and a series must never swallow a book that merely shares a
 title.
 
+**The books that were on the shelf before their series was.** Placing a book
+from a sibling's list only works when a sibling is *there*. Everything added
+before Phase 7 shipped, and everything whose one add-time lookup happened to
+land on a dead network or an expired token, had no sibling and no answer — it
+simply sat there as a standalone forever, because add time was the only moment
+the question was ever asked. A reader finished *Ninth House*, the first of two,
+and the app said nothing at all: nothing had ever asked whether it was a series.
+
+`services/series-backfill.js` is the second time of asking, shaped exactly like
+`backfill.js` and running on the same signals plus one more — signing in, since
+`/series` needs a token and a sweep at boot would find none. It walks the shelf
+for books with no `seriesKey`, asks about a few per visit, and stops on the
+first unanswered lookup rather than firing a queue at a wall.
+
+What makes it stop asking is **`seriesAskedAt`**. A "standalone" answer leaves
+no mark on the book — that is what it means — so without a stamp the sweep would
+re-ask every book on every load until the end of time. It re-asks after thirty
+days and not before, which is exactly the Worker's `SOFT_TTL` for a standalone:
+that TTL exists so a wrong "no" can heal, and it can only heal if somebody asks
+a second time. The stamp is written in the *same* commit as the answer, so a
+series arriving redraws the shelf once. It is bookkeeping, not part of what a
+book is — `replaceBook()` drops it, because a book renamed by hand is a
+different question.
+
+**The record is the second and last place a series can be announced.** The
+finish modal is the first, and a book that learns its series afterwards is
+already past it — the one moment the app had to say "there is a book 2" has
+gone. So a record row whose next volume is verified, published and on no shelf
+says *Next: Hell Bent* and offers one tap to put it on the pile.
+`unreadVolume()` is `nextVolume()`'s walk with the re-read guard inverted (every
+book it is asked about is by definition already read) and with promotion
+removed: the record offers, and never moves anything. Every other rule holds —
+nothing unverified, nothing unpublished, nothing already on a shelf, and nothing
+at all for a book that was set down.
+
 **Nothing new is stored.** A series entry is a normal book carrying series
 fields. The grouping — in Current Reads and in the record alike — happens at
 paint time off `seriesKey`, so sync, export, migration, search, the filters and
@@ -614,6 +649,10 @@ would take the sheet down with it.
                                              //   workKey?, coverId?, year? }]
                                              //   every volume, publication order
   seriesDetached,                            // the reader said stop. See below
+  seriesAskedAt,                             // when the Worker was last asked
+                                             //   about this book. Bookkeeping for
+                                             //   services/series-backfill.js —
+                                             //   NOT part of what a book is
   genres,                                    // at most two, from GENRES
   format }                                   // 'print' | 'ebook' | 'audio'
 ```

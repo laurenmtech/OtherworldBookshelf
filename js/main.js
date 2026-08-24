@@ -24,8 +24,9 @@ import { mountFinished } from './routes/finished.js'
 import { isAnyModalOpen, hasDirtyInput } from './ui/modal.js'
 import { onAuthChange } from './state/auth.js'
 import { watchForNetwork } from './services/backfill.js'
+import { watchForSeries } from './services/series-backfill.js'
 
-export const APP_VERSION = '1.0'
+export const APP_VERSION = '1.0.1'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))
@@ -133,3 +134,6 @@ registerServiceWorker()
 // Books added with no signal finish arriving. After mountAll(), so the lists are
 // already subscribed and a book that fills in repaints where it sits.
 watchForNetwork()
+// And the books that were on the shelf before their series was — same reason for
+// the same placement, and it waits for sign-in on its own.
+watchForSeries()
