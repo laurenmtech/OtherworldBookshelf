@@ -15,6 +15,10 @@ import { BORROW_FORMATS, FIND_LINKS } from '../state/migrate.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
 
+// The one way to reach a person from inside the app. The address is also
+// written into the markup, so the link says where it goes before it is tapped.
+const CONTACT_EMAIL = 'laurenmtech@gmail.com'
+
 function stamp(){
   const d = new Date()
   const pad = n => String(n).padStart(2, '0')
@@ -35,7 +39,29 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
   if(!root) return { open(){}, close(){} }
 
   const sheet = createSheet(root)
-  openButton && openButton.addEventListener('click', () => sheet.open())
+
+  // The subject line carries what the footer knows — version and the build
+  // actually installed, read back from the service worker's cache. "It did the
+  // wrong thing" is a different bug on build 48 than on build 52, and nobody
+  // writing in should have to know that, or be asked.
+  //
+  // Read off the footer rather than imported: main.js owns APP_VERSION and
+  // imports this module, so importing it back would be a cycle — and the
+  // footer is the number that is TRUE on this device, which a constant isn't.
+  const contact = root.querySelector('[data-contact]')
+  function stampContact(){
+    if(!contact) return
+    const versionEl = document.getElementById('app-version')   // not `el` — that's the DOM helper
+    const running = (versionEl && versionEl.textContent) || ''
+    const subject = running ? `Otherworld Bookshelf — ${running}` : 'Otherworld Bookshelf'
+    contact.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`
+  }
+  stampContact()
+
+  openButton && openButton.addEventListener('click', () => {
+    stampContact()   // showVersion() is async, and may have landed since mount
+    sheet.open()
+  })
 
   mountHeader(root.querySelector('#auth-area'))
 
