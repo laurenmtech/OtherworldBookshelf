@@ -2,11 +2,13 @@
 //
 // Two things here are load-bearing and shouldn't be "simplified":
 //
-//   1. EFFORT IS PINNED. Claude Opus 5 thinks by default and thinking tokens
-//      bill as output, so an unpinned request costs several times a pinned one
-//      — the difference between roughly $8 a month at the full allowance and
-//      something nobody budgeted for. `effort: 'low'` is what makes the cost
-//      estimate in the README true.
+//   1. EFFORT IS PINNED — ON THE MODELS THAT TAKE IT. Claude Opus 5 thinks by
+//      default and thinking tokens bill as output, so an unpinned request costs
+//      several times a pinned one. `effort: 'low'` is what makes the cost table
+//      in the README true. But Haiku 4.5 REJECTS `output_config.effort` with a
+//      400 — it is not in the supported-models list — so sending the pin to the
+//      cheap model would break the very swap the pin exists to make possible.
+//      Hence EFFORT_MODELS below: the pin follows the model, not the file.
 //
 //   2. STRUCTURED OUTPUT IS THE CONTRACT. The response is constrained to a JSON
 //      schema, so `suggestions` is always an array of {title, author, why}.
@@ -15,11 +17,23 @@
 //      verification pass is for.
 import Anthropic from '@anthropic-ai/sdk'
 
-// Both here, on purpose: swapping to Haiku is a two-line change if the bill
-// ever surprises you. Haiku 4.5 costs roughly a fifth as much per ask and
-// recommends noticeably less well — it is the cost lever, not the default.
+// The DEFAULT model, overridden by MODEL in wrangler.toml — so the Haiku swap
+// is a config change and a deploy rather than an edit to this file. Haiku 4.5
+// costs roughly a fifth as much per ask and recommends noticeably less well: it
+// is the cost lever, not the default.
 export const MODEL = 'claude-opus-5'
 export const EFFORT = 'low'
+
+// Models that accept `output_config.effort`. Anything not listed gets the
+// request WITHOUT the pin, because sending it is a 400, not a no-op. Listed
+// rather than inferred from the id: a name-shaped guess ("opus means yes") is
+// how the next model quietly breaks this route.
+export const EFFORT_MODELS = new Set([
+  'claude-opus-5', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6',
+  'claude-sonnet-5', 'claude-sonnet-4-6', 'claude-fable-5'
+])
+
+export const takesEffort = (model) => EFFORT_MODELS.has(model)
 
 // A ceiling, not a target — unused tokens cost nothing. Generous because
 // max_tokens caps thinking AND the answer together on this model, and a
@@ -95,16 +109,17 @@ export function buildUserPrompt({ moods = [], freeText = '', tasteSummary = '', 
   return parts.join('\n\n')
 }
 
-// Returns { suggestions: [{title, author, why}] }. Throws on any upstream
-// failure — the caller turns that into a typed error and refunds the credit.
-export async function recommend(apiKey, request){
+// Returns { suggestions: [{title, author, why}], usage, model }. `usage` is
+// what the month's ledger is billed from — the caller prices it. Throws on any
+// upstream failure, which the caller turns into a typed error and a refund.
+export async function recommend(apiKey, request, model = MODEL){
   const client = new Anthropic({ apiKey })
   const message = await client.messages.create({
-    model: MODEL,
+    model,
     max_tokens: MAX_TOKENS,
     system: SYSTEM,
     output_config: {
-      effort: EFFORT,
+      ...(takesEffort(model) ? { effort: EFFORT } : {}),
       format: { type: 'json_schema', schema: SUGGESTION_SCHEMA }
     },
     messages: [{ role: 'user', content: buildUserPrompt(request) }]
@@ -119,5 +134,5 @@ export async function recommend(apiKey, request){
 
   const parsed = JSON.parse(text.text)
   const suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : []
-  return { suggestions: suggestions.slice(0, HOW_MANY) }
+  return { suggestions: suggestions.slice(0, HOW_MANY), usage: message.usage || {}, model }
 }

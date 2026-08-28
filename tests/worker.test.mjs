@@ -7,7 +7,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { suite, test, is, ok } from './harness.mjs'
 import { shape, slug, sameTitle, fanOut, cacheKey } from '../api/src/series.js'
 import { claim, refund, readUsed, DAILY_CAP } from '../api/src/quota.js'
-import worker from '../api/src/index.js'
+import { costMicros, addSpent, readSpent, overBudget, budgetMicros, PRICES } from '../api/src/budget.js'
+import { takesEffort } from '../api/src/recommend.js'
+import worker, { handleRecommend } from '../api/src/index.js'
 
 // ── The self-consistency guard ──────────────────────────────────────────────
 
@@ -156,6 +158,108 @@ test('series lookups use a separate counter', async () => {
   await claim(kv, 'u1', 60, 's')
   return is(await readUsed(kv, 'u1'), 0) && is(await readUsed(kv, 'u1', 's'), 1)
 })
+
+// ── The month's ceiling ─────────────────────────────────────────────────────
+
+suite('worker: monthly budget')
+
+// The README's cost table says ~10¢ per ask, measured against a real invoice
+// with ~400 input and ~3,900 output tokens. If this test moves, the table is
+// wrong or the prices changed — re-measure rather than adjusting the number.
+test('an ask prices out at the measured ~10¢', () =>
+  is(costMicros('claude-opus-5', { input_tokens: 400, output_tokens: 3900 }), 99500))
+test('a series lookup is a tenth of a cent', () =>
+  is(costMicros('claude-haiku-4-5', { input_tokens: 60, output_tokens: 300 }) < 2000, true))
+
+// A typo'd model id must not cost zero. Free is the one answer that turns a
+// misconfiguration into an uncapped month.
+test('an unpriced model bills at the dearest known rate', () =>
+  is(costMicros('claude-nonesuch', { input_tokens: 400, output_tokens: 3900 }),
+     costMicros('claude-opus-5', { input_tokens: 400, output_tokens: 3900 })))
+test('no model is priced above the fallback', () =>
+  is(Object.values(PRICES).every(p => p.out <= 25), true))
+
+test('spend accumulates across asks', async () => {
+  const kv = fakeKV()
+  await addSpent(kv, 99500)
+  await addSpent(kv, 99500)
+  return is(await readSpent(kv), 199000)
+})
+test('the ledger key carries no uid', async () => {
+  const kv = fakeKV()
+  await addSpent(kv, 1)
+  return is([...kv.store.keys()].every(k => /^m:\d{4}-\d{2}$/.test(k)), true)
+})
+
+test('under the ceiling is not over budget', async () => {
+  const kv = fakeKV()
+  await addSpent(kv, 5 * 1e6)
+  return is(await overBudget(kv, { MONTHLY_BUDGET_USD: '20' }), false)
+})
+test('at the ceiling is over budget', async () => {
+  const kv = fakeKV()
+  await addSpent(kv, 20 * 1e6)
+  return is(await overBudget(kv, { MONTHLY_BUDGET_USD: '20' }), true)
+})
+// An absent or unparseable figure means no ceiling — a config typo must not
+// take the recommender off the air.
+test('an unset budget is no ceiling', async () => {
+  const kv = fakeKV()
+  await addSpent(kv, 9999 * 1e6)
+  return is(await overBudget(kv, {}), false) &&
+         is(await overBudget(kv, { MONTHLY_BUDGET_USD: 'twenty' }), false)
+})
+test('a budget converts to micro-dollars', () => is(budgetMicros({ MONTHLY_BUDGET_USD: '20' }), 20000000))
+
+// THE ordering test. A reader turned away by the month's budget has not had an
+// ask, and must not lose one of their ten to it — so the budget is checked
+// before the credit is claimed. Nothing here reaches the network: the
+// over-budget path returns before the model is ever called.
+const spentEnv = async (usd, micros) => {
+  const kv = fakeKV()
+  await addSpent(kv, micros)
+  return { QUOTA: kv, MONTHLY_BUDGET_USD: usd }
+}
+
+test('a spent month answers 503, not 429', async () => {
+  const env = await spentEnv('20', 20 * 1e6)
+  return is((await handleRecommend(env, 'u1', {}, {})).status, 503)
+})
+test('it says which of the two it is', async () => {
+  const env = await spentEnv('20', 20 * 1e6)
+  const body = await (await handleRecommend(env, 'u1', {}, {})).json()
+  return is(body.error.type, 'budget_exhausted')
+})
+test('a budget stop does NOT spend a daily credit', async () => {
+  const env = await spentEnv('20', 20 * 1e6)
+  await handleRecommend(env, 'u1', {}, {})
+  return is(await readUsed(env.QUOTA, 'u1'), 0)
+})
+// The mirror of the above: with budget left, the request gets PAST the ceiling
+// and on to the model, which fails here because there is no API key — 502, not
+// 503. The counter is back at zero afterwards because that failure refunds the
+// credit, which is the behaviour quota.js promises and worth pinning too.
+test('with budget left it gets past the ceiling to the model', async () => {
+  const env = await spentEnv('20', 1e6)
+  return is((await handleRecommend(env, 'u1', {}, {})).status, 502)
+})
+test('and the failed ask gives the credit back', async () => {
+  const env = await spentEnv('20', 1e6)
+  await handleRecommend(env, 'u1', {}, {})
+  return is(await readUsed(env.QUOTA, 'u1'), 0)
+})
+
+// ── The effort pin follows the model ────────────────────────────────────────
+//
+// Haiku 4.5 rejects output_config.effort with a 400. Sending the pin to it
+// would break the exact swap the MODEL config value exists to make possible —
+// the cost lever would fail closed, on every ask, the moment it was pulled.
+
+suite('worker: effort follows the model')
+
+test('the default model takes the pin', () => is(takesEffort('claude-opus-5'), true))
+test('Haiku 4.5 does NOT take the pin', () => is(takesEffort('claude-haiku-4-5'), false))
+test('an unknown model is assumed not to', () => is(takesEffort('claude-nonesuch'), false))
 
 // ── The uid comes from the verified token, never the request body ───────────
 
