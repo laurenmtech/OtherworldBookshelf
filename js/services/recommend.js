@@ -82,6 +82,7 @@ const MESSAGES = {
   offline: 'You’re offline — this one needs a connection.',
   unauthenticated: 'Sign in to ask for a recommendation.',
   over_quota: 'That’s all for today. More tomorrow.',
+  budget_exhausted: 'The recommender is resting until the 1st.',
   upstream_failure: 'Couldn’t reach the recommender just now.',
   network: 'Couldn’t reach the recommender just now.',
   none_found: 'Nothing came back that I could verify. Try again, or say more about what you want.'

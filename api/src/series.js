@@ -340,5 +340,5 @@ export async function lookupSeries(env, { title, author }){
       kv.put(w.key, JSON.stringify({ series: w.series }), opts)))
   }
 
-  return { series, cached: false }
+  return { series, cached: false, usage: message.usage || {}, model: MODEL }
 }

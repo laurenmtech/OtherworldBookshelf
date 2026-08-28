@@ -51,7 +51,9 @@ export function mountRecommendModal(root){
     if(!errorBox) return
     errorBox.innerHTML = ''
     errorBox.appendChild(el('p', {}, message || messageFor(type)))
-    if(type !== 'over_quota' && type !== 'signed_out'){
+    // No "Try again" for the three that trying again cannot fix: the day's
+    // allowance, the month's budget, and not being signed in.
+    if(type !== 'over_quota' && type !== 'budget_exhausted' && type !== 'signed_out'){
       errorBox.appendChild(el('button', {
         type: 'button', className: 'btn', onClick: () => ask(lastAsk)
       }, 'Try again'))

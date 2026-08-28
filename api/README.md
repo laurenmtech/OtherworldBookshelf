@@ -42,13 +42,59 @@ The earlier estimate here said ~2.8¢ and was wrong by 3–4×, because it assum
 model or the effort, re-measure rather than re-deriving.
 
 At a realistic few asks a week this is small change. At the full allowance every
-day it is not. Two levers, both one line:
+day it is not. Three levers, all of them **config in `wrangler.toml`** — a
+change and a `wrangler deploy`, never an edit to a source file:
 
-- **`DAILY_CAP`** in `wrangler.toml` — fewer asks per reader per day.
-- **`MODEL`** in `src/recommend.js` — `claude-haiku-4-5` is about a fifth the
-  cost and recommends noticeably less well.
+- **`DAILY_CAP`** — fewer asks per reader per day.
+- **`MODEL`** — `claude-haiku-4-5` is about a fifth the cost and recommends
+  noticeably less well. The effort pin follows the model automatically
+  (`EFFORT_MODELS` in `src/recommend.js`): Haiku 4.5 rejects
+  `output_config.effort` with a 400, so a swap that still sent the pin would
+  fail on every ask.
+- **`MONTHLY_BUDGET_USD`** — the ceiling across every reader, below.
 
-**Set a billing alert on the Anthropic account before anyone but you uses this.**
+**Set a spend limit on the Anthropic account before anyone but you uses this.**
+Console → Settings → Workspaces → the workspace holding this Worker's key →
+spend limit, plus a notification below it. That limit is the backstop, and the
+reason it matters is that it does not depend on anything in this repo being
+correct.
+
+### The month's ceiling
+
+`MONTHLY_BUDGET_USD` is a running total of what the month has cost, checked
+before each recommendation. Past it, `/recommend` returns a typed
+`budget_exhausted` (503) and the app says *"The recommender is resting until the
+1st."* in one sentence. Nothing else changes: books add, finish, and find their
+series exactly as before.
+
+Three things about it are deliberate:
+
+- **The check comes before the daily claim.** A reader turned away by the budget
+  has not had an ask, and doesn't lose one of their ten to it.
+- **Series lookups are recorded but never gated.** The ledger says what the
+  month cost, so leaving the Haiku calls out would make it a lie — but a reader
+  adding a book isn't asking for anything, and the app must not start failing at
+  it because a *recommendation* budget ran out.
+- **An unset or unparseable figure means no ceiling.** A config typo should not
+  take the feature off the air; that is what the account-level limit is for.
+
+It is a strong nudge, not an enforced cap. The cost of an ask isn't knowable
+until the response reports its tokens, so the ceiling is crossed by one ask
+rather than stopped at it, and — like the daily counters — the ledger is
+read-then-write with nothing holding the two together, so simultaneous asks can
+lose an increment. The overshoot is cents.
+
+### Reading what the month has cost
+
+One KV key, no endpoint, no dashboard:
+
+```
+npx wrangler kv key get --remote --binding QUOTA "m:$(date -u +%Y-%m)"
+```
+
+The number is **micro-dollars** — divide by a million. There is deliberately no
+route that serves it: an admin endpoint would need an admin identity, and this
+Worker doesn't have one and is better for it.
 
 ### `/series` is the cheap one, and stays cheap
 
@@ -194,10 +240,11 @@ network.
 ## Files
 
 ```
-wrangler.toml     config, KV binding, the daily cap
-src/index.js      the route: CORS, auth, quota, typed errors
+wrangler.toml     config: KV binding, the caps, the model, the month's budget
+src/index.js      the route: CORS, auth, quota, budget, typed errors
 src/firebase.js   ID token verification via JWKS + WebCrypto (no Admin SDK)
 src/quota.js      counters per reader per day, in KV — one prefix per route
+src/budget.js     the month's spend: token prices, one total, the ceiling
 src/recommend.js  the model call — model id, effort pin, schema, prompt
 src/series.js     the series lookup — Haiku, schema, Open Library check, cache
 ```

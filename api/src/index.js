@@ -16,8 +16,9 @@
 // nothing about what anyone reads is logged — see logging note at the bottom.
 import { verifyIdToken } from './firebase.js'
 import { claim, refund, readUsed, DAILY_CAP, SERIES_DAILY_CAP } from './quota.js'
-import { recommend } from './recommend.js'
+import { recommend, MODEL } from './recommend.js'
 import { lookupSeries } from './series.js'
+import { costMicros, addSpent, overBudget } from './budget.js'
 
 // Typed so the UI can show them verbatim rather than inventing its own copy for
 // each failure. The status codes matter as much as the strings: 429 is what a
@@ -26,6 +27,10 @@ const ERRORS = {
   bad_request:      { status: 400, message: 'That request didn’t look right.' },
   unauthenticated:  { status: 401, message: 'Sign in to ask for a recommendation.' },
   over_quota:       { status: 429, message: 'That’s all for today. More tomorrow.' },
+  // 503 rather than 429: this is not "you asked too often", it is "this one
+  // feature is off until the month turns", and a client shouldn't back off and
+  // retry into it.
+  budget_exhausted: { status: 503, message: 'The recommender is resting until the 1st.' },
   upstream_failure: { status: 502, message: 'Couldn’t reach the recommender just now.' },
   not_found:        { status: 404, message: 'No such endpoint.' }
 }
@@ -64,7 +69,7 @@ function allowedOrigins(env){
 
 // ── POST /recommend ─────────────────────────────────────────────────────────
 
-async function handleRecommend(env, uid, body, cors){
+export async function handleRecommend(env, uid, body, cors){
   // Whatever the body claims about identity is ignored — `uid` is the only one
   // that exists as far as this Worker is concerned.
   const ask = {
@@ -73,6 +78,19 @@ async function handleRecommend(env, uid, body, cors){
     tasteSummary: typeof body.tasteSummary === 'string' ? body.tasteSummary.slice(0, 4000) : '',
     exclude: Array.isArray(body.exclude) ? body.exclude.slice(0, 300).map(String) : []
   }
+
+  // ---- is the month spent? ----
+  // Checked BEFORE the daily credit is claimed, deliberately: a reader who is
+  // turned away by the budget has not had an ask, and should not be charged one
+  // out of their ten. A KV failure here is NOT fatal — an unreadable ledger
+  // falls through to the ask, because the account-level spend limit is the
+  // backstop and a broken counter shouldn't take the feature down.
+  try{
+    if(await overBudget(env.QUOTA, env)) return json(
+      { error: { type: 'budget_exhausted', message: ERRORS.budget_exhausted.message } },
+      ERRORS.budget_exhausted.status, cors
+    )
+  }catch(e){ /* fall through and ask */ }
 
   // ---- how many left ----
   const cap = Number(env.DAILY_CAP) > 0 ? Number(env.DAILY_CAP) : DAILY_CAP
@@ -89,7 +107,9 @@ async function handleRecommend(env, uid, body, cors){
 
   // ---- ask ----
   try{
-    const { suggestions } = await recommend(env.ANTHROPIC_API_KEY, ask)
+    const model = String(env.MODEL || MODEL)
+    const { suggestions, usage } = await recommend(env.ANTHROPIC_API_KEY, ask, model)
+    await addSpent(env.QUOTA, costMicros(model, usage))
     return json({ suggestions, remaining: claimed.remaining }, 200, cors)
   }catch(e){
     // The credit goes back: an outage on our side shouldn't spend someone's
@@ -130,8 +150,16 @@ async function handleSeries(env, uid, body, cors){
   }
 
   try{
-    const { series, cached } = await lookupSeries(env, { title, author })
-    if(!cached) await claim(env.QUOTA, uid, cap, 's')
+    const { series, cached, usage, model } = await lookupSeries(env, { title, author })
+    if(!cached){
+      await claim(env.QUOTA, uid, cap, 's')
+      // Series spend is RECORDED but never gated. The ledger claims to be the
+      // month's AI spend, so leaving out the Haiku calls would make it a lie —
+      // but the budget ceiling stops the recommender only. A reader adding a
+      // book is not asking for anything, and the app must not start failing at
+      // it because a recommendation budget ran out.
+      await addSpent(env.QUOTA, costMicros(model, usage))
+    }
     return json({ series: series || null }, 200, cors)
   }catch(e){
     return fail('upstream_failure', cors)
@@ -187,3 +215,7 @@ export default {
 // prompt, no mood, no book title, no suggestion, and no reader's words are ever
 // written anywhere. The only thing this backend stores about a person is an
 // integer per day, which expires in 48 hours.
+//
+// The month's spend ledger added in Phase 10 keeps that promise: it is one
+// running total for the whole Worker, with no uid in the key and no per-ask
+// row, so it says what the month cost and nothing whatever about who asked.

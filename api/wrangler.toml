@@ -18,9 +18,25 @@ FIREBASE_PROJECT_ID = "books-7a105"
 # here, and the Worker redeployed, before the browser will let the app call it.
 ALLOWED_ORIGINS = "https://laurenmtech.github.io,http://localhost:8000,http://localhost:8123,http://localhost:8127"
 
-# Asks per reader per UTC day. Lowering this is the other cost lever, alongside
-# the model in src/recommend.js.
+# Asks per reader per UTC day. One of three cost levers, all of them config.
 DAILY_CAP = "10"
+
+# The model the recommender asks. Empty or absent falls back to the default in
+# src/recommend.js (claude-opus-5). "claude-haiku-4-5" is roughly a fifth the
+# cost per ask and recommends noticeably less well — the lever to pull if the
+# bill surprises you. The effort pin follows the model automatically; see
+# EFFORT_MODELS in src/recommend.js for why that isn't optional.
+MODEL = "claude-opus-5"
+
+# The month's ceiling, in US dollars, across every reader. When the running
+# total passes this, /recommend returns a typed budget_exhausted and the app
+# says so in one sentence; everything else — adding, finishing, series lookups —
+# is untouched. Measured cost is ~10¢ per ask, so 20 is about 200 asks.
+#
+# Removing this line, or setting it to 0, means NO ceiling. It is not the
+# backstop: the spend limit on the Anthropic account is, because that one does
+# not depend on this Worker being correct.
+MONTHLY_BUDGET_USD = "20"
 
 # Series lookups per reader per UTC day. NOT an allowance — nothing ever shows
 # this number to anyone. Adding a book fires a lookup on its own, so this is an
@@ -30,6 +46,7 @@ SERIES_DAILY_CAP = "60"
 # Two things live here, under different key prefixes:
 #   q:<uid>:<date>  one integer per reader per day  (recommendations, 48h TTL)
 #   s:<uid>:<date>  the same for series lookups     (48h TTL)
+#   m:<YYYY-MM>     the month's spend in micro-dollars, no uid  (70d TTL)
 #   series:v<n>:…   the series cache — public facts, shared by every reader.
 #                   <n> is CACHE_VERSION in src/series.js; bumping it abandons
 #                   every cached answer, which is how a wrong one gets fixed.
