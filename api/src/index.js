@@ -32,6 +32,7 @@ const ERRORS = {
   // retry into it.
   budget_exhausted: { status: 503, message: 'The recommender is resting until the 1st.' },
   upstream_failure: { status: 502, message: 'Couldn’t reach the recommender just now.' },
+  bad_key:          { status: 400, message: 'That key wasn’t accepted. Check it, or remove it to use the shared one.' },
   not_found:        { status: 404, message: 'No such endpoint.' }
 }
 
@@ -46,7 +47,7 @@ function corsHeaders(origin, allowed){
   return {
     'Access-Control-Allow-Origin': ok ? origin : allowed[0],
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Headers': 'authorization, content-type, x-reader-key',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin'
   }
@@ -69,7 +70,26 @@ function allowedOrigins(env){
 
 // ── POST /recommend ─────────────────────────────────────────────────────────
 
-export async function handleRecommend(env, uid, body, cors){
+// A reader's own key, if they brought one.
+//
+// In a HEADER and never the body, so it cannot end up in a URL, a referrer, or
+// anything that gets written down. It is read, passed to the SDK, and dropped
+// when the request ends: never stored in KV, never put in the response, and —
+// like everything else here — never logged, because nothing here logs.
+//
+// The shape check is the same one the client makes. Rejecting a malformed key
+// LOUDLY matters: silently falling back to the shared key would mean a reader
+// who thinks they're paying for their own asks is quietly spending the app's
+// budget instead.
+const READER_KEY_HEADER = 'X-Reader-Key'
+const KEY_SHAPE = /^sk-ant-[A-Za-z0-9_-]{20,}$/
+
+const readerKey = (request) => {
+  const raw = (request.headers.get(READER_KEY_HEADER) || '').trim()
+  return raw ? { present: true, key: raw, ok: KEY_SHAPE.test(raw) } : { present: false }
+}
+
+export async function handleRecommend(env, uid, body, cors, own = { present: false }){
   // Whatever the body claims about identity is ignored — `uid` is the only one
   // that exists as far as this Worker is concerned.
   const ask = {
@@ -78,6 +98,16 @@ export async function handleRecommend(env, uid, body, cors){
     tasteSummary: typeof body.tasteSummary === 'string' ? body.tasteSummary.slice(0, 4000) : '',
     exclude: Array.isArray(body.exclude) ? body.exclude.slice(0, 300).map(String) : []
   }
+
+  // ---- whose key, and therefore whose meters? ----
+  //
+  // A reader on their own key bypasses BOTH shared meters — the month's budget
+  // and the daily cap — because neither is about them: the budget is this
+  // app's bill, and the daily cap is how that bill is kept down. Someone
+  // spending their own money is subject to neither, which is the whole point of
+  // letting them bring a key.
+  if(own.present && !own.ok) return fail('bad_key', cors)
+  if(own.present) return askOnOwnKey(env, own.key, ask, cors)
 
   // ---- is the month spent? ----
   // Checked BEFORE the daily credit is claimed, deliberately: a reader who is
@@ -115,6 +145,26 @@ export async function handleRecommend(env, uid, body, cors){
     // The credit goes back: an outage on our side shouldn't spend someone's
     // allowance. Best-effort by nature — see quota.js.
     await refund(env.QUOTA, uid, cap)
+    return fail('upstream_failure', cors)
+  }
+}
+
+// No claim, no refund, no ledger entry: nothing about this ask touches a
+// counter, because none of the counters are counting it. `remaining` comes back
+// null rather than a number — there is no allowance left to report, and a
+// number here would be a lie about a limit that isn't applying.
+async function askOnOwnKey(env, key, ask, cors){
+  try{
+    const model = String(env.MODEL || MODEL)
+    const { suggestions } = await recommend(key, ask, model)
+    return json({ suggestions, remaining: null, ownKey: true }, 200, cors)
+  }catch(e){
+    // 401/403 from Anthropic means the key itself is the problem — a real key
+    // in shape that the account won't honour, revoked, or out of credit. Saying
+    // "couldn't reach the recommender" there would send someone debugging their
+    // connection over a key they can fix in ten seconds.
+    const status = e && (e.status || e.statusCode)
+    if(status === 401 || status === 403) return fail('bad_key', cors)
     return fail('upstream_failure', cors)
   }
 }
@@ -206,6 +256,10 @@ export default {
     }
     if(!body || typeof body !== 'object') return fail('bad_request', cors)
 
+    // Only /recommend takes a reader's key. A series lookup is Haiku and costs
+    // a tenth of a cent, and the fewer places a credential is accepted, the
+    // fewer places it can go wrong.
+    if(pathname === '/recommend') return handleRecommend(env, uid, body, cors, readerKey(request))
     return handler(env, uid, body, cors)
   }
 }

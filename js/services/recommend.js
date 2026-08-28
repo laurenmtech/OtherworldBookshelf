@@ -5,6 +5,7 @@
 // output. verify() below is the anti-invention pass — structured output removes
 // the parsing failure, not the making-things-up one.
 import { idToken } from '../state/auth.js'
+import { readOwnKey } from './own-key.js'
 import { searchBooks } from './books.js'
 import { bookKey, sameTitle } from './book-shape.js'
 
@@ -82,6 +83,7 @@ const MESSAGES = {
   offline: 'You’re offline — this one needs a connection.',
   unauthenticated: 'Sign in to ask for a recommendation.',
   over_quota: 'That’s all for today. More tomorrow.',
+  bad_key: 'That key wasn’t accepted. Check it, or remove it to use the shared one.',
   budget_exhausted: 'The recommender is resting until the 1st.',
   upstream_failure: 'Couldn’t reach the recommender just now.',
   network: 'Couldn’t reach the recommender just now.',
@@ -95,6 +97,11 @@ export async function askForBooks({ moods = [], freeText = '' } = {}, state){
   const token = await idToken()
   if(!token) throw new RecommendError('signed_out', MESSAGES.signed_out)
 
+  // Their own key, if they have one — in a header, so it never lands in a URL,
+  // a referrer or anything that gets written down. Absent, the header simply
+  // isn't sent and the shared key and its meters apply as before.
+  const own = readOwnKey()
+
   const timer = new AbortController()
   const stop = setTimeout(() => timer.abort(), TIMEOUT_MS)
   let res
@@ -102,7 +109,11 @@ export async function askForBooks({ moods = [], freeText = '' } = {}, state){
     res = await fetch(API_URL, {
       method: 'POST',
       signal: timer.signal,
-      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(own ? { 'X-Reader-Key': own } : {})
+      },
       body: JSON.stringify({
         moods,
         freeText,

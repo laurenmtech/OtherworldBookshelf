@@ -10,6 +10,7 @@ import { claim, refund, readUsed, DAILY_CAP } from '../api/src/quota.js'
 import { costMicros, addSpent, readSpent, overBudget, budgetMicros, PRICES } from '../api/src/budget.js'
 import { takesEffort } from '../api/src/recommend.js'
 import worker, { handleRecommend } from '../api/src/index.js'
+import { looksLikeKey } from '../js/services/own-key.js'
 
 // ── The self-consistency guard ──────────────────────────────────────────────
 
@@ -260,6 +261,117 @@ suite('worker: effort follows the model')
 test('the default model takes the pin', () => is(takesEffort('claude-opus-5'), true))
 test('Haiku 4.5 does NOT take the pin', () => is(takesEffort('claude-haiku-4-5'), false))
 test('an unknown model is assumed not to', () => is(takesEffort('claude-nonesuch'), false))
+
+// ── A reader's own key ──────────────────────────────────────────────────────
+//
+// What is NOT tested here, deliberately: an accepted key actually reaching
+// Anthropic. That path calls the real SDK, and a test that fires a request at
+// api.anthropic.com is a test that costs money and fails on a train. The
+// orderings below are what can be checked without leaving the machine.
+
+suite("worker: a reader's own key")
+
+const keyed = async (header, { budget, spent = 0 } = {}) => {
+  const kv = fakeKV()
+  if(spent) await addSpent(kv, spent)
+  const env = { QUOTA: kv, ...(budget ? { MONTHLY_BUDGET_USD: budget } : {}) }
+  return { env, res: () => handleRecommend(env, 'u1', {}, {}, { present: true, key: header, ok: /^sk-ant-[A-Za-z0-9_-]{20,}$/.test(header) }) }
+}
+
+test('a malformed key is refused, not silently ignored', async () => {
+  const { res } = await keyed('not-a-key')
+  return is((await res()).status, 400)
+})
+test('and says so by type', async () => {
+  const { res } = await keyed('sk-ant-short')
+  return is((await (await res()).json()).error.type, 'bad_key')
+})
+// Silently falling back to the shared key would mean someone who believes they
+// are paying for their own asks is quietly spending the app's budget.
+test('a refused key spends no daily credit', async () => {
+  const { env, res } = await keyed('not-a-key')
+  await res()
+  return is(await readUsed(env.QUOTA, 'u1'), 0)
+})
+test('a refused key writes nothing to KV at all', async () => {
+  const { env, res } = await keyed('not-a-key')
+  await res()
+  return is(env.QUOTA.store.size, 0)
+})
+// The ordering that makes "bypasses the shared cap entirely" true: the key is
+// dealt with BEFORE the month's ceiling is consulted, so a spent month never
+// turns away someone who isn't spending from it.
+test('a key request is judged before the month\'s ceiling', async () => {
+  const { res } = await keyed('not-a-key', { budget: '20', spent: 20 * 1e6 })
+  const r = await res()
+  return is(r.status, 400) && is(r.status === 503, false)
+})
+test('with no key, that same month IS refused', async () => {
+  const kv = fakeKV()
+  await addSpent(kv, 20 * 1e6)
+  const r = await handleRecommend({ QUOTA: kv, MONTHLY_BUDGET_USD: '20' }, 'u1', {}, {})
+  return is(r.status, 503)
+})
+
+// ── The key stays on the device ─────────────────────────────────────────────
+//
+// The promise is that a reader's key is never synced. It is kept by keeping the
+// key out of the state object entirely — so the guard is structural: if
+// anything under state/ ever learns about it, that promise is gone and this
+// test is how we find out.
+
+suite("own key: never leaves the device")
+
+test('nothing in state/ imports own-key.js', () => {
+  const offenders = []
+  for(const f of readdirSync('js/state')){
+    if(!f.endsWith('.js')) continue
+    if(/own-key/.test(readFileSync(`js/state/${f}`, 'utf8'))) offenders.push(f)
+  }
+  return is(offenders.join(', '), '', 'state/ must not touch the key')
+})
+
+test('exactly one file names the storage key', () => {
+  const hits = []
+  const walk = (dir) => {
+    for(const e of readdirSync(dir, { withFileTypes: true })){
+      const path = `${dir}/${e.name}`
+      if(e.isDirectory()) walk(path)
+      else if(e.name.endsWith('.js') && readFileSync(path, 'utf8').includes('otherworld_reads_own_key')) hits.push(path)
+    }
+  }
+  walk('js')
+  return is(hits.join(', '), 'js/services/own-key.js')
+})
+
+// ── Nothing third-party, anywhere ───────────────────────────────────────────
+//
+// Phase 10's acceptance criterion, as a test rather than a promise: no
+// analytics, no ad network, no third-party script. This is the kind of thing
+// that arrives one innocuous snippet at a time, and the "What this costs"
+// section of the Hidden Shelf says out loud that it hasn't.
+
+test('index.html loads no script from another origin', () => {
+  const html = readFileSync('index.html', 'utf8')
+  const offenders = [...html.matchAll(/<script[^>]*\ssrc=["']([^"']+)["']/gi)]
+    .map(m => m[1])
+    .filter(src => /^(https?:)?\/\//.test(src))
+  return is(offenders.join(', '), '', 'third-party script tags found')
+})
+
+// The claim in that same section, kept honest: a tagged affiliate link would
+// make the sentence "no affiliate tag, so nobody gets a cut" false.
+test('the Bookshop link carries no affiliate tag', () => {
+  const src = readFileSync('js/services/libby.js', 'utf8')
+  return is(/bookshop\.org[^`'"]*[?&](a|aid|affiliate)=/i.test(src), false)
+})
+
+// The mis-paste cases, which are the ones that actually happen.
+test('a real-shaped key is accepted', () => is(looksLikeKey('sk-ant-api03-' + 'a'.repeat(30)), true))
+test('surrounding whitespace survives a paste', () => is(looksLikeKey('  sk-ant-' + 'x'.repeat(25) + '  '), true))
+test('half a key is not a key', () => is(looksLikeKey('sk-ant-'), false))
+test('an email address is not a key', () => is(looksLikeKey('someone@example.com'), false))
+test('an empty box is not a key', () => is(looksLikeKey(''), false))
 
 // ── The uid comes from the verified token, never the request body ───────────
 

@@ -26,7 +26,7 @@ import { onAuthChange } from './state/auth.js'
 import { watchForNetwork } from './services/backfill.js'
 import { watchForSeries } from './services/series-backfill.js'
 
-export const APP_VERSION = '1.0.2'
+export const APP_VERSION = '1.0.3'
 
 function mountAll(){
   const finishModal = mountFinishModal(document.getElementById('finish-form'))

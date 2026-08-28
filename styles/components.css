@@ -429,6 +429,14 @@ body.sheet-open{ overflow:hidden }
    every vibe would be wrong about it. */
 .contact-link{ color:var(--accent-2); text-decoration:underline; word-break:break-all }
 
+/* The sentence under the key input. It sits with the field rather than floating
+   as body copy, because what it says — this stays on your device — is only
+   reassuring if you read it while pasting, not three paragraphs above. */
+.field-note{ margin:6px 0 0; font-size:12px; line-height:1.45 }
+/* A pasted key is long and unbroken; letting it set the field's width would
+   push the sheet sideways on a phone. */
+#own-key-input{ font-family:var(--mono, ui-monospace, monospace); font-size:13px }
+
 /* Two steps, one per platform — see components/install.js for why both are
    always written out rather than picked by sniffing the user agent. */
 .install-step{ margin:0 0 6px }
