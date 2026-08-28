@@ -71,9 +71,12 @@ export function mountRecommendModal(root){
     try{
       const { suggestions, remaining } = await askForBooks(request, getState())
       render(suggestions)
-      if(remainingEl && Number.isFinite(remaining)){
-        remainingEl.textContent = remaining === 0
-          ? 'That was the last one today.'
+      // null on a reader's own key: no allowance is being counted, so the line
+      // is cleared rather than left showing a number from an earlier ask that
+      // no longer describes anything.
+      if(remainingEl){
+        remainingEl.textContent = !Number.isFinite(remaining) ? ''
+          : remaining === 0 ? 'That was the last one today.'
           : `${remaining} more today.`
       }
       show('results')

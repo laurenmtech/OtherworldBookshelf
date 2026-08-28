@@ -84,6 +84,30 @@ rather than stopped at it, and — like the daily counters — the ledger is
 read-then-write with nothing holding the two together, so simultaneous asks can
 lose an increment. The overshoot is cents.
 
+### A reader's own key
+
+A reader can paste their own Anthropic key in the Hidden Shelf. When they have,
+the app sends it as `X-Reader-Key` and that ask bypasses **both** shared meters —
+the daily cap and the month's budget — because neither is about them. Nothing
+about the ask touches a counter, and `remaining` comes back `null` rather than a
+number, because there is no allowance left to report.
+
+Four things hold the promise up:
+
+- **It is never part of the app state.** `js/services/own-key.js` owns its own
+  localStorage key and nothing under `js/state/` may import it, which is a test.
+  A key in the state object would be synced to Firestore by construction — a
+  credential in someone else's database, on every device they sign in on.
+- **It travels in a header,** never a body or a URL, so it can't reach a log or
+  a referrer. It is read, passed to the SDK, and dropped: never written to KV,
+  never in a response.
+- **A malformed key is refused loudly** (`bad_key`, 400) at both ends. Falling
+  back to the shared key would mean someone who believes they're paying for
+  their own asks is quietly spending this app's budget.
+- **A 401/403 from Anthropic becomes `bad_key`, not `upstream_failure`** — a key
+  the account won't honour is fixable in ten seconds, and "couldn't reach the
+  recommender" sends people debugging their connection instead.
+
 ### Reading what the month has cost
 
 One KV key, no endpoint, no dashboard:
@@ -241,7 +265,7 @@ network.
 
 ```
 wrangler.toml     config: KV binding, the caps, the model, the month's budget
-src/index.js      the route: CORS, auth, quota, budget, typed errors
+src/index.js      the route: CORS, auth, quota, budget, own keys, errors
 src/firebase.js   ID token verification via JWKS + WebCrypto (no Admin SDK)
 src/quota.js      counters per reader per day, in KV — one prefix per route
 src/budget.js     the month's spend: token prices, one total, the ceiling

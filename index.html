@@ -322,6 +322,59 @@
         <input id="import-file" type="file" accept="application/json,.json" class="visually-hidden">
       </section>
 
+      <!-- Two paragraphs, and they have to stay true. The numbers are the ones
+           in api/README.md, which are measured against a real invoice rather
+           than derived — if the model or the ceiling changes, this text is part
+           of the change. The second paragraph is a promise about money, and the
+           moment an affiliate tag or a sponsor goes anywhere near this app it
+           gets rewritten in the same commit, not the next one. -->
+      <section class="sheet-section" id="costs-section">
+        <h3>What this costs</h3>
+        <p class="muted">Hosting, sync, and looking books up in the catalogues cost nothing — they run inside
+          free allowances and would keep doing so with far more readers than this has. The one part with a
+          bill attached is the recommender, which asks Claude and costs about ten cents a time. That's what
+          the ten-a-day limit is for, and there's a ceiling of $20 a month across everyone; past it the
+          recommender rests until the 1st and the rest of the app carries on. If you'd rather not share
+          either limit, put your own key in above and your asks go on your bill.</p>
+        <p class="muted">It earns nothing. There are no ads, no analytics, no trackers and no third-party
+          scripts. Nothing here is sold, and nothing about what you read is for sale — the backend keeps one
+          number per person per day and no titles at all. The borrow and buy links are plain links: no
+          affiliate tag, so nobody gets a cut when you use them. If that ever changes, it will say so right
+          at the link, before you tap it, and not in a page like this one.</p>
+      </section>
+
+      <!-- Advanced, and last before the contact address, because almost nobody
+           wants it and the people who do will go looking. The text at the input
+           is not decoration: a real credential on a shared device deserves a
+           plain sentence about exactly where it goes, written where it is
+           pasted rather than in a policy page nobody opens.
+           See services/own-key.js for why it isn't part of the synced state. -->
+      <section class="sheet-section" id="own-key-section">
+        <h3>Your own key</h3>
+        <p class="muted">The recommender runs on my Anthropic account, which is why there's a limit on it. Paste
+          your own API key and your asks go on your bill instead — no daily limit, and no waiting for the
+          month to turn.</p>
+        <div id="own-key-absent">
+          <div class="field">
+            <label for="own-key-input">Anthropic API key</label>
+            <input id="own-key-input" type="password" autocomplete="off" spellcheck="false"
+                   placeholder="sk-ant-…" aria-describedby="own-key-note">
+            <p class="muted field-note" id="own-key-note">Stored on this device only. It is never synced, never
+              saved to your account, and goes nowhere but this app's own server on its way to Anthropic.</p>
+          </div>
+          <div class="actions">
+            <button id="own-key-save" type="button" class="btn primary">Save key</button>
+          </div>
+        </div>
+        <div id="own-key-present" hidden>
+          <p class="muted">A key is saved on this device. Your recommendations are billed to your account.</p>
+          <div class="actions">
+            <button id="own-key-remove" type="button" class="btn danger">Remove key</button>
+          </div>
+        </div>
+        <p class="muted" id="own-key-status" role="status" aria-live="polite"></p>
+      </section>
+
       <!-- Last, because it is the thing you go looking for after something has
            already gone wrong. The address is written out rather than hidden
            behind a "Contact" button: a mailto is a promise about where a

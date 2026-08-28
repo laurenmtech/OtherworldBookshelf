@@ -14,6 +14,7 @@ import {
 import { BORROW_FORMATS, FIND_LINKS } from '../state/migrate.js'
 import { getVibe, DEFAULT_VIBE } from '../vibes/registry.js'
 import { toStorage } from '../state/migrate.js'
+import { readOwnKey, saveOwnKey, clearOwnKey, looksLikeKey } from '../services/own-key.js'
 
 // The one way to reach a person from inside the app. The address is also
 // written into the markup, so the link says where it goes before it is tapped.
@@ -129,6 +130,8 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
 
   mountInstall(root.querySelector('#install-section'))
 
+  mountOwnKey(root.querySelector('#own-key-section'))
+
   const exportBtn = root.querySelector('#export-data')
   exportBtn && exportBtn.addEventListener('click', exportShelf)
 
@@ -198,4 +201,49 @@ export function mountHiddenShelf(root, { libraryModal, bookstoreModal, vibePicke
   })
 
   return sheet
+}
+
+// The reader's own key: two states, one input, no key ever rendered back.
+//
+// The saved key is deliberately never shown again, not even masked. There is
+// nothing to do with it on screen — you cannot edit half a credential — and a
+// value in a field is a value that gets copied, screenshotted, or read over a
+// shoulder. Replacing it means pasting a new one; the only other verb is
+// Remove.
+function mountOwnKey(section){
+  if(!section) return
+  const input = section.querySelector('#own-key-input')
+  const saveBtn = section.querySelector('#own-key-save')
+  const removeBtn = section.querySelector('#own-key-remove')
+  const absent = section.querySelector('#own-key-absent')
+  const present = section.querySelector('#own-key-present')
+  const status = section.querySelector('#own-key-status')
+
+  const say = (text) => { if(status) status.textContent = text || '' }
+
+  function show(){
+    const has = !!readOwnKey()
+    if(absent) absent.hidden = has
+    if(present) present.hidden = !has
+    if(input) input.value = ''
+  }
+
+  saveBtn && saveBtn.addEventListener('click', () => {
+    const value = input ? input.value.trim() : ''
+    if(!value) return say('Paste a key first.')
+    // Caught here rather than on the next ask: a mis-paste that only surfaces
+    // as a failed recommendation looks like the app is broken.
+    if(!looksLikeKey(value)) return say('That doesn’t look like an Anthropic key — they start with sk-ant-.')
+    if(!saveOwnKey(value)) return say('This browser wouldn’t store it. Private windows often won’t.')
+    show()
+    say('Saved on this device.')
+  })
+
+  removeBtn && removeBtn.addEventListener('click', () => {
+    clearOwnKey()
+    show()
+    say('Removed. Recommendations are back on the shared key.')
+  })
+
+  show()
 }
