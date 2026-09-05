@@ -28,6 +28,34 @@
        Reads. Android reads `short_name` from the manifest for the same job. -->
   <meta name="apple-mobile-web-app-title" content="TBR">
 
+  <!-- Link previews. None of this is read by a browser: it exists so that
+       pasting the URL into LinkedIn, Slack, iMessage or anywhere else produces
+       a card instead of a bare link. Without og:title/og:description/og:image a
+       crawler has nothing to build one from, and LinkedIn in particular reports
+       that as "we couldn't generate a preview" rather than falling back to
+       <title>.
+
+       og:image MUST be an absolute URL — crawlers do not resolve relative paths
+       against the page. og-image.jpg is 1800x945 (the 1.91:1 every crawler
+       wants) and is deliberately NOT in the ASSETS list in sw.js: nothing in
+       the app ever requests it, only crawlers do, so precaching it would cost
+       every installed phone 170KB for a file it will never show.
+
+       og:url carries the trailing slash. The bare path 301s to it, and pinning
+       the canonical form here keeps every share pointing at one URL. -->
+  <meta name="description" content="A private reading shelf, so you remember what you read. Search and add in one tap, keep three books going at once, and get the next in the series handed to you. Works offline.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Otherworld Bookshelf">
+  <meta property="og:title" content="Otherworld Bookshelf">
+  <meta property="og:description" content="A private reading shelf, so you remember what you read. Search and add in one tap, keep three books going at once, and get the next in the series handed to you. Works offline.">
+  <meta property="og:url" content="https://laurenmtech.github.io/OtherworldBookshelf/">
+  <meta property="og:image" content="https://laurenmtech.github.io/OtherworldBookshelf/og-image.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1800">
+  <meta property="og:image:height" content="945">
+  <meta property="og:image:alt" content="Otherworld Bookshelf on a phone, showing three books in progress with their covers.">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link rel="stylesheet" href="styles/tokens.css">
   <!-- Vibe files are only custom-property declarations — a few hundred bytes
        each — so all four load up front and switching costs no network at all.
