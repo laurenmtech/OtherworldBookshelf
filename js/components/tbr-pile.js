@@ -9,6 +9,8 @@ import {
 } from '../services/libby.js'
 import { subtitle, tagRow } from '../ui/book-meta.js'
 import { entranceGuard } from '../ui/entrance.js'
+import { showMessage } from '../ui/dialog.js'
+import { fetchSummary } from '../services/summary.js'
 import { subscribe, getState, removeTbr, makeTbrCurrent } from '../state/store.js'
 
 export function primaryLibrary(state){
@@ -135,6 +137,11 @@ export function mountTbrPile(root, { bookModal }){
     }
 
     const actions = el('div', { className: 'list-actions' },
+      iconButton('info', 'Summary', () => showMessage({
+        title: book.title,
+        body: fetchSummary(book).then(t => t || 'Couldn’t find a summary for this one.'),
+        pending: 'Looking it up…'
+      })),
       iconButton('finish', 'Set current', () => makeTbrCurrent(idx)),
       iconButton('trash', 'Remove', () => removeTbr(idx))
     )

@@ -10,7 +10,7 @@ function paragraphs(body){
   return String(body || '').split(/\n{2,}/).map(t => t.trim()).filter(Boolean)
 }
 
-function dialog({ title, body, buttons, initial }){
+function dialog({ title, body, buttons, initial, pending = '…', failed = '' }){
   return new Promise(resolve => {
     const root = el('div', { className: 'modal', role: 'dialog', 'aria-modal': 'true' })
     const inner = el('div', { className: 'finish-inner dialog-inner' })
@@ -20,7 +20,13 @@ function dialog({ title, body, buttons, initial }){
     heading.id = id
     root.setAttribute('aria-labelledby', id)
     inner.appendChild(heading)
-    for(const p of paragraphs(body)) inner.appendChild(el('p', { className: 'muted' }, p))
+    const text = el('div', { className: 'dialog-body' })
+    const fill = b => { text.innerHTML = ''; for(const p of paragraphs(b)) text.appendChild(el('p', { className: 'muted' }, p)) }
+    if(body && typeof body.then === 'function'){
+      fill(pending)
+      body.then(fill, () => fill(failed))
+    }else fill(body)
+    inner.appendChild(text)
 
     let answered = null
     const modal = createModal(root, {
@@ -59,10 +65,13 @@ export function askConfirm({ title, body = '', confirm = 'OK', cancel = 'Cancel'
   })
 }
 
-export function showMessage({ title, body = '', close = 'Close' } = {}){
+// body may be a promise of text; `pending` shows until it settles.
+export function showMessage({ title, body = '', close = 'Close', pending, failed } = {}){
   return dialog({
     title,
     body,
+    pending,
+    failed,
     buttons: [{ label: close, value: undefined, primary: true, safe: true, focus: true }]
   })
 }
